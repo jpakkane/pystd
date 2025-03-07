@@ -19,7 +19,7 @@ template<class T> struct remove_reference<T &&> {
 template<class T> using remove_reference_t = typename remove_reference<T>::type;
 
 template<class T> constexpr remove_reference_t<T> &&move(T &&t) noexcept {
-    return static_cast<T &&>(t);
+    return static_cast<typename remove_reference<T>::type &&>(t);
 }
 
 template<typename T> class unique_ptr final {
@@ -49,6 +49,33 @@ private:
     T *ptr;
 };
 
+template<typename T> class unique_arr final {
+public:
+    unique_arr() : ptr{nullptr} {}
+    explicit unique_arr(T *t) : ptr{t} {}
+    explicit unique_arr(const unique_arr<T> &o) = delete;
+    explicit unique_arr(unique_arr<T> &&o) : ptr{o.ptr} { o.ptr = nullptr; }
+    ~unique_arr() { delete[] ptr; }
+
+    T &operator=(const unique_arr<T> &o) = delete;
+
+    T &operator=(unique_arr<T> &&o) {
+        if(this != &o) {
+            delete ptr;
+            ptr = o.ptr;
+            o.ptr = nullptr;
+        }
+        return *this;
+    }
+
+    T *get() { return ptr; }
+    const T *get() const { return ptr; }
+    T *operator->() { return ptr; }
+
+private:
+    T *ptr;
+};
+
 enum class EncodingPolicy {
     Enforce,
     Substitute,
@@ -58,16 +85,20 @@ enum class EncodingPolicy {
 class Bytes {
 public:
     explicit Bytes(const char *buf, size_t bufsize);
-    const char *c_str() const { return str; }
+    Bytes(Bytes &&o);
+    Bytes(const Bytes &o);
+    const char *c_str() const { return str.get(); }
 
 private:
-    const char *str; // Always zero terminated.
+    unique_arr<char> str; // Always zero terminated.
     size_t strsize;
     size_t capacity;
 };
 
 class U8String {
 public:
+    U8String(U8String &&o) : bytes{move(o.bytes)} {}
+    U8String(const U8String &o) : bytes{o.bytes} {}
     explicit U8String(const char *txt, size_t txtsize);
     const char *c_str() const { return bytes.c_str(); }
 

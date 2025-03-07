@@ -6,6 +6,7 @@
 
 int main(int argc, char **argv) {
     pystd::unique_ptr<int> up(new int);
+    pystd::unique_arr<int> ua(new int[42]);
     printf("Hello.\n");
     return 0;
 }
