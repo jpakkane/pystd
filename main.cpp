@@ -5,8 +5,18 @@
 #include <pystd.hpp>
 
 int main(int argc, char **argv) {
-    pystd::unique_ptr<int> up(new int);
-    pystd::unique_arr<int> ua(new int[42]);
-    printf("Hello.\n");
+    if(argc != 2) {
+        printf("%s <infile>\n", argv[0]);
+        return 0;
+    }
+    printf("Contents of file %s:\n\n", argv[0]);
+    pystd::File f(argv[1], "r");
+    while(true) {
+        pystd::Bytes line = f.readline_bytes();
+        if(line.empty()) {
+            break;
+        }
+        printf("%s", line.c_str());
+    }
     return 0;
 }

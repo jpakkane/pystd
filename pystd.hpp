@@ -59,18 +59,24 @@ public:
 
     T &operator=(const unique_arr<T> &o) = delete;
 
-    T &operator=(unique_arr<T> &&o) {
+    // unique_ptr<T> &
+    void operator=(unique_arr<T> &&o) {
         if(this != &o) {
             delete ptr;
             ptr = o.ptr;
             o.ptr = nullptr;
         }
-        return *this;
+        // return *this;
     }
 
     T *get() { return ptr; }
     const T *get() const { return ptr; }
     T *operator->() { return ptr; }
+
+    T &operator[](size_t index) {
+        // FIXME, add bounds checks.
+        return ptr[index];
+    }
 
 private:
     T *ptr;
@@ -84,12 +90,19 @@ enum class EncodingPolicy {
 
 class Bytes {
 public:
-    explicit Bytes(const char *buf, size_t bufsize);
+    Bytes();
+    Bytes(const char *buf, size_t bufsize);
     Bytes(Bytes &&o);
     Bytes(const Bytes &o);
     const char *c_str() const { return str.get(); }
 
+    void append(const char c);
+
+    bool empty() const { return strsize == 0; }
+
 private:
+    void double_size();
+
     unique_arr<char> str; // Always zero terminated.
     size_t strsize;
     size_t capacity;
@@ -118,12 +131,19 @@ private:
 
 class File {
 public:
-    U8String readline();
+    File(const char *fname, const char *modes);
+
+    Bytes readline_bytes();
+    ~File();
+
+    File &operator=(File &&o) = delete;
+    File &operator=(const File &o) = delete;
     // Vector<U8String> readlines();
     // Vector<Bytes> readlines_raw();
+
 private:
     FILE *f;
-    Bytes buf;
+    EncodingPolicy policy;
 };
 
 } // namespace pystd
