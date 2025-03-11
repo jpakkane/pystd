@@ -16,7 +16,7 @@ const size_t default_bufsize = 16;
 
 }
 
-Bytes::Bytes() : str{new char[default_bufsize]} {
+Bytes::Bytes() noexcept : str{new char[default_bufsize]} {
     str[0] = '\0';
     capacity = default_bufsize;
     strsize = 0;
