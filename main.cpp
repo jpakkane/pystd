@@ -16,7 +16,7 @@ int main(int argc, char **argv) {
         if(line.empty()) {
             break;
         }
-        printf("%s", line.c_str());
+        printf("%s", line.data());
     }
     return 0;
 }

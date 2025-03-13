@@ -52,9 +52,9 @@ private:
 template<typename T> class unique_arr final {
 public:
     unique_arr() noexcept : ptr{nullptr} {}
-    explicit unique_arr(T *t) noexcept  : ptr{t}, size{0} {}
+    explicit unique_arr(T *t, size_t size=0) noexcept  : ptr{t}, bufsize{size} {}
     explicit unique_arr(const unique_arr<T> &o) = delete;
-    explicit unique_arr(unique_arr<T> &&o) noexcept : ptr{o.ptr}, size{o.size} { o.ptr = nullptr; o.size = 0;}
+    explicit unique_arr(unique_arr<T> &&o) noexcept : ptr{o.ptr}, bufsize{o.bufsize} { o.ptr = nullptr; o.bufsize = 0;}
     ~unique_arr() { delete[] ptr; }
 
     T &operator=(const unique_arr<T> &o) = delete;
@@ -64,23 +64,29 @@ public:
         if(this != &o) {
             delete ptr;
             ptr = o.ptr;
+            bufsize = o.bufsize;
             o.ptr = nullptr;
+            o.bufsize = 0;
         }
         // return *this;
     }
+
+    size_t size() const { return bufsize; }
 
     T *get() { return ptr; }
     const T *get() const { return ptr; }
     T *operator->() { return ptr; }
 
     T &operator[](size_t index) {
-        // FIXME, add bounds checks.
+        if(index >= bufsize) {
+            throw "Index out of bounds.";
+        }
         return ptr[index];
     }
 
 private:
     T *ptr;
-    size_t size;
+    size_t bufsize;
 };
 
 enum class EncodingPolicy {
@@ -92,12 +98,12 @@ enum class EncodingPolicy {
 class Bytes {
 public:
     Bytes() noexcept;
+    explicit Bytes(size_t initial_size) noexcept;
     Bytes(const char *buf, size_t bufsize) noexcept;
     Bytes(Bytes &&o) noexcept;
     Bytes(const Bytes &o) noexcept;
-    const char *c_str() const { return str.get(); }
-    const char* data() const { return str.get(); }
-    char* data() { return str.get(); }
+    const char* data() const { return buf.get(); }
+    char* data() { return buf.get(); }
 
     void append(const char c);
 
@@ -111,9 +117,8 @@ public:
 private:
     void double_size();
 
-    unique_arr<char> str; // Always zero terminated.
+    unique_arr<char> buf; // Not zero terminated.
     size_t strsize;
-    size_t capacity;
 };
 
 class U8String {
@@ -121,7 +126,7 @@ public:
     U8String(U8String &&o) noexcept : bytes{move(o.bytes)} {}
     U8String(const U8String &o) noexcept : bytes{o.bytes} {}
     explicit U8String(const char *txt, size_t txtsize);
-    const char *c_str() const { return bytes.c_str(); }
+    const char *c_str() const { return nullptr;/* return bytes.c_str();*/ }
 
 private:
     Bytes bytes;

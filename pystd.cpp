@@ -16,29 +16,27 @@ const size_t default_bufsize = 16;
 
 }
 
-Bytes::Bytes() noexcept : str{new char[default_bufsize]} {
-    str[0] = '\0';
-    capacity = default_bufsize;
+Bytes::Bytes() noexcept : buf{new char[default_bufsize], default_bufsize} { strsize = 0; }
+
+Bytes::Bytes(size_t initial_size) noexcept : buf{new char[initial_size], initial_size} {
     strsize = 0;
 }
 
 void Bytes::double_size() {
-    const auto new_capacity = 2 * capacity;
-    unique_arr<char> new_buf{new char[new_capacity]};
-    for(size_t i = 0; i <= strsize; ++i) {
-        new_buf[i] = str[i];
+    const auto new_capacity = 2 * buf.size();
+    unique_arr<char> new_buf{new char[new_capacity], new_capacity};
+    for(size_t i = 0; i < strsize; ++i) {
+        new_buf[i] = buf[i];
     }
-    capacity = new_capacity;
-    str = move(new_buf);
+    buf = move(new_buf);
 }
 
 void Bytes::append(const char c) {
-    if(strsize + 2 > capacity) {
+    if(strsize >= buf.size()) {
         double_size();
     }
-    str[strsize] = c;
+    buf[strsize] = c;
     ++strsize;
-    str[strsize] = '\0';
 }
 
 File::File(const char *fname, const char *modes) : policy{EncodingPolicy::Enforce} {
@@ -51,13 +49,16 @@ File::File(const char *fname, const char *modes) : policy{EncodingPolicy::Enforc
 File::~File() { fclose(f); }
 
 Bytes File::readline_bytes() {
-    Bytes b;
+    Bytes b(160);
     // The world's least efficient readline.
     char c;
     while(true) {
         auto rc = fread(&c, 1, 1, f);
         if(rc != 1) {
             if(feof(f)) {
+                if(!b.empty()) {
+                    b.append('\0');
+                }
                 return b;
             } else if(ferror(f)) {
                 abort();
@@ -67,6 +68,7 @@ Bytes File::readline_bytes() {
         }
         b.append(c);
         if(c == '\n') {
+            b.append('\0');
             return b;
         }
     }
