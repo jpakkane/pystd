@@ -151,6 +151,20 @@ U8String U8String::substr(size_t offset, size_t length) const {
     return U8String(bytes.data() + offset, length);
 }
 
+PyException::PyException(const char *msg) : message("") {
+    Bytes b;
+    size_t offset = 0;
+    while(msg[offset]) {
+        auto c = msg[offset];
+        if(c > 127) {
+            b.append('?');
+        } else {
+            b.append(c);
+        }
+    }
+    message = U8String(b.data(), b.size());
+}
+
 File::File(const char *fname, const char *modes) : policy{EncodingPolicy::Enforce} {
     f = fopen(fname, modes);
     if(!f) {

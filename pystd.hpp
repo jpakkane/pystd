@@ -121,6 +121,14 @@ public:
 
     void assign(const char *buf, size_t bufsize);
 
+    void operator=(Bytes &&o) {
+        if(this != &o) {
+            buf = move(o.buf);
+            strsize = o.strsize;
+            o.strsize = 0;
+        }
+    }
+
 private:
     void grow_to(size_t new_size);
 
@@ -130,14 +138,20 @@ private:
 
 class U8String {
 public:
-    U8String(U8String &&o) noexcept : bytes{move(o.bytes)} {}
-    U8String(const U8String &o) noexcept : bytes{o.bytes} {}
+    U8String(U8String &&o) noexcept = default;
+    U8String(const U8String &o) noexcept = default;
     explicit U8String(const char *txt, size_t txtsize = -1);
     const char *c_str() const { return bytes.data(); }
 
     size_t size_bytes() const { return bytes.size(); }
 
     U8String substr(size_t offset, size_t length) const;
+
+    void operator=(U8String &&o) {
+        if(this != &o) {
+            bytes = move(o.bytes);
+        }
+    }
 
 private:
     Bytes bytes;
@@ -146,7 +160,8 @@ private:
 
 class PyException {
 public:
-    PyException(U8String msg) : message{msg} {}
+    explicit PyException(const char *msg);
+    explicit PyException(U8String msg) : message{msg} {}
 
     const U8String &what() const { return message; }
 

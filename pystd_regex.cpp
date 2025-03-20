@@ -21,7 +21,7 @@ Regex::Regex(const U8String &pattern) {
         PCRE2_UCHAR buf[bufsize];
         const auto strsize = pcre2_get_error_message(errorcode, buf, bufsize);
         if(strsize < 0) {
-            throw PyException(U8String("Compiling regex failed."));
+            throw PyException("Compiling regex failed.");
         }
         throw PyException(U8String((const char *)buf, strsize));
     }
@@ -38,7 +38,7 @@ Match::~Match() {
 U8String Match::get_submatch(size_t i) {
     auto osize = pcre2_get_ovector_count((pcre2_match_data_8 *)handle);
     if(i >= osize) {
-        throw PyException(U8String("Submatch does not exist."));
+        throw PyException("Submatch does not exist.");
     }
     auto ovector = pcre2_get_ovector_pointer((pcre2_match_data_8 *)handle);
     auto match_start = ovector[2 * i];
@@ -64,7 +64,7 @@ Match regex_match(const Regex &pattern, const U8String &text) {
         // PCRE2_UCHAR buf[bufsize];
         // pcre2_get_error_message(rc, buf, bufsize);
         // printf("%s\n", buf);
-        throw PyException(U8String("Regex matching failed."));
+        throw PyException("Regex matching failed.");
     }
     return m;
 }
