@@ -146,6 +146,11 @@ U8String::U8String(const char *txt, size_t txtsize) {
     bytes.append('\0');
 }
 
+U8String U8String::substr(size_t offset, size_t length) const {
+    // FIXME, validate range.
+    return U8String(bytes.data() + offset, length);
+}
+
 File::File(const char *fname, const char *modes) : policy{EncodingPolicy::Enforce} {
     f = fopen(fname, modes);
     if(!f) {
