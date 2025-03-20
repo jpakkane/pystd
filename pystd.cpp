@@ -87,6 +87,12 @@ bool is_valid_utf8(const char *input, size_t input_size) {
 
 } // namespace
 
+void SimpleHasher::feed_bytes(const char *buf, size_t bufsize) noexcept {
+    for(size_t i = 0; i < bufsize; ++i) {
+        value = 13 * value ^ (unsigned char)buf[i];
+    }
+}
+
 Bytes::Bytes() noexcept : buf{new char[default_bufsize], default_bufsize} { strsize = 0; }
 
 Bytes::Bytes(size_t initial_size) noexcept : buf{new char[initial_size], initial_size} {

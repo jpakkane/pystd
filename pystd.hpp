@@ -107,6 +107,21 @@ enum class EncodingPolicy {
     Ignore,
 };
 
+class SimpleHasher final {
+public:
+    void feed_bytes(const char *buf, size_t bufsize) noexcept;
+
+    template<typename T> void feed_primitive(const T &c) noexcept {
+        // FIXME, add concept to only accept ints and floats.
+        feed_bytes((const char *)&c, sizeof(c));
+    }
+
+    size_t get_hash() const { return value; }
+
+private:
+    size_t value{0};
+};
+
 class Bytes {
 public:
     Bytes() noexcept;
@@ -163,6 +178,8 @@ public:
         return strsize < o.strsize;
     }
 
+    template<typename Hasher> void feed_hash(Hasher &h) { h.add_bytes(buf.get(), strsize); }
+
 private:
     void grow_to(size_t new_size);
 
@@ -189,6 +206,8 @@ public:
 
     bool operator==(const U8String &o) const = default;
     bool operator<(const U8String &o) const { return bytes < o.bytes; }
+
+    template<typename Hasher> void feed_hash(Hasher &h) { bytes.feed_hash(h); }
 
 private:
     Bytes bytes;
