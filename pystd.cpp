@@ -155,7 +155,7 @@ PyException::PyException(const char *msg) : message("") {
     Bytes b;
     size_t offset = 0;
     while(msg[offset]) {
-        auto c = msg[offset];
+        auto c = msg[offset++];
         if(c > 127) {
             b.append('?');
         } else {

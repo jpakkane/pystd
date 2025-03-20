@@ -89,6 +89,13 @@ public:
         return ptr[index];
     }
 
+    const T &operator[](size_t index) const {
+        if(index >= bufsize) {
+            throw "Index out of bounds.";
+        }
+        return ptr[index];
+    }
+
 private:
     T *ptr;
     size_t bufsize;
@@ -129,6 +136,33 @@ public:
         }
     }
 
+    bool operator==(const Bytes &o) const {
+        if(strsize != o.strsize) {
+            return false;
+        }
+        for(size_t i = 0; i < strsize; ++i) {
+            if(buf[i] != o.buf[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    bool operator<(const Bytes &o) const {
+        const auto num_its = strsize < o.strsize ? strsize : o.strsize;
+        for(size_t i = 0; i < num_its; ++i) {
+            const auto &c1 = buf[i];
+            const auto &c2 = o.buf[i];
+            if(c1 < c2) {
+                return true;
+            }
+            if(c2 > c1) {
+                return false;
+            }
+        }
+        return strsize < o.strsize;
+    }
+
 private:
     void grow_to(size_t new_size);
 
@@ -152,6 +186,9 @@ public:
             bytes = move(o.bytes);
         }
     }
+
+    bool operator==(const U8String &o) const = default;
+    bool operator<(const U8String &o) const { return bytes < o.bytes; }
 
 private:
     Bytes bytes;
