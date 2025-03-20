@@ -4,8 +4,10 @@
 #pragma once
 
 #include <stdio.h>
+#include <stdint.h>
 
 namespace pystd {
+
 
 template<class T> struct remove_reference {
     typedef T type;
@@ -62,7 +64,7 @@ public:
     // unique_ptr<T> &
     void operator=(unique_arr<T> &&o) noexcept {
         if(this != &o) {
-            delete ptr;
+            delete[] ptr;
             ptr = o.ptr;
             bufsize = o.bufsize;
             o.ptr = nullptr;
@@ -114,8 +116,10 @@ public:
     void extend(size_t num_bytes) noexcept;
     void shrink(size_t num_bytes) noexcept;
 
+    void assign(const char *buf, size_t bufsize);
+
 private:
-    void double_size();
+    void grow_to(size_t new_size);
 
     unique_arr<char> buf; // Not zero terminated.
     size_t strsize;
@@ -125,11 +129,12 @@ class U8String {
 public:
     U8String(U8String &&o) noexcept : bytes{move(o.bytes)} {}
     U8String(const U8String &o) noexcept : bytes{o.bytes} {}
-    explicit U8String(const char *txt, size_t txtsize);
-    const char *c_str() const { return nullptr;/* return bytes.c_str();*/ }
+    explicit U8String(const char *txt, size_t txtsize=-1);
+    const char *c_str() const { return bytes.data(); }
 
 private:
     Bytes bytes;
+    // Store length in codepoints.
 };
 
 class PyException {

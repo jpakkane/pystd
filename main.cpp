@@ -16,7 +16,8 @@ int main(int argc, char **argv) {
         if(line.empty()) {
             break;
         }
-        printf("%s", line.data());
+        pystd::U8String u8line(line.data(), line.size());
+        printf("%s", u8line.c_str());
     }
     return 0;
 }
