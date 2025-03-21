@@ -53,6 +53,7 @@ private:
 template<typename T> class unique_arr final {
 public:
     unique_arr() noexcept : ptr{nullptr} {}
+    explicit unique_arr(size_t size) noexcept : ptr{new T[size]}, bufsize{size} {}
     explicit unique_arr(T *t, size_t size = 0) noexcept : ptr{t}, bufsize{size} {}
     explicit unique_arr(const unique_arr<T> &o) = delete;
     explicit unique_arr(unique_arr<T> &&o) noexcept : ptr{o.ptr}, bufsize{o.bufsize} {
@@ -289,6 +290,119 @@ private:
     const T *rawptr(size_t i) const noexcept { return backing.data() + i * sizeof(T); }
 
     Bytes backing;
+};
+
+template<typename Key, typename Value, typename Hasher = SimpleHasher> class HashMap final {
+public:
+    HashMap() {
+        salt = (size_t)this;
+        num_entries = 0;
+        size_in_powers_of_two = 6;
+        auto initial_table_size = table_size();
+        mod_mask = initial_table_size - 1;
+        data.hashes = unique_arr<size_t>{initial_table_size};
+        data.keydata = Bytes(initial_table_size * sizeof(Key));
+        data.valuedata = Bytes(initial_table_size * sizeof(Value));
+        for(size_t i = 0; i < initial_table_size; ++i) {
+            data.hashes[i] = FREE_SLOT;
+        }
+    }
+
+    ~HashMap() { deallocate_contents(data); }
+
+    Value *lookup(const Key &key) const {
+        const auto hashval = hash_for(key);
+        auto slot = hashval & mod_mask;
+        while(true) {
+            if(data.hashes[slot] == FREE_SLOT) {
+                return nullptr;
+            }
+            if(data.hashes[slot] == hashval) {
+                auto *potential_key = keyptr(slot);
+                if(*potential_key == key) {
+                    return valueptr(slot);
+                }
+            }
+            slot = (slot + 1) & mod_mask;
+        }
+    }
+
+    void insert(const Key &key, const Value &v) {
+        const auto hashval = hash_for(key);
+        auto slot = hashval & mod_mask;
+        while(true) {
+            if(data.hashes[slot] == FREE_SLOT) {
+                auto *key_loc = keyptr(slot);
+                auto *value_loc = valueptr(slot);
+                new(key_loc) Key(key);
+                new(value_loc) Value(v);
+                data.hashes[slot] = hashval;
+                ++num_entries;
+                return;
+            }
+            if(data.hashes[slot] == hashval) {
+                auto *potential_key = keyptr(slot);
+                if(*potential_key == key) {
+                    auto *value_loc = valueptr(slot);
+                    *value_loc = v;
+                    return;
+                }
+            }
+            slot = (slot + 1) & mod_mask;
+        }
+    }
+
+private:
+    // This is neither fast, memory efficient nor elegant.
+    // At this point in the project life cycle it does not need to be.
+    struct MapData {
+        unique_arr<size_t> hashes;
+        Bytes keydata;
+        Bytes valuedata;
+    };
+
+    void deallocate_contents(MapData &d) {
+        for(size_t i = 0; i < table_size(); ++i) {
+            if(d.data.hashes[i] == FREE_SLOT || d.data.hashes[i] == TOMBSTONE) {
+                continue;
+            }
+            d.keyptr(i)->~Key();
+            d.valueptr(i)->~Value();
+        }
+    }
+
+    size_t hash_for(const Key &k) const {
+        Hasher h;
+        h.feed_primitive(salt);
+        k.feed_hash(h);
+        auto raw_hash = h.get_hash();
+        if(raw_hash == FREE_SLOT) {
+            raw_hash = FREE_SLOT + 1;
+        } else if(raw_hash == TOMBSTONE) {
+            raw_hash = TOMBSTONE + 1;
+        }
+        return raw_hash;
+    }
+
+    size_t table_size() const { return 1 << size_in_powers_of_two; }
+
+    Key *keyptr(size_t i) noexcept { return data.keydata.data() + i * sizeof(Key); }
+    const Key *keyptr(size_t i) const noexcept { return data.keydata.data() + i * sizeof(Key); }
+
+    Value *valueptr(size_t i) noexcept { return data.valuedata.data() + i * sizeof(Value); }
+    const Value *valueptr(size_t i) const noexcept {
+        return data.valuedata.data() + i * sizeof(Value);
+    }
+
+    static constexpr size_t FREE_SLOT = 42;
+    static constexpr size_t TOMBSTONE = 666;
+    static constexpr double MAX_LOAD = 0.7;
+
+    MapData data;
+    size_t salt;
+    size_t num_entries;
+    size_t mod_mask;
+    int32_t size_in_powers_of_two;
 };
 
 class Regex {
