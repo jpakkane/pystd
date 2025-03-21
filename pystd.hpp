@@ -6,6 +6,9 @@
 #include <stdio.h>
 #include <stdint.h>
 
+void* operator new(size_t, void *ptr) noexcept;
+
+
 namespace pystd {
 
 template<class T> struct remove_reference {
@@ -67,7 +70,6 @@ public:
     // unique_ptr<T> &
     void operator=(unique_arr<T> &&o) noexcept {
         if(this != &o) {
-
             delete[] ptr;
             ptr = o.ptr;
             bufsize = o.bufsize;
@@ -179,7 +181,7 @@ public:
         return strsize < o.strsize;
     }
 
-    template<typename Hasher> void feed_hash(Hasher &h) { h.add_bytes(buf.get(), strsize); }
+    template<typename Hasher> void feed_hash(Hasher &h) const { h.feed_bytes(buf.get(), strsize); }
 
 private:
     void grow_to(size_t new_size);
@@ -208,7 +210,7 @@ public:
     bool operator==(const U8String &o) const = default;
     bool operator<(const U8String &o) const { return bytes < o.bytes; }
 
-    template<typename Hasher> void feed_hash(Hasher &h) { bytes.feed_hash(h); }
+    template<typename Hasher> void feed_hash(Hasher &h) const { bytes.feed_hash(h); }
 
 private:
     Bytes bytes;
@@ -298,19 +300,15 @@ public:
         salt = (size_t)this;
         num_entries = 0;
         size_in_powers_of_two = 6;
-        auto initial_table_size = table_size();
+        auto initial_table_size = 1 << size_in_powers_of_two;
         mod_mask = initial_table_size - 1;
-        data.hashes = unique_arr<size_t>{initial_table_size};
+        data.hashes = unique_arr<size_t>(initial_table_size);
+        data.reset_hash_values();
         data.keydata = Bytes(initial_table_size * sizeof(Key));
         data.valuedata = Bytes(initial_table_size * sizeof(Value));
-        for(size_t i = 0; i < initial_table_size; ++i) {
-            data.hashes[i] = FREE_SLOT;
-        }
     }
 
-    ~HashMap() { deallocate_contents(data); }
-
-    Value *lookup(const Key &key) const {
+    const Value *lookup(const Key &key) const {
         const auto hashval = hash_for(key);
         auto slot = hashval & mod_mask;
         while(true) {
@@ -318,9 +316,9 @@ public:
                 return nullptr;
             }
             if(data.hashes[slot] == hashval) {
-                auto *potential_key = keyptr(slot);
+                auto *potential_key = data.keyptr(slot);
                 if(*potential_key == key) {
-                    return valueptr(slot);
+                    return data.valueptr(slot);
                 }
             }
             slot = (slot + 1) & mod_mask;
@@ -328,29 +326,19 @@ public:
     }
 
     void insert(const Key &key, const Value &v) {
-        const auto hashval = hash_for(key);
-        auto slot = hashval & mod_mask;
-        while(true) {
-            if(data.hashes[slot] == FREE_SLOT) {
-                auto *key_loc = keyptr(slot);
-                auto *value_loc = valueptr(slot);
-                new(key_loc) Key(key);
-                new(value_loc) Value(v);
-                data.hashes[slot] = hashval;
-                ++num_entries;
-                return;
-            }
-            if(data.hashes[slot] == hashval) {
-                auto *potential_key = keyptr(slot);
-                if(*potential_key == key) {
-                    auto *value_loc = valueptr(slot);
-                    *value_loc = v;
-                    return;
-                }
-            }
-            slot = (slot + 1) & mod_mask;
+        if(fill_ratio() >= MAX_LOAD) {
+            grow();
         }
+
+        const auto hashval = hash_for(key);
+        insert_internal(hashval, key, v);
     }
+
+    bool contains(const Key &key) const {
+        return lookup(key) != nullptr;
+    }
+
+    size_t size() const { return num_entries; }
 
 private:
     // This is neither fast, memory efficient nor elegant.
@@ -359,15 +347,93 @@ private:
         unique_arr<size_t> hashes;
         Bytes keydata;
         Bytes valuedata;
+
+        MapData() = default;
+        MapData(MapData &&o) noexcept{
+            hashes = move(o.hashes);
+            keydata = move(o.valuedata);
+            valuedata = move(o.valuedata);
+        }
+
+        void operator=(MapData &&o) noexcept {
+            if(this != &o) {
+                hashes = move(o.hashes);
+                keydata = move(o.keydata);
+                valuedata = move(o.valuedata);
+            }
+        }
+
+        ~MapData() { deallocate_contents(); }
+
+        Key *keyptr(size_t i) noexcept { return (Key*)(keydata.data() + i * sizeof(Key)); }
+        const Key *keyptr(size_t i) const noexcept { return (const Key*)(keydata.data() + i * sizeof(Key)); }
+
+        Value *valueptr(size_t i) noexcept { return (Value*)(valuedata.data() + i * sizeof(Value)); }
+        const Value *valueptr(size_t i) const noexcept {
+            return (const Value*)(valuedata.data() + i * sizeof(Value));
+        }
+
+        void reset_hash_values() {
+            for(size_t i = 0; i < hashes.size(); ++i) {
+                hashes[i] = FREE_SLOT;
+            }
+        }
+
+        void deallocate_contents() {
+            for(size_t i = 0; i < hashes.size(); ++i) {
+                if(hashes[i] == FREE_SLOT || hashes[i] == TOMBSTONE) {
+                    continue;
+                }
+                keyptr(i)->~Key();
+                valueptr(i)->~Value();
+            }
+        }
     };
 
-    void deallocate_contents(MapData &d) {
-        for(size_t i = 0; i < table_size(); ++i) {
-            if(d.data.hashes[i] == FREE_SLOT || d.data.hashes[i] == TOMBSTONE) {
+    void insert_internal(size_t hashval, const Key &key, const Value &v) {
+        auto slot = hashval & mod_mask;
+        while(true) {
+            if(data.hashes[slot] == FREE_SLOT) {
+                auto *key_loc = data.keyptr(slot);
+                auto *value_loc = data.valueptr(slot);
+                new(key_loc) Key(key);
+                new(value_loc) Value{v};
+                data.hashes[slot] = hashval;
+                ++num_entries;
+                return;
+            }
+            if(data.hashes[slot] == hashval) {
+                auto *potential_key = data.keyptr(slot);
+                if(*potential_key == key) {
+                    auto *value_loc = data.valueptr(slot);
+                    *value_loc = v;
+                    return;
+                }
+            }
+            slot = (slot + 1) & mod_mask;
+        }
+    }
+
+    void grow() {
+        const auto new_size = 2*table_size();
+        const auto new_powers_of_two = size_in_powers_of_two + 1;
+        const auto new_mod_mask = new_powers_of_two - 1;
+        MapData grown;
+
+        grown.hashes = unique_arr<size_t>(new_size);
+            grown.keydata = Bytes(new_size*sizeof(Key));
+        grown.valuedata = Bytes(new_size*sizeof(Value));
+
+        grown.reset_hash_values();
+        MapData old = move(data);
+        data = move(grown);
+        size_in_powers_of_two = new_powers_of_two;
+        mod_mask = new_mod_mask;
+        for(size_t i=0; i<old.hashes.size(); ++i) {
+            if(old.hashes[i] == FREE_SLOT || old.hashes[i] == TOMBSTONE) {
                 continue;
             }
-            d.keyptr(i)->~Key();
-            d.valueptr(i)->~Value();
+            insert_internal(old.hashes[i], *old.keyptr(i), *old.valueptr(i));
         }
     }
 
@@ -384,16 +450,11 @@ private:
         return raw_hash;
     }
 
-    size_t table_size() const { return 1 << size_in_powers_of_two; }
+    size_t table_size() const { return data.hashes.size(); }
 
-    Key *keyptr(size_t i) noexcept { return data.keydata.data() + i * sizeof(Key); }
-    const Key *keyptr(size_t i) const noexcept { return data.keydata.data() + i * sizeof(Key); }
-
-    Value *valueptr(size_t i) noexcept { return data.valuedata.data() + i * sizeof(Value); }
-    const Value *valueptr(size_t i) const noexcept {
-        return data.valuedata.data() + i * sizeof(Value);
+    double fill_ratio() const {
+        return double(num_entries) / table_size();
     }
-
     static constexpr size_t FREE_SLOT = 42;
     static constexpr size_t TOMBSTONE = 666;
     static constexpr double MAX_LOAD = 0.7;

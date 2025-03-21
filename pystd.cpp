@@ -10,6 +10,8 @@ void *operator new(size_t count) { return malloc(count); }
 
 void operator delete(void *ptr) noexcept { free(ptr); }
 
+void *operator new(size_t, void *ptr) noexcept { return ptr; }
+
 namespace pystd {
 
 struct UtfDecodeStep {
