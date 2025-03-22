@@ -323,7 +323,7 @@ public:
 
     const Value *lookup(const Key &key) const {
         const auto hashval = hash_for(key);
-        auto slot = hashval & mod_mask;
+        auto slot = hash_to_slot(hashval);
         while(true) {
             if(data.hashes[slot] == FREE_SLOT) {
                 return nullptr;
@@ -403,8 +403,20 @@ private:
         }
     };
 
+    size_t hash_to_slot(size_t hashval) const {
+        const size_t total_bits = sizeof(size_t)*8;
+        size_t consumed_bits = 0;
+        size_t slot = 0;
+        while(consumed_bits < total_bits) {
+            slot ^= hashval & mod_mask;
+            consumed_bits += size_in_powers_of_two;
+            hashval >>= size_in_powers_of_two;
+        }
+        return slot;
+    }
+
     void insert_internal(size_t hashval, const Key &key, const Value &v) {
-        auto slot = hashval & mod_mask;
+        auto slot = hash_to_slot(hashval);
         while(true) {
             if(data.hashes[slot] == FREE_SLOT) {
                 auto *key_loc = data.keyptr(slot);
