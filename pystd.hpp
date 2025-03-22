@@ -125,6 +125,8 @@ private:
     size_t value{0};
 };
 
+class PyException;
+
 class Bytes {
 public:
     Bytes() noexcept;
@@ -145,6 +147,10 @@ public:
     void shrink(size_t num_bytes) noexcept;
 
     void assign(const char *buf, size_t bufsize);
+
+    char operator[](size_t i) const {
+        return buf[i];
+    }
 
     void operator=(Bytes &&o) {
         if(this != &o) {
@@ -190,6 +196,60 @@ private:
     size_t strsize;
 };
 
+template<typename T> class Vector final {
+public:
+    Vector() noexcept = default;
+    ~Vector() {
+        for(size_t i = 0; i < num_entries; ++i) {
+            objptr(i)->~T();
+        }
+    }
+
+    void push_back(const T &obj) noexcept {
+        backing.extend(sizeof(T));
+        auto obj_loc = objptr(num_entries);
+        new(obj_loc) T(obj);
+        ++num_entries;
+    }
+
+    void pop_back() noexcept {
+        if(num_entries == 0) {
+            return;
+        }
+        T *obj = objptr(num_entries);
+        obj->~obj();
+        backing.shrink(sizeof(T));
+        --num_entries;
+    }
+
+    size_t capacity() noexcept { return backing.size() / sizeof(T); }
+    size_t size() noexcept { return num_entries; }
+
+    T &operator[](size_t i) {
+        if(i >= num_entries) {
+            throw "Index out of bounds.";
+        }
+        return *objptr(i);
+    }
+
+    const T &operator[](size_t i) const {
+        if(i >= num_entries) {
+            throw "Index out of bounds.";
+        }
+        return *objptr(i);
+    }
+
+private:
+    T *objptr(size_t i) noexcept { return reinterpret_cast<T *>(rawptr(i)); }
+    const T *objptr(size_t i) const noexcept { return reinterpret_cast<const T *>(rawptr(i)); }
+    char *rawptr(size_t i) noexcept { return backing.data() + i * sizeof(T); }
+    const T *rawptr(size_t i) const noexcept { return backing.data() + i * sizeof(T); }
+
+    Bytes backing;
+    size_t num_entries=0;
+};
+
+
 class U8String {
 public:
     U8String(U8String &&o) noexcept = default;
@@ -207,10 +267,12 @@ public:
         }
     }
 
-    bool operator==(const U8String &o) const = default;
+    bool operator==(const U8String &o) const { return bytes == o.bytes; }
     bool operator<(const U8String &o) const { return bytes < o.bytes; }
 
     template<typename Hasher> void feed_hash(Hasher &h) const { bytes.feed_hash(h); }
+
+    Vector<U8String> split() const;
 
 private:
     Bytes bytes;
@@ -243,55 +305,6 @@ public:
 private:
     FILE *f;
     EncodingPolicy policy;
-};
-
-template<typename T> class Vector final {
-public:
-    Vector() noexcept;
-    ~Vector() {
-        for(size_t i = 0; i < size(); ++i) {
-            objptr(i)->~T();
-        }
-    }
-
-    void push_back(const T &obj) noexcept {
-        const auto write_index = size();
-        backing.extend(sizeof(T));
-        new(rawtpr(write_index)) T(obj);
-    }
-
-    void pop_back() noexcept {
-        if(backing.empty()) {
-            return;
-        }
-        T *obj = objptr(size() - 1);
-        obj->~obj();
-        backing.shrink(sizeof(T));
-    }
-
-    size_t size() noexcept { return backing.size() / sizeof(T); }
-
-    T &operator[](size_t i) {
-        if(i >= size()) {
-            throw "Index out of bounds.";
-        }
-        return *objptr(i);
-    }
-
-    const T &operator[](size_t i) const {
-        if(i >= size()) {
-            throw "Index out of bounds.";
-        }
-        return *objptr(i);
-    }
-
-private:
-    T *objptr(size_t i) noexcept { return reinterpret_cast<T *>(rawptr(i)); }
-    const T *objptr(size_t i) const noexcept { return reinterpret_cast<const T *>(rawptr(i)); }
-    char *rawptr(size_t i) noexcept { return backing.data() + i * sizeof(T); }
-    const T *rawptr(size_t i) const noexcept { return backing.data() + i * sizeof(T); }
-
-    Bytes backing;
 };
 
 template<typename Key, typename Value, typename Hasher = SimpleHasher> class HashMap final {

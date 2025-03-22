@@ -55,9 +55,21 @@ int hashmap_main(int, char **) {
     return 0;
 }
 
+int split_main(int, char **) {
+    pystd::U8String text("aa bb cc");
+    auto r = text.split();
+    printf("Split array size: %d\n", (int)r.size());
+    for(size_t i = 0; i < r.size(); ++i) {
+        printf(" %s\n", r[i].c_str());
+    }
+    return 0;
+}
+
 int main(int argc, char **argv) {
-    if(true) {
+    if(false) {
         return hashmap_main(argc, argv);
+    } else if(true) {
+        return split_main(argc, argv);
     } else {
         return file_main(argc, argv);
     }

@@ -14,6 +14,12 @@ void *operator new(size_t, void *ptr) noexcept { return ptr; }
 
 namespace pystd {
 
+namespace {
+
+bool is_ascii_whitespace(char c) { return c == ' ' || c == '\n' || c == '\n' || c == '\t'; }
+
+} // namespace
+
 struct UtfDecodeStep {
     uint32_t byte1_data_mask;
     uint32_t num_subsequent_bytes;
@@ -143,6 +149,20 @@ void Bytes::append(const char c) {
     ++strsize;
 }
 
+void Bytes::extend(size_t num_bytes) noexcept {
+    const size_t target_size = strsize + num_bytes;
+    grow_to(target_size);
+    strsize += num_bytes;
+}
+
+void Bytes::shrink(size_t num_bytes) noexcept {
+    if(num_bytes > strsize) {
+        strsize = 0;
+    } else {
+        strsize -= num_bytes;
+    }
+}
+
 U8String::U8String(const char *txt, size_t txtsize) {
     if(txtsize == (size_t)-1) {
         txtsize = strlen(txt);
@@ -157,6 +177,27 @@ U8String::U8String(const char *txt, size_t txtsize) {
 U8String U8String::substr(size_t offset, size_t length) const {
     // FIXME, validate range.
     return U8String(bytes.data() + offset, length);
+}
+
+Vector<U8String> U8String::split() const {
+    Vector<U8String> arr;
+    size_t i = 0;
+    while(i < size_bytes()) {
+        while(i < size_bytes() && is_ascii_whitespace(bytes[i])) {
+            ++i;
+        }
+        if(i == size_bytes()) {
+            break;
+        }
+        const auto string_start = i;
+        ++i;
+        while(i < size_bytes() && (!is_ascii_whitespace(bytes[i]))) {
+            ++i;
+        }
+        auto sub = substr(string_start, i - string_start);
+        arr.push_back(sub);
+    }
+    return arr;
 }
 
 PyException::PyException(const char *msg) : message("") {
