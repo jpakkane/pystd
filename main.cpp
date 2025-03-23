@@ -10,11 +10,11 @@ struct WordCount {
     size_t count;
 
     int operator<=>(const WordCount &o) const {
-        auto diff = o.count - count;
+        auto diff = (int64_t)o.count - (int64_t)count;
         if(diff != 0) {
             return diff;
         }
-        return o.str->size_bytes() - str->size_bytes();
+        return (int64_t)o.str->size_bytes() - (int64_t)str->size_bytes();
     }
 };
 
@@ -27,8 +27,8 @@ int file_main(int argc, char **argv) {
     try {
         pystd::File f(argv[1], "r");
         for(auto &&line : f) {
-            pystd::U8String u8line(line.data(), line.size());
-            assert(line.size() == u8line.size_bytes());
+            pystd::U8String u8line(move(line));
+            // assert(line.size() == u8line.size_bytes());
             auto words = u8line.split();
             for(const auto &w : words) {
                 auto *c = counts.lookup(w);
@@ -39,7 +39,6 @@ int file_main(int argc, char **argv) {
                 }
             }
         }
-        printf("%d unique words.\n", (int)counts.size());
         pystd::Vector<WordCount> stats;
         for(const auto item : counts) {
             stats.push_back(WordCount{item.key, *item.value});

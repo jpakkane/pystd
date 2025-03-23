@@ -259,6 +259,7 @@ class U8String {
 public:
     U8String(U8String &&o) noexcept = default;
     U8String(const U8String &o) noexcept = default;
+    U8String(Bytes incoming);
     explicit U8String(const char *txt, size_t txtsize = -1);
     const char *c_str() const { return bytes.data(); }
 

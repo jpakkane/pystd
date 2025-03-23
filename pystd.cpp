@@ -162,6 +162,14 @@ void Bytes::shrink(size_t num_bytes) noexcept {
     }
 }
 
+U8String::U8String(Bytes incoming) {
+    if(!is_valid_utf8(incoming.data(), incoming.size())) {
+        throw PyException("Invalid UTF-8.");
+    }
+    bytes = move(incoming);
+    bytes.append('\0');
+}
+
 U8String::U8String(const char *txt, size_t txtsize) {
     if(txtsize == (size_t)-1) {
         txtsize = strlen(txt);
