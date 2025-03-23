@@ -5,6 +5,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 void *operator new(size_t, void *ptr) noexcept;
 
@@ -222,6 +223,8 @@ public:
     size_t capacity() noexcept { return backing.size() / sizeof(T); }
     size_t size() noexcept { return num_entries; }
 
+    T* data() { return (T*)backing.data(); }
+
     T &operator[](size_t i) {
         if(i >= num_entries) {
             throw "Index out of bounds.";
@@ -277,6 +280,7 @@ public:
 
     bool operator==(const U8String &o) const { return bytes == o.bytes; }
     bool operator<(const U8String &o) const { return bytes < o.bytes; }
+    // Fixme: add <=>
 
     template<typename Hasher> void feed_hash(Hasher &h) const { bytes.feed_hash(h); }
 
@@ -394,6 +398,14 @@ public:
 
     size_t size() const { return num_entries; }
 
+    HashMapIterator<Key, Value> begin() {
+        return HashMapIterator<Key, Value>(this, 0);
+    }
+
+    HashMapIterator<Key, Value> end() {
+        return HashMapIterator<Key, Value>(this, table_size());
+    }
+
 private:
     // This is neither fast, memory efficient nor elegant.
     // At this point in the project life cycle it does not need to be.
@@ -439,12 +451,19 @@ private:
 
         void deallocate_contents() {
             for(size_t i = 0; i < hashes.size(); ++i) {
-                if(hashes[i] == FREE_SLOT || hashes[i] == TOMBSTONE) {
+                if(!has_value(i)) {
                     continue;
                 }
                 keyptr(i)->~Key();
                 valueptr(i)->~Value();
             }
+        }
+
+        bool has_value(size_t offset) const {
+            if(offset >= hashes.size()) {
+                return false;
+            }
+            return !(hashes[offset] == TOMBSTONE || hashes[offset] == FREE_SLOT);
         }
     };
 
@@ -536,13 +555,43 @@ private:
 };
 
 template<typename Key, typename Value>
+struct KeyValue {
+    Key *key;
+    Value *value;
+};
+
+template<typename Key, typename Value>
 class HashMapIterator final {
 public:
-    explicit HashMapIterator(HashMap<Key, Value> *map) : map{map} {}
+    HashMapIterator(HashMap<Key, Value> *map, size_t offset) : map{map}, offset{offset} {
+        if(offset == 0 && !map->data.has_value(offset)) {
+            advance();
+        }
+    }
 
+    KeyValue<Key, Value> operator*() {
+        return KeyValue{map->data.keyptr(offset), map->data.valueptr(offset)};
+    }
+
+    bool operator!=(const HashMapIterator<Key, Value> &o) const {
+        return offset != o.offset;
+    };
+
+    HashMapIterator<Key, Value> &operator++() {
+        advance();
+        return *this;
+    }
 
 private:
+    void advance() {
+        ++offset;
+        while(offset < map->table_size() && !map->data.has_value(offset)) {
+            ++offset;
+        }
+    }
+
     HashMap<Key, Value> *map;
+    size_t offset;
 };
 
 
@@ -587,7 +636,11 @@ private:
 Match regex_match(const Regex &pattern, const U8String &text);
 
 template<typename T> void sort_relocatable(T *data, size_t bufsize) {
-    auto ordering = [](const T *d1, const T *d2) -> int { return *d1 <=> *d2; };
+    auto ordering = [](const void *v1, const void *v2) -> int {
+        auto d1 = (T*)v1;
+        auto d2 = (T*)v2;
+        return *d1 <=> *d2;
+    };
     qsort(data, bufsize, sizeof(T), ordering);
 }
 

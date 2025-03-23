@@ -6,10 +6,16 @@
 #include <assert.h>
 
 struct WordCount {
-    pystd::U8String *str;
+    const pystd::U8String *str;
     size_t count;
 
-    int operator<=>(const WordCount &o) const { return o.count - o.count; }
+    int operator<=>(const WordCount &o) const {
+        auto diff = o.count - count;
+        if(diff != 0) {
+            return diff;
+        }
+        return o.str->size_bytes() - str->size_bytes();
+    }
 };
 
 int file_main(int argc, char **argv) {
@@ -34,6 +40,14 @@ int file_main(int argc, char **argv) {
             }
         }
         printf("%d unique words.\n", (int)counts.size());
+        pystd::Vector<WordCount> stats;
+        for(const auto item : counts) {
+            stats.push_back(WordCount{item.key, *item.value});
+        }
+        pystd::sort_relocatable<WordCount>(stats.data(), stats.size());
+        for(const auto &i : stats) {
+            printf("%d %s\n", (int)i.count, i.str->c_str());
+        }
     } catch(const pystd::PyException &e) {
         printf("%s\n", e.what().c_str());
         return 1;
