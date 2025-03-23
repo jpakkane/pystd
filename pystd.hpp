@@ -290,6 +290,34 @@ private:
     U8String message;
 };
 
+class File;
+
+class FileEndSentinel final {
+public:
+private:
+};
+
+class FileLineIterator final {
+public:
+    explicit FileLineIterator(File *f) : f{f} {
+        is_up_to_date = false;
+    }
+
+    bool operator!=(const FileEndSentinel &)const;
+
+    Bytes&& operator*();
+
+    FileLineIterator& operator++() {
+        is_up_to_date = false;
+        return *this;
+    }
+
+private:
+    File *f;
+    Bytes line;
+    bool is_up_to_date = false;
+};
+
 class File {
 public:
     File(const char *fname, const char *modes);
@@ -297,10 +325,17 @@ public:
     Bytes readline_bytes();
     ~File();
 
+    FileEndSentinel end() { return FileEndSentinel(); }
+    FileLineIterator begin() { return FileLineIterator(this); }
+
     File &operator=(File &&o) = delete;
     File &operator=(const File &o) = delete;
     // Vector<U8String> readlines();
     // Vector<Bytes> readlines_raw();
+
+    bool eof() const {
+        return feof(f);
+    }
 
 private:
     FILE *f;

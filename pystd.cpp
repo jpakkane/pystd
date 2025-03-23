@@ -214,6 +214,15 @@ PyException::PyException(const char *msg) : message("") {
     message = U8String(b.data(), b.size());
 }
 
+bool FileLineIterator::operator!=(const FileEndSentinel &) const { return !f->eof(); }
+
+Bytes &&FileLineIterator::operator*() {
+    if(!is_up_to_date) {
+        line = f->readline_bytes();
+    }
+    return move(line);
+}
+
 File::File(const char *fname, const char *modes) : policy{EncodingPolicy::Enforce} {
     f = fopen(fname, modes);
     if(!f) {
