@@ -346,8 +346,12 @@ private:
     EncodingPolicy policy;
 };
 
+template<typename Key, typename Value>
+class HashMapIterator;
+
 template<typename Key, typename Value, typename Hasher = SimpleHasher> class HashMap final {
 public:
+    friend class HashMapIterator<Key, Value>;
     HashMap() {
         salt = (size_t)this;
         num_entries = 0;
@@ -495,6 +499,7 @@ private:
         data = move(grown);
         size_in_powers_of_two = new_powers_of_two;
         mod_mask = new_mod_mask;
+        num_entries = 0;
         for(size_t i = 0; i < old.hashes.size(); ++i) {
             if(old.hashes[i] == FREE_SLOT || old.hashes[i] == TOMBSTONE) {
                 continue;
@@ -529,6 +534,17 @@ private:
     size_t mod_mask;
     int32_t size_in_powers_of_two;
 };
+
+template<typename Key, typename Value>
+class HashMapIterator final {
+public:
+    explicit HashMapIterator(HashMap<Key, Value> *map) : map{map} {}
+
+
+private:
+    HashMap<Key, Value> *map;
+};
+
 
 class Regex {
 public:
