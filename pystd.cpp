@@ -121,10 +121,9 @@ Bytes::Bytes(const Bytes &o) noexcept {
 
 void Bytes::assign(const char *buf_in, size_t bufsize) {
     strsize = 0;
-    grow_to(bufsize + 1);
+    grow_to(bufsize + 1);               // Prepare for the eventual null terminator.
     memcpy(buf.get(), buf_in, bufsize); // str might not be null terminated.
     strsize = bufsize;
-    append('\0');
 }
 
 void Bytes::grow_to(size_t new_size) {
@@ -136,7 +135,7 @@ void Bytes::grow_to(size_t new_size) {
     while(new_capacity < new_size) {
         new_capacity *= 2;
     }
-    unique_arr<char> new_buf{new char[new_capacity], new_capacity};
+    unique_arr<char> new_buf(new_capacity);
     memcpy(new_buf.get(), buf.get(), strsize);
     buf = move(new_buf);
 }
@@ -252,7 +251,6 @@ Bytes File::readline_bytes() {
         }
         b.append(c);
         if(c == '\n') {
-            b.append('\0');
             return b;
         }
     }

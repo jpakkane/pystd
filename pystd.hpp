@@ -6,8 +6,7 @@
 #include <stdio.h>
 #include <stdint.h>
 
-void* operator new(size_t, void *ptr) noexcept;
-
+void *operator new(size_t, void *ptr) noexcept;
 
 namespace pystd {
 
@@ -148,9 +147,7 @@ public:
 
     void assign(const char *buf, size_t bufsize);
 
-    char operator[](size_t i) const {
-        return buf[i];
-    }
+    char operator[](size_t i) const { return buf[i]; }
 
     void operator=(Bytes &&o) {
         if(this != &o) {
@@ -239,6 +236,12 @@ public:
         return *objptr(i);
     }
 
+    const T *cbegin() const { return objptr(0); }
+    const T *cend() const { return objptr(num_entries); }
+
+    T *begin() { return objptr(0); }
+    T *end() { return objptr(num_entries); }
+
 private:
     T *objptr(size_t i) noexcept { return reinterpret_cast<T *>(rawptr(i)); }
     const T *objptr(size_t i) const noexcept { return reinterpret_cast<const T *>(rawptr(i)); }
@@ -246,9 +249,8 @@ private:
     const T *rawptr(size_t i) const noexcept { return backing.data() + i * sizeof(T); }
 
     Bytes backing;
-    size_t num_entries=0;
+    size_t num_entries = 0;
 };
-
 
 class U8String {
 public:
@@ -257,7 +259,13 @@ public:
     explicit U8String(const char *txt, size_t txtsize = -1);
     const char *c_str() const { return bytes.data(); }
 
-    size_t size_bytes() const { return bytes.size(); }
+    size_t size_bytes() const {
+        auto s = bytes.size();
+        if(s > 0) {
+            --s; // Do not count null terminator.
+        }
+        return s;
+    }
 
     U8String substr(size_t offset, size_t length) const;
 
@@ -299,15 +307,13 @@ private:
 
 class FileLineIterator final {
 public:
-    explicit FileLineIterator(File *f) : f{f} {
-        is_up_to_date = false;
-    }
+    explicit FileLineIterator(File *f) : f{f} { is_up_to_date = false; }
 
-    bool operator!=(const FileEndSentinel &)const;
+    bool operator!=(const FileEndSentinel &) const;
 
-    Bytes&& operator*();
+    Bytes &&operator*();
 
-    FileLineIterator& operator++() {
+    FileLineIterator &operator++() {
         is_up_to_date = false;
         return *this;
     }
@@ -333,9 +339,7 @@ public:
     // Vector<U8String> readlines();
     // Vector<Bytes> readlines_raw();
 
-    bool eof() const {
-        return feof(f);
-    }
+    bool eof() const { return feof(f); }
 
 private:
     FILE *f;
@@ -347,7 +351,7 @@ public:
     HashMap() {
         salt = (size_t)this;
         num_entries = 0;
-        size_in_powers_of_two = 6;
+        size_in_powers_of_two = 4;
         auto initial_table_size = 1 << size_in_powers_of_two;
         mod_mask = initial_table_size - 1;
         data.hashes = unique_arr<size_t>(initial_table_size);
@@ -356,7 +360,7 @@ public:
         data.valuedata = Bytes(initial_table_size * sizeof(Value));
     }
 
-    const Value *lookup(const Key &key) const {
+    Value *lookup(const Key &key) const {
         const auto hashval = hash_for(key);
         auto slot = hash_to_slot(hashval);
         while(true) {
@@ -366,7 +370,7 @@ public:
             if(data.hashes[slot] == hashval) {
                 auto *potential_key = data.keyptr(slot);
                 if(*potential_key == key) {
-                    return data.valueptr(slot);
+                    return const_cast<Value *>(data.valueptr(slot));
                 }
             }
             slot = (slot + 1) & mod_mask;
@@ -382,9 +386,7 @@ public:
         insert_internal(hashval, key, v);
     }
 
-    bool contains(const Key &key) const {
-        return lookup(key) != nullptr;
-    }
+    bool contains(const Key &key) const { return lookup(key) != nullptr; }
 
     size_t size() const { return num_entries; }
 
@@ -397,9 +399,9 @@ private:
         Bytes valuedata;
 
         MapData() = default;
-        MapData(MapData &&o) noexcept{
+        MapData(MapData &&o) noexcept {
             hashes = move(o.hashes);
-            keydata = move(o.valuedata);
+            keydata = move(o.keydata);
             valuedata = move(o.valuedata);
         }
 
@@ -413,12 +415,16 @@ private:
 
         ~MapData() { deallocate_contents(); }
 
-        Key *keyptr(size_t i) noexcept { return (Key*)(keydata.data() + i * sizeof(Key)); }
-        const Key *keyptr(size_t i) const noexcept { return (const Key*)(keydata.data() + i * sizeof(Key)); }
+        Key *keyptr(size_t i) noexcept { return (Key *)(keydata.data() + i * sizeof(Key)); }
+        const Key *keyptr(size_t i) const noexcept {
+            return (const Key *)(keydata.data() + i * sizeof(Key));
+        }
 
-        Value *valueptr(size_t i) noexcept { return (Value*)(valuedata.data() + i * sizeof(Value)); }
+        Value *valueptr(size_t i) noexcept {
+            return (Value *)(valuedata.data() + i * sizeof(Value));
+        }
         const Value *valueptr(size_t i) const noexcept {
-            return (const Value*)(valuedata.data() + i * sizeof(Value));
+            return (const Value *)(valuedata.data() + i * sizeof(Value));
         }
 
         void reset_hash_values() {
@@ -439,7 +445,7 @@ private:
     };
 
     size_t hash_to_slot(size_t hashval) const {
-        const size_t total_bits = sizeof(size_t)*8;
+        const size_t total_bits = sizeof(size_t) * 8;
         size_t consumed_bits = 0;
         size_t slot = 0;
         while(consumed_bits < total_bits) {
@@ -475,21 +481,21 @@ private:
     }
 
     void grow() {
-        const auto new_size = 2*table_size();
+        const auto new_size = 2 * table_size();
         const auto new_powers_of_two = size_in_powers_of_two + 1;
-        const auto new_mod_mask = new_powers_of_two - 1;
+        const auto new_mod_mask = new_size - 1;
         MapData grown;
 
         grown.hashes = unique_arr<size_t>(new_size);
-            grown.keydata = Bytes(new_size*sizeof(Key));
-        grown.valuedata = Bytes(new_size*sizeof(Value));
+        grown.keydata = Bytes(new_size * sizeof(Key));
+        grown.valuedata = Bytes(new_size * sizeof(Value));
 
         grown.reset_hash_values();
         MapData old = move(data);
         data = move(grown);
         size_in_powers_of_two = new_powers_of_two;
         mod_mask = new_mod_mask;
-        for(size_t i=0; i<old.hashes.size(); ++i) {
+        for(size_t i = 0; i < old.hashes.size(); ++i) {
             if(old.hashes[i] == FREE_SLOT || old.hashes[i] == TOMBSTONE) {
                 continue;
             }
@@ -512,9 +518,7 @@ private:
 
     size_t table_size() const { return data.hashes.size(); }
 
-    double fill_ratio() const {
-        return double(num_entries) / table_size();
-    }
+    double fill_ratio() const { return double(num_entries) / table_size(); }
     static constexpr size_t FREE_SLOT = 42;
     static constexpr size_t TOMBSTONE = 666;
     static constexpr double MAX_LOAD = 0.7;
@@ -565,5 +569,10 @@ private:
 };
 
 Match regex_match(const Regex &pattern, const U8String &text);
+
+template<typename T> void sort_relocatable(T *data, size_t bufsize) {
+    auto ordering = [](const T *d1, const T *d2) -> int { return *d1 <=> *d2; };
+    qsort(data, bufsize, sizeof(T), ordering);
+}
 
 } // namespace pystd

@@ -3,28 +3,37 @@
 
 #include <stdio.h>
 #include <pystd.hpp>
+#include <assert.h>
+
+struct WordCount {
+    pystd::U8String *str;
+    size_t count;
+
+    int operator<=>(const WordCount &o) const { return o.count - o.count; }
+};
 
 int file_main(int argc, char **argv) {
     if(argc != 2) {
         printf("%s <infile>\n", argv[0]);
         return 0;
     }
+    pystd::HashMap<pystd::U8String, size_t> counts;
     try {
-        pystd::Regex pattern(pystd::U8String("[a-zA-Z]+"));
-        printf("First word on each line for %s:\n\n", argv[0]);
         pystd::File f(argv[1], "r");
         for(auto &&line : f) {
             pystd::U8String u8line(line.data(), line.size());
-            try {
-                // auto m = pystd::regex_match(pattern, u8line);
-                // auto m1 = m.get_submatch(0);
-                printf("%s", u8line.c_str());
-            } catch(const pystd::PyException &e) {
-                // No match. Go on.
-                printf("\n");
+            assert(line.size() == u8line.size_bytes());
+            auto words = u8line.split();
+            for(const auto &w : words) {
+                auto *c = counts.lookup(w);
+                if(c) {
+                    ++(*c);
+                } else {
+                    counts.insert(w, 1);
+                }
             }
         }
-        printf("\n");
+        printf("%d unique words.\n", (int)counts.size());
     } catch(const pystd::PyException &e) {
         printf("%s\n", e.what().c_str());
         return 1;
