@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <pystd2025.hpp>
+#include <pystd0.hpp>
 #include <assert.h>
 
 namespace pystd = pystd2025;
@@ -19,6 +20,12 @@ struct WordCount {
         return (int64_t)o.str->size_bytes() - (int64_t)str->size_bytes();
     }
 };
+
+int cooperation_main(int argc, char **argv) {
+    pystd0::Bytes old_bytes;
+    pystd::Bytes new_bytes(old_bytes.c_str(), old_bytes.size());
+    return 0;
+}
 
 int file_main(int argc, char **argv) {
     if(argc != 2) {

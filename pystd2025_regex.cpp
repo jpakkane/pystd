@@ -69,4 +69,4 @@ Match regex_match(const Regex &pattern, const U8String &text) {
     return m;
 }
 
-} // namespace pystd
+} // namespace pystd2025

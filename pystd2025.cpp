@@ -107,6 +107,12 @@ Bytes::Bytes(size_t initial_size) noexcept : buf{new char[initial_size], initial
     strsize = 0;
 }
 
+Bytes::Bytes(const char *data, size_t bufsize) noexcept : buf{bufsize} {
+    for(size_t i = 0; i < bufsize; ++i) {
+        buf[i] = data[i];
+    }
+}
+
 Bytes::Bytes(Bytes &&o) noexcept {
     buf = move(o.buf);
     strsize = o.strsize;
@@ -264,4 +270,4 @@ Bytes File::readline_bytes() {
     }
 }
 
-} // namespace pystd
+} // namespace pystd2025

@@ -223,7 +223,7 @@ public:
     size_t capacity() noexcept { return backing.size() / sizeof(T); }
     size_t size() noexcept { return num_entries; }
 
-    T* data() { return (T*)backing.data(); }
+    T *data() { return (T *)backing.data(); }
 
     T &operator[](size_t i) {
         if(i >= num_entries) {
@@ -351,8 +351,7 @@ private:
     EncodingPolicy policy;
 };
 
-template<typename Key, typename Value>
-class HashMapIterator;
+template<typename Key, typename Value> class HashMapIterator;
 
 template<typename Key, typename Value, typename Hasher = SimpleHasher> class HashMap final {
 public:
@@ -399,13 +398,9 @@ public:
 
     size_t size() const { return num_entries; }
 
-    HashMapIterator<Key, Value> begin() {
-        return HashMapIterator<Key, Value>(this, 0);
-    }
+    HashMapIterator<Key, Value> begin() { return HashMapIterator<Key, Value>(this, 0); }
 
-    HashMapIterator<Key, Value> end() {
-        return HashMapIterator<Key, Value>(this, table_size());
-    }
+    HashMapIterator<Key, Value> end() { return HashMapIterator<Key, Value>(this, table_size()); }
 
 private:
     // This is neither fast, memory efficient nor elegant.
@@ -555,14 +550,12 @@ private:
     int32_t size_in_powers_of_two;
 };
 
-template<typename Key, typename Value>
-struct KeyValue {
+template<typename Key, typename Value> struct KeyValue {
     Key *key;
     Value *value;
 };
 
-template<typename Key, typename Value>
-class HashMapIterator final {
+template<typename Key, typename Value> class HashMapIterator final {
 public:
     HashMapIterator(HashMap<Key, Value> *map, size_t offset) : map{map}, offset{offset} {
         if(offset == 0 && !map->data.has_value(offset)) {
@@ -574,9 +567,7 @@ public:
         return KeyValue{map->data.keyptr(offset), map->data.valueptr(offset)};
     }
 
-    bool operator!=(const HashMapIterator<Key, Value> &o) const {
-        return offset != o.offset;
-    };
+    bool operator!=(const HashMapIterator<Key, Value> &o) const { return offset != o.offset; };
 
     HashMapIterator<Key, Value> &operator++() {
         advance();
@@ -594,7 +585,6 @@ private:
     HashMap<Key, Value> *map;
     size_t offset;
 };
-
 
 class Regex {
 public:
@@ -638,11 +628,11 @@ Match regex_match(const Regex &pattern, const U8String &text);
 
 template<typename T> void sort_relocatable(T *data, size_t bufsize) {
     auto ordering = [](const void *v1, const void *v2) -> int {
-        auto d1 = (T*)v1;
-        auto d2 = (T*)v2;
+        auto d1 = (T *)v1;
+        auto d2 = (T *)v2;
         return *d1 <=> *d2;
     };
     qsort(data, bufsize, sizeof(T), ordering);
 }
 
-} // namespace pystd
+} // namespace pystd2025
