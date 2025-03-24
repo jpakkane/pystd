@@ -9,7 +9,7 @@
 
 void *operator new(size_t, void *ptr) noexcept;
 
-namespace pystd {
+namespace pystd2025 {
 
 template<class T> struct remove_reference {
     typedef T type;

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2025 Jussi Pakkanen
 
-#include <pystd.hpp>
+#include <pystd2025.hpp>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -12,7 +12,7 @@ void operator delete(void *ptr) noexcept { free(ptr); }
 
 void *operator new(size_t, void *ptr) noexcept { return ptr; }
 
-namespace pystd {
+namespace pystd2025 {
 
 namespace {
 

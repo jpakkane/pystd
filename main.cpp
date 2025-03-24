@@ -2,8 +2,10 @@
 // Copyright 2025 Jussi Pakkanen
 
 #include <stdio.h>
-#include <pystd.hpp>
+#include <pystd2025.hpp>
 #include <assert.h>
+
+namespace pystd = pystd2025;
 
 struct WordCount {
     const pystd::U8String *str;

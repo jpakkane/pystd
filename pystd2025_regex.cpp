@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2025 Jussi Pakkanen
 
-#include <pystd.hpp>
+#include <pystd2025.hpp>
 #define PCRE2_CODE_UNIT_WIDTH 8
 #include <pcre2.h>
 
-namespace pystd {
+namespace pystd2025 {
 
 Regex::Regex(const U8String &pattern) {
     int errorcode = 0;

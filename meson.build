@@ -5,5 +5,5 @@ add_global_link_arguments('-nostdlib++', '-lsupc++', language: 'cpp')
 
 pcre_dep = dependency('libpcre2-8')
 
-executable('pystd', 'pystd.cpp', 'pystd_regex.cpp', 'main.cpp',
+executable('pystd', 'pystd2025.cpp', 'pystd2025_regex.cpp', 'main.cpp',
   dependencies: pcre_dep)
