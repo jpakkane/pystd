@@ -23,7 +23,7 @@ struct WordCount {
 
 int cooperation_main(int argc, char **argv) {
     pystd0::Bytes old_bytes;
-    pystd::Bytes new_bytes(old_bytes.c_str(), old_bytes.size());
+    pystd2025::Bytes new_bytes(old_bytes.c_str(), old_bytes.size());
     return 0;
 }
 
@@ -32,12 +32,11 @@ int file_main(int argc, char **argv) {
         printf("%s <infile>\n", argv[0]);
         return 0;
     }
-    pystd::HashMap<pystd::U8String, size_t> counts;
     try {
+        pystd::HashMap<pystd::U8String, size_t> counts;
         pystd::File f(argv[1], "r");
         for(auto &&line : f) {
             pystd::U8String u8line(move(line));
-            // assert(line.size() == u8line.size_bytes());
             auto words = u8line.split();
             for(const auto &w : words) {
                 auto *c = counts.lookup(w);
