@@ -255,6 +255,41 @@ private:
     size_t num_entries = 0;
 };
 
+// Iterates over the code points of a valid UTF 8 string.
+// If the string used is not valid UTF-8, result is undefined.
+class ValidU8Iterator {
+public:
+    friend class U8String;
+
+    ValidU8Iterator(const ValidU8Iterator &) = default;
+    ValidU8Iterator(ValidU8Iterator &&) = default;
+
+    uint32_t operator*();
+
+    ValidU8Iterator &operator++();
+    ValidU8Iterator operator++(int);
+
+    bool operator==(const ValidU8Iterator &o) const;
+    bool operator!=(const ValidU8Iterator &o) const;
+
+private:
+    struct CharInfo {
+        uint32_t codepoint;
+        uint32_t byte_count;
+    };
+
+    explicit ValidU8Iterator(const unsigned char *utf8_string)
+        : buf{utf8_string}, has_char_info{false} {}
+
+    void compute_char_info();
+
+    CharInfo extract_one_codepoint(const unsigned char *buf);
+
+    const unsigned char *buf;
+    CharInfo char_info;
+    bool has_char_info;
+};
+
 class U8String {
 public:
     U8String(U8String &&o) noexcept = default;
@@ -286,6 +321,12 @@ public:
     template<typename Hasher> void feed_hash(Hasher &h) const { bytes.feed_hash(h); }
 
     Vector<U8String> split() const;
+
+    ValidU8Iterator cbegin() const { return ValidU8Iterator((const unsigned char *)bytes.data()); }
+
+    ValidU8Iterator cend() const {
+        return ValidU8Iterator((const unsigned char *)bytes.data() + size_bytes());
+    }
 
 private:
     Bytes bytes;

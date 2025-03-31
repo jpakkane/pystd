@@ -18,14 +18,10 @@ namespace {
 
 bool is_ascii_whitespace(char c) { return c == ' ' || c == '\n' || c == '\n' || c == '\t'; }
 
-} // namespace
-
 struct UtfDecodeStep {
     uint32_t byte1_data_mask;
     uint32_t num_subsequent_bytes;
 };
-
-namespace {
 
 const size_t default_bufsize = 16;
 
@@ -91,6 +87,22 @@ bool is_valid_utf8(const char *input, size_t input_size) {
         i += par.num_subsequent_bytes;
     }
     return true;
+}
+
+uint32_t unpack_one(const unsigned char *valid_utf8, const UtfDecodeStep &par) {
+    const uint32_t byte1 = uint32_t(*valid_utf8);
+    const uint32_t subsequent_data_mask = 0b111111;
+    const uint32_t subsequent_num_data_bits = 6;
+
+    uint32_t unpacked = byte1 & par.byte1_data_mask;
+    for(uint32_t i = 0; i < par.num_subsequent_bytes; ++i) {
+        unpacked <<= subsequent_num_data_bits;
+        const uint32_t subsequent = uint32_t((unsigned char)valid_utf8[1 + i]);
+        assert((unpacked & subsequent_data_mask) == 0);
+        unpacked |= subsequent & subsequent_data_mask;
+    }
+
+    return unpacked;
 }
 
 } // namespace
@@ -168,6 +180,57 @@ void Bytes::shrink(size_t num_bytes) noexcept {
     }
 }
 
+uint32_t ValidU8Iterator::operator*() {
+    compute_char_info();
+    return char_info.codepoint;
+}
+
+ValidU8Iterator &ValidU8Iterator::operator++() {
+    compute_char_info();
+    buf += char_info.byte_count;
+    has_char_info = false;
+    return *this;
+}
+
+ValidU8Iterator ValidU8Iterator::operator++(int) {
+    compute_char_info();
+    ValidU8Iterator rval{*this};
+    ++(*this);
+    return rval;
+}
+
+bool ValidU8Iterator::operator==(const ValidU8Iterator &o) const { return buf == o.buf; }
+
+bool ValidU8Iterator::operator!=(const ValidU8Iterator &o) const { return !(*this == o); }
+
+ValidU8Iterator::CharInfo ValidU8Iterator::extract_one_codepoint(const unsigned char *buf) {
+    UtfDecodeStep par;
+    // clang-format off
+    const uint32_t twobyte_header_mask    = 0b11100000;
+    const uint32_t twobyte_header_value   = 0b11000000;
+    const uint32_t threebyte_header_mask  = 0b11110000;
+    const uint32_t threebyte_header_value = 0b11100000;
+    const uint32_t fourbyte_header_mask   = 0b11111000;
+    const uint32_t fourbyte_header_value  = 0b11110000;
+    // clang-format on
+    const uint32_t code = uint32_t((unsigned char)buf[0]);
+    if(code < 0x80) {
+        return CharInfo{code, 1};
+    } else if((code & twobyte_header_mask) == twobyte_header_value) {
+        par.byte1_data_mask = 0b11111;
+        par.num_subsequent_bytes = 1;
+    } else if((code & threebyte_header_mask) == threebyte_header_value) {
+        par.byte1_data_mask = 0b1111;
+        par.num_subsequent_bytes = 2;
+    } else if((code & fourbyte_header_mask) == fourbyte_header_value) {
+        par.byte1_data_mask = 0b111;
+        par.num_subsequent_bytes = 3;
+    } else {
+        abort();
+    }
+    return CharInfo{unpack_one(buf, par), 1 + par.num_subsequent_bytes};
+}
+
 U8String::U8String(Bytes incoming) {
     if(!is_valid_utf8(incoming.data(), incoming.size())) {
         throw PyException("Invalid UTF-8.");
@@ -212,6 +275,13 @@ Vector<U8String> U8String::split() const {
     }
     return arr;
 }
+
+void ValidU8Iterator::compute_char_info() {
+    if(has_char_info) {
+        return;
+    }
+    char_info = extract_one_codepoint(buf);
+};
 
 PyException::PyException(const char *msg) : message("") {
     Bytes b;
