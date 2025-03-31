@@ -2,11 +2,16 @@
 
 Design goals:
 
-- provide functionality that is in the Python standard library
+- NOT an implementation of the ISO C++ standard library, but instead
+  an experiment to see what a stdlib that no backwards compatibility
+  requirements might look like
+- design-wise copy the Python standard library's APIs whenever
+  possible
 - minimize build times
-- single header includes everything
+- a single header includes everything
 - KISS
 - do not sacrifice too much performance
+- Can use existing C libraries like pcre but not C++ libraries
 
 ## API and ABI stability
 
