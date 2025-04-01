@@ -272,23 +272,54 @@ public:
     bool operator==(const ValidU8Iterator &o) const;
     bool operator!=(const ValidU8Iterator &o) const;
 
-private:
     struct CharInfo {
         uint32_t codepoint;
         uint32_t byte_count;
     };
+
+private:
 
     explicit ValidU8Iterator(const unsigned char *utf8_string)
         : buf{utf8_string}, has_char_info{false} {}
 
     void compute_char_info();
 
-    CharInfo extract_one_codepoint(const unsigned char *buf);
-
     const unsigned char *buf;
     CharInfo char_info;
     bool has_char_info;
 };
+
+class ValidU8ReverseIterator {
+public:
+    friend class U8String;
+
+    ValidU8ReverseIterator(const ValidU8ReverseIterator &) = default;
+    ValidU8ReverseIterator(ValidU8ReverseIterator &&) = default;
+
+    uint32_t operator*();
+
+    ValidU8ReverseIterator &operator++();
+    ValidU8ReverseIterator operator++(int);
+
+    bool operator==(const ValidU8ReverseIterator &o) const;
+    bool operator!=(const ValidU8ReverseIterator &o) const;
+
+private:
+
+    explicit ValidU8ReverseIterator(const unsigned char *utf8_string, int64_t offset)
+        : original_str{utf8_string}, offset{offset}, has_char_info{false} {
+        go_backwards();
+    }
+
+    void go_backwards();
+    void compute_char_info();
+
+    const unsigned char *original_str;
+    int64_t offset; // Need to represent -1;
+    ValidU8Iterator::CharInfo char_info;
+    bool has_char_info;
+};
+
 
 class U8String {
 public:
@@ -326,6 +357,12 @@ public:
 
     ValidU8Iterator cend() const {
         return ValidU8Iterator((const unsigned char *)bytes.data() + size_bytes());
+    }
+
+    ValidU8ReverseIterator crbegin() const { return ValidU8ReverseIterator((const unsigned char *)bytes.data(), size_bytes()); }
+
+    ValidU8ReverseIterator crend() const {
+        return ValidU8ReverseIterator((const unsigned char *)bytes.data(), -1);
     }
 
 private:

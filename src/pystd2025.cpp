@@ -105,6 +105,34 @@ uint32_t unpack_one(const unsigned char *valid_utf8, const UtfDecodeStep &par) {
     return unpacked;
 }
 
+ValidU8Iterator::CharInfo extract_one_codepoint(const unsigned char *buf) {
+    UtfDecodeStep par;
+    // clang-format off
+    const uint32_t twobyte_header_mask    = 0b11100000;
+    const uint32_t twobyte_header_value   = 0b11000000;
+    const uint32_t threebyte_header_mask  = 0b11110000;
+    const uint32_t threebyte_header_value = 0b11100000;
+    const uint32_t fourbyte_header_mask   = 0b11111000;
+    const uint32_t fourbyte_header_value  = 0b11110000;
+    // clang-format on
+    const uint32_t code = uint32_t((unsigned char)buf[0]);
+    if(code < 0x80) {
+        return ValidU8Iterator::CharInfo{code, 1};
+    } else if((code & twobyte_header_mask) == twobyte_header_value) {
+        par.byte1_data_mask = 0b11111;
+        par.num_subsequent_bytes = 1;
+    } else if((code & threebyte_header_mask) == threebyte_header_value) {
+        par.byte1_data_mask = 0b1111;
+        par.num_subsequent_bytes = 2;
+    } else if((code & fourbyte_header_mask) == fourbyte_header_value) {
+        par.byte1_data_mask = 0b111;
+        par.num_subsequent_bytes = 3;
+    } else {
+        abort();
+    }
+    return ValidU8Iterator::CharInfo{unpack_one(buf, par), 1 + par.num_subsequent_bytes};
+}
+
 } // namespace
 
 void SimpleHasher::feed_bytes(const char *buf, size_t bufsize) noexcept {
@@ -203,33 +231,58 @@ bool ValidU8Iterator::operator==(const ValidU8Iterator &o) const { return buf ==
 
 bool ValidU8Iterator::operator!=(const ValidU8Iterator &o) const { return !(*this == o); }
 
-ValidU8Iterator::CharInfo ValidU8Iterator::extract_one_codepoint(const unsigned char *buf) {
-    UtfDecodeStep par;
-    // clang-format off
-    const uint32_t twobyte_header_mask    = 0b11100000;
-    const uint32_t twobyte_header_value   = 0b11000000;
-    const uint32_t threebyte_header_mask  = 0b11110000;
-    const uint32_t threebyte_header_value = 0b11100000;
-    const uint32_t fourbyte_header_mask   = 0b11111000;
-    const uint32_t fourbyte_header_value  = 0b11110000;
-    // clang-format on
-    const uint32_t code = uint32_t((unsigned char)buf[0]);
-    if(code < 0x80) {
-        return CharInfo{code, 1};
-    } else if((code & twobyte_header_mask) == twobyte_header_value) {
-        par.byte1_data_mask = 0b11111;
-        par.num_subsequent_bytes = 1;
-    } else if((code & threebyte_header_mask) == threebyte_header_value) {
-        par.byte1_data_mask = 0b1111;
-        par.num_subsequent_bytes = 2;
-    } else if((code & fourbyte_header_mask) == fourbyte_header_value) {
-        par.byte1_data_mask = 0b111;
-        par.num_subsequent_bytes = 3;
-    } else {
-        abort();
-    }
-    return CharInfo{unpack_one(buf, par), 1 + par.num_subsequent_bytes};
+uint32_t ValidU8ReverseIterator::operator*() {
+    compute_char_info();
+    return char_info.codepoint;
 }
+
+ValidU8ReverseIterator &ValidU8ReverseIterator::operator++() {
+    go_backwards();
+    return *this;
+}
+
+ValidU8ReverseIterator ValidU8ReverseIterator::operator++(int) {
+    compute_char_info();
+    ValidU8ReverseIterator rval{*this};
+    ++(*this);
+    return rval;
+}
+
+bool ValidU8ReverseIterator::operator==(const ValidU8ReverseIterator &o) const {
+    return original_str == o.original_str && offset == o.offset;
+}
+
+bool ValidU8ReverseIterator::operator!=(const ValidU8ReverseIterator &o) const {
+    return !(*this == o);
+}
+
+void ValidU8ReverseIterator::go_backwards() {
+    const uint8_t CONTINUATION_MASK = 0b11000000;
+    const uint8_t CONTINUATION_VALUE = 0b10000000;
+    if(offset < 0) {
+        assert(!has_char_info);
+        return;
+    }
+    has_char_info = false;
+    if(offset == 0) {
+        --offset;
+        return;
+    }
+    --offset;
+    while((original_str[offset] & CONTINUATION_MASK) == CONTINUATION_VALUE) {
+        --offset;
+    }
+}
+
+void ValidU8ReverseIterator::compute_char_info() {
+    if(has_char_info) {
+        return;
+    }
+    if(offset >= 0) {
+        char_info = extract_one_codepoint(original_str + offset);
+        has_char_info = true;
+    }
+};
 
 U8String::U8String(Bytes incoming) {
     if(!is_valid_utf8(incoming.data(), incoming.size())) {

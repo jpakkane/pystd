@@ -20,6 +20,7 @@ const char daikatana[] = "大刀";
 
 int test_string_simple() {
     pystd2025::U8String str("abc");
+    ASSERT(str.size_bytes() == 3);
     ASSERT_WITH(strcmp("abc", str.c_str()) == 0, "String construction failed.");
     return 0;
 }
@@ -53,12 +54,44 @@ int test_u8_iterator_cjk() {
     return 0;
 }
 
+int test_u8_reverse_iterator() {
+    pystd2025::U8String ascii("abc");
+    ASSERT(ascii.size_bytes() == 3);
+    auto start = ascii.crbegin();
+    auto end = ascii.crend();
+    ASSERT_WITH(start != end, "Iterator construction fail.");
+    ASSERT(*start == 'c');
+    ++start;
+    ASSERT(*start == 'b');
+    start++;
+    ASSERT(*start == 'a');
+    ASSERT(start != end);
+    ++start;
+    ASSERT(start == end);
+    return 0;
+}
+
+int test_u8_reverse_iterator_cjk() {
+    pystd2025::U8String cjk(daikatana);
+    auto it = cjk.crbegin();
+    auto c1 = *it;
+    ASSERT(c1 == 20992);
+    ++it;
+    auto c2 = *it;
+    ASSERT(c2 == 22823);
+    ++it;
+    ASSERT(it == cjk.crend());
+    return 0;
+}
+
 int test_strings() {
     printf("Testing U8strings.\n");
     int failing_subtests = 0;
     failing_subtests += test_string_simple();
     failing_subtests += test_u8_iterator();
     failing_subtests += test_u8_iterator_cjk();
+    failing_subtests += test_u8_reverse_iterator();
+    failing_subtests += test_u8_reverse_iterator_cjk();
     return failing_subtests;
 }
 
