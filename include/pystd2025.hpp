@@ -54,6 +54,19 @@ inline constexpr bool is_well_behaved_v =
     __is_nothrow_assignable(add_lval_ref_t<Type>, add_rval_ref_t<Type>);
 // FIXME, should also be nothrow copyable maybe?
 
+/* Also FIXME. The above should be something like the following
+ * but I could not make it work.*/
+
+template<typename T>
+concept WellBehaved = requires(T a, T b, const T &c, T &&d) {
+    requires noexcept(a = b);
+    requires noexcept(a = move(b));
+    requires noexcept(T{});
+    requires noexcept(T{b});
+    requires noexcept(T{c});
+    requires noexcept(T{d});
+};
+
 template<typename T> class unique_ptr final {
 public:
     unique_ptr() : ptr{nullptr} {}
@@ -178,6 +191,8 @@ public:
 
     char operator[](size_t i) const { return buf[i]; }
 
+    void operator=(const Bytes&) noexcept;
+
     void operator=(Bytes &&o) noexcept {
         if(this != &o) {
             buf = move(o.buf);
@@ -223,7 +238,6 @@ private:
 };
 
 template<typename T> class Vector final {
-    static_assert(is_well_behaved_v<T>);
 
 public:
     Vector() noexcept = default;
@@ -367,6 +381,7 @@ public:
 
     char operator[](size_t i) const { return bytes[i]; }
 
+    void operator=(const pystd2025::CString&) noexcept;
     void operator=(CString &&o) noexcept {
         if(this != &o) {
             bytes = move(o.bytes);
@@ -398,6 +413,7 @@ public:
 
     U8String substr(size_t offset, size_t length) const;
 
+    U8String& operator=(const U8String&) noexcept;
     void operator=(U8String &&o) noexcept {
         if(this != &o) {
             bytes = move(o.bytes);
@@ -492,10 +508,8 @@ private:
 
 template<typename Key, typename Value> class HashMapIterator;
 
-template<typename Key, typename Value, typename Hasher = SimpleHasher> class HashMap final {
+template<WellBehaved Key, WellBehaved Value, typename Hasher = SimpleHasher> class HashMap final {
 public:
-    static_assert(is_well_behaved_v<Key>);
-    static_assert(is_well_behaved_v<Value>);
     friend class HashMapIterator<Key, Value>;
     HashMap() {
         salt = (size_t)this;
@@ -775,5 +789,16 @@ template<typename T> void sort_relocatable(T *data, size_t bufsize) {
     };
     qsort(data, bufsize, sizeof(T), ordering);
 }
+
+/*
+template<WellBehaved Type>
+struct Bob {
+    Vector<Type> x;
+};
+
+inline Bob<U8String> gig;
+inline Bob<CString> gig2;
+inline Bob<Bytes> gig3;
+*/
 
 } // namespace pystd2025
