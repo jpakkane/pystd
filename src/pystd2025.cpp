@@ -151,6 +151,7 @@ Bytes::Bytes(const char *data, size_t bufsize) noexcept : buf{bufsize} {
     for(size_t i = 0; i < bufsize; ++i) {
         buf[i] = data[i];
     }
+    strsize = bufsize;
 }
 
 Bytes::Bytes(Bytes &&o) noexcept {
@@ -206,6 +207,27 @@ void Bytes::shrink(size_t num_bytes) noexcept {
     } else {
         strsize -= num_bytes;
     }
+}
+
+CString::CString(Bytes incoming) {
+    bytes = move(bytes);
+    bytes.append('\0'); // FIXME, check embedded nulls.
+}
+
+CString::CString(const char *txt, size_t txtsize) {
+    if(txtsize == (size_t)-1) {
+        bytes = Bytes(txt, strlen(txt));
+        bytes.append('\0');
+    } else {
+        bytes = Bytes(txt, txtsize);
+        bytes.append('\0');
+    }
+}
+
+size_t CString::size() const {
+    auto s = bytes.size();
+    assert(s > 0);
+    return s - 1;
 }
 
 uint32_t ValidU8Iterator::operator*() {
@@ -289,7 +311,6 @@ U8String::U8String(Bytes incoming) {
         throw PyException("Invalid UTF-8.");
     }
     bytes = move(incoming);
-    bytes.append('\0');
 }
 
 U8String::U8String(const char *txt, size_t txtsize) {
@@ -299,8 +320,7 @@ U8String::U8String(const char *txt, size_t txtsize) {
     if(!is_valid_utf8(txt, txtsize)) {
         throw PyException(U8String{"Invalid UTF-8."});
     }
-    bytes.assign(txt, txtsize);
-    bytes.append('\0');
+    bytes = CString(txt, txtsize);
 }
 
 U8String U8String::substr(size_t offset, size_t length) const {

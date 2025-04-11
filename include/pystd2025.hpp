@@ -150,7 +150,7 @@ public:
 
     char operator[](size_t i) const { return buf[i]; }
 
-    void operator=(Bytes &&o) {
+    void operator=(Bytes &&o) noexcept {
         if(this != &o) {
             buf = move(o.buf);
             strsize = o.strsize;
@@ -158,7 +158,7 @@ public:
         }
     }
 
-    bool operator==(const Bytes &o) const {
+    bool operator==(const Bytes &o) const noexcept {
         if(strsize != o.strsize) {
             return false;
         }
@@ -278,7 +278,6 @@ public:
     };
 
 private:
-
     explicit ValidU8Iterator(const unsigned char *utf8_string)
         : buf{utf8_string}, has_char_info{false} {}
 
@@ -305,7 +304,6 @@ public:
     bool operator!=(const ValidU8ReverseIterator &o) const;
 
 private:
-
     explicit ValidU8ReverseIterator(const unsigned char *utf8_string, int64_t offset)
         : original_str{utf8_string}, offset{offset}, has_char_info{false} {
         go_backwards();
@@ -320,26 +318,57 @@ private:
     bool has_char_info;
 };
 
+// A string guaranteed to end with a zero terminator.
+class CString {
+public:
+    CString() noexcept { bytes.append('0'); }
+    CString(CString &&o) noexcept = default;
+    CString(const CString &o) noexcept = default;
+    CString(Bytes incoming);
+    explicit CString(const char *txt, size_t txtsize = -1);
+
+    const char *c_str() const { return bytes.data(); }
+
+    const char *data() const { return bytes.data(); }
+
+    size_t size() const;
+
+    CString substr(size_t offset, size_t length) const;
+
+    char operator[](size_t i) const { return bytes[i]; }
+
+    void operator=(CString &&o) noexcept {
+        if(this != &o) {
+            bytes = move(o.bytes);
+        }
+    }
+
+    bool operator==(const CString &o) const { return bytes == o.bytes; }
+    bool operator<(const CString &o) const { return bytes < o.bytes; }
+    // Fixme: add <=>
+
+    template<typename Hasher> void feed_hash(Hasher &h) const { bytes.feed_hash(h); }
+
+    Vector<CString> split() const;
+
+private:
+    Bytes bytes;
+};
 
 class U8String {
 public:
+    U8String() noexcept = default;
     U8String(U8String &&o) noexcept = default;
     U8String(const U8String &o) noexcept = default;
     U8String(Bytes incoming);
     explicit U8String(const char *txt, size_t txtsize = -1);
     const char *c_str() const { return bytes.data(); }
 
-    size_t size_bytes() const {
-        auto s = bytes.size();
-        if(s > 0) {
-            --s; // Do not count null terminator.
-        }
-        return s;
-    }
+    size_t size_bytes() const { return bytes.size(); }
 
     U8String substr(size_t offset, size_t length) const;
 
-    void operator=(U8String &&o) {
+    void operator=(U8String &&o) noexcept {
         if(this != &o) {
             bytes = move(o.bytes);
         }
@@ -359,14 +388,16 @@ public:
         return ValidU8Iterator((const unsigned char *)bytes.data() + size_bytes());
     }
 
-    ValidU8ReverseIterator crbegin() const { return ValidU8ReverseIterator((const unsigned char *)bytes.data(), size_bytes()); }
+    ValidU8ReverseIterator crbegin() const {
+        return ValidU8ReverseIterator((const unsigned char *)bytes.data(), size_bytes());
+    }
 
     ValidU8ReverseIterator crend() const {
         return ValidU8ReverseIterator((const unsigned char *)bytes.data(), -1);
     }
 
 private:
-    Bytes bytes;
+    CString bytes;
     // Store length in codepoints.
 };
 
