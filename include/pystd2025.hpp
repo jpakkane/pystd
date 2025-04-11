@@ -26,6 +26,34 @@ template<class T> constexpr remove_reference_t<T> &&move(T &&t) noexcept {
     return static_cast<typename remove_reference<T>::type &&>(t);
 }
 
+template<typename...> using __void_t = void;
+
+template<typename Type, typename = void> struct add_rvalue_reference_helper {
+    using type = Type;
+};
+
+template<typename Type> struct add_rvalue_reference_helper<Type, __void_t<Type &&>> {
+    using type = Type &&;
+};
+
+template<typename Type> using add_rval_ref_t = typename add_rvalue_reference_helper<Type>::type;
+
+template<typename Type, typename = void> struct add_lvalue_reference_helper {
+    using type = Type;
+};
+
+template<typename Type> struct add_lvalue_reference_helper<Type, __void_t<Type &>> {
+    using type = Type &;
+};
+
+template<typename Type> using add_lval_ref_t = typename add_lvalue_reference_helper<Type>::type;
+
+template<typename Type>
+inline constexpr bool is_well_behaved_v =
+    __is_nothrow_constructible(Type) && __is_nothrow_constructible(Type, add_rval_ref_t<Type>) &&
+    __is_nothrow_assignable(add_lval_ref_t<Type>, add_rval_ref_t<Type>);
+// FIXME, should also be nothrow copyable maybe?
+
 template<typename T> class unique_ptr final {
 public:
     unique_ptr() : ptr{nullptr} {}
@@ -195,6 +223,8 @@ private:
 };
 
 template<typename T> class Vector final {
+    static_assert(is_well_behaved_v<T>);
+
 public:
     Vector() noexcept = default;
     ~Vector() {
@@ -464,6 +494,8 @@ template<typename Key, typename Value> class HashMapIterator;
 
 template<typename Key, typename Value, typename Hasher = SimpleHasher> class HashMap final {
 public:
+    static_assert(is_well_behaved_v<Key>);
+    static_assert(is_well_behaved_v<Value>);
     friend class HashMapIterator<Key, Value>;
     HashMap() {
         salt = (size_t)this;
