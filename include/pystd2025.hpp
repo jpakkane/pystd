@@ -309,20 +309,20 @@ private:
 
 // Iterates over the code points of a valid UTF 8 string.
 // If the string used is not valid UTF-8, result is undefined.
-class ValidU8Iterator {
+class ValidatedU8Iterator {
 public:
     friend class U8String;
 
-    ValidU8Iterator(const ValidU8Iterator &) = default;
-    ValidU8Iterator(ValidU8Iterator &&) = default;
+    ValidatedU8Iterator(const ValidatedU8Iterator &) = default;
+    ValidatedU8Iterator(ValidatedU8Iterator &&) = default;
 
     uint32_t operator*();
 
-    ValidU8Iterator &operator++();
-    ValidU8Iterator operator++(int);
+    ValidatedU8Iterator &operator++();
+    ValidatedU8Iterator operator++(int);
 
-    bool operator==(const ValidU8Iterator &o) const;
-    bool operator!=(const ValidU8Iterator &o) const;
+    bool operator==(const ValidatedU8Iterator &o) const;
+    bool operator!=(const ValidatedU8Iterator &o) const;
 
     struct CharInfo {
         uint32_t codepoint;
@@ -330,7 +330,7 @@ public:
     };
 
 private:
-    explicit ValidU8Iterator(const unsigned char *utf8_string)
+    explicit ValidatedU8Iterator(const unsigned char *utf8_string)
         : buf{utf8_string}, has_char_info{false} {}
 
     void compute_char_info();
@@ -340,23 +340,23 @@ private:
     bool has_char_info;
 };
 
-class ValidU8ReverseIterator {
+class ValidatedU8ReverseIterator {
 public:
     friend class U8String;
 
-    ValidU8ReverseIterator(const ValidU8ReverseIterator &) = default;
-    ValidU8ReverseIterator(ValidU8ReverseIterator &&) = default;
+    ValidatedU8ReverseIterator(const ValidatedU8ReverseIterator &) = default;
+    ValidatedU8ReverseIterator(ValidatedU8ReverseIterator &&) = default;
 
     uint32_t operator*();
 
-    ValidU8ReverseIterator &operator++();
-    ValidU8ReverseIterator operator++(int);
+    ValidatedU8ReverseIterator &operator++();
+    ValidatedU8ReverseIterator operator++(int);
 
-    bool operator==(const ValidU8ReverseIterator &o) const;
-    bool operator!=(const ValidU8ReverseIterator &o) const;
+    bool operator==(const ValidatedU8ReverseIterator &o) const;
+    bool operator!=(const ValidatedU8ReverseIterator &o) const;
 
 private:
-    explicit ValidU8ReverseIterator(const unsigned char *utf8_string, int64_t offset)
+    explicit ValidatedU8ReverseIterator(const unsigned char *utf8_string, int64_t offset)
         : original_str{utf8_string}, offset{offset}, has_char_info{false} {
         go_backwards();
     }
@@ -366,7 +366,7 @@ private:
 
     const unsigned char *original_str;
     int64_t offset; // Need to represent -1;
-    ValidU8Iterator::CharInfo char_info;
+    ValidatedU8Iterator::CharInfo char_info;
     bool has_char_info;
 };
 
@@ -439,20 +439,20 @@ public:
 
     Vector<U8String> split_ascii() const;
 
-    ValidU8Iterator cbegin() const {
-        return ValidU8Iterator((const unsigned char *)cstring.data());
+    ValidatedU8Iterator cbegin() const {
+        return ValidatedU8Iterator((const unsigned char *)cstring.data());
     }
 
-    ValidU8Iterator cend() const {
-        return ValidU8Iterator((const unsigned char *)cstring.data() + size_bytes());
+    ValidatedU8Iterator cend() const {
+        return ValidatedU8Iterator((const unsigned char *)cstring.data() + size_bytes());
     }
 
-    ValidU8ReverseIterator crbegin() const {
-        return ValidU8ReverseIterator((const unsigned char *)cstring.data(), size_bytes());
+    ValidatedU8ReverseIterator crbegin() const {
+        return ValidatedU8ReverseIterator((const unsigned char *)cstring.data(), size_bytes());
     }
 
-    ValidU8ReverseIterator crend() const {
-        return ValidU8ReverseIterator((const unsigned char *)cstring.data(), -1);
+    ValidatedU8ReverseIterator crend() const {
+        return ValidatedU8ReverseIterator((const unsigned char *)cstring.data(), -1);
     }
 
 private:

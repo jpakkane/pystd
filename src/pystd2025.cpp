@@ -107,7 +107,7 @@ uint32_t unpack_one(const unsigned char *valid_utf8, const UtfDecodeStep &par) {
     return unpacked;
 }
 
-ValidU8Iterator::CharInfo extract_one_codepoint(const unsigned char *buf) {
+ValidatedU8Iterator::CharInfo extract_one_codepoint(const unsigned char *buf) {
     UtfDecodeStep par;
     // clang-format off
     const uint32_t twobyte_header_mask    = 0b11100000;
@@ -119,7 +119,7 @@ ValidU8Iterator::CharInfo extract_one_codepoint(const unsigned char *buf) {
     // clang-format on
     const uint32_t code = uint32_t((unsigned char)buf[0]);
     if(code < 0x80) {
-        return ValidU8Iterator::CharInfo{code, 1};
+        return ValidatedU8Iterator::CharInfo{code, 1};
     } else if((code & twobyte_header_mask) == twobyte_header_value) {
         par.byte1_data_mask = 0b11111;
         par.num_subsequent_bytes = 1;
@@ -132,7 +132,7 @@ ValidU8Iterator::CharInfo extract_one_codepoint(const unsigned char *buf) {
     } else {
         abort();
     }
-    return ValidU8Iterator::CharInfo{unpack_one(buf, par), 1 + par.num_subsequent_bytes};
+    return ValidatedU8Iterator::CharInfo{unpack_one(buf, par), 1 + par.num_subsequent_bytes};
 }
 
 } // namespace
@@ -274,55 +274,55 @@ size_t CString::size() const {
     return s - 1;
 }
 
-uint32_t ValidU8Iterator::operator*() {
+uint32_t ValidatedU8Iterator::operator*() {
     compute_char_info();
     return char_info.codepoint;
 }
 
-ValidU8Iterator &ValidU8Iterator::operator++() {
+ValidatedU8Iterator &ValidatedU8Iterator::operator++() {
     compute_char_info();
     buf += char_info.byte_count;
     has_char_info = false;
     return *this;
 }
 
-ValidU8Iterator ValidU8Iterator::operator++(int) {
+ValidatedU8Iterator ValidatedU8Iterator::operator++(int) {
     compute_char_info();
-    ValidU8Iterator rval{*this};
+    ValidatedU8Iterator rval{*this};
     ++(*this);
     return rval;
 }
 
-bool ValidU8Iterator::operator==(const ValidU8Iterator &o) const { return buf == o.buf; }
+bool ValidatedU8Iterator::operator==(const ValidatedU8Iterator &o) const { return buf == o.buf; }
 
-bool ValidU8Iterator::operator!=(const ValidU8Iterator &o) const { return !(*this == o); }
+bool ValidatedU8Iterator::operator!=(const ValidatedU8Iterator &o) const { return !(*this == o); }
 
-uint32_t ValidU8ReverseIterator::operator*() {
+uint32_t ValidatedU8ReverseIterator::operator*() {
     compute_char_info();
     return char_info.codepoint;
 }
 
-ValidU8ReverseIterator &ValidU8ReverseIterator::operator++() {
+ValidatedU8ReverseIterator &ValidatedU8ReverseIterator::operator++() {
     go_backwards();
     return *this;
 }
 
-ValidU8ReverseIterator ValidU8ReverseIterator::operator++(int) {
+ValidatedU8ReverseIterator ValidatedU8ReverseIterator::operator++(int) {
     compute_char_info();
-    ValidU8ReverseIterator rval{*this};
+    ValidatedU8ReverseIterator rval{*this};
     ++(*this);
     return rval;
 }
 
-bool ValidU8ReverseIterator::operator==(const ValidU8ReverseIterator &o) const {
+bool ValidatedU8ReverseIterator::operator==(const ValidatedU8ReverseIterator &o) const {
     return original_str == o.original_str && offset == o.offset;
 }
 
-bool ValidU8ReverseIterator::operator!=(const ValidU8ReverseIterator &o) const {
+bool ValidatedU8ReverseIterator::operator!=(const ValidatedU8ReverseIterator &o) const {
     return !(*this == o);
 }
 
-void ValidU8ReverseIterator::go_backwards() {
+void ValidatedU8ReverseIterator::go_backwards() {
     const uint8_t CONTINUATION_MASK = 0b11000000;
     const uint8_t CONTINUATION_VALUE = 0b10000000;
     if(offset < 0) {
@@ -340,7 +340,7 @@ void ValidU8ReverseIterator::go_backwards() {
     }
 }
 
-void ValidU8ReverseIterator::compute_char_info() {
+void ValidatedU8ReverseIterator::compute_char_info() {
     if(has_char_info) {
         return;
     }
@@ -393,7 +393,7 @@ Vector<U8String> U8String::split_ascii() const {
     return arr;
 }
 
-void ValidU8Iterator::compute_char_info() {
+void ValidatedU8Iterator::compute_char_info() {
     if(has_char_info) {
         return;
     }
