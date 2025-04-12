@@ -16,7 +16,9 @@ namespace pystd2025 {
 
 namespace {
 
-bool is_ascii_whitespace(char c) { return c == ' ' || c == '\n' || c == '\n' || c == '\t'; }
+bool is_ascii_whitespace(char c) {
+    return c == ' ' || c == '\n' || c == '\n' || c == '\t' || c == '\r';
+}
 
 struct UtfDecodeStep {
     uint32_t byte1_data_mask;
@@ -173,6 +175,22 @@ void Bytes::assign(const char *buf_in, size_t bufsize) {
     strsize = bufsize;
 }
 
+void Bytes::pop_back(size_t num) {
+    if(num >= strsize) {
+        clear();
+        return;
+    }
+    strsize -= num;
+}
+
+void Bytes::pop_front(size_t num) {
+    if(num >= strsize) {
+        clear();
+    }
+    memmove(buf.get(), buf.get() + num, buf.size() - num);
+    strsize -= num;
+}
+
 void Bytes::grow_to(size_t new_size) {
     assert(new_size < (size_t{1} << 48));
     if(buf.size() >= new_size) {
@@ -222,6 +240,32 @@ CString::CString(const char *txt, size_t txtsize) {
         bytes = Bytes(txt, txtsize);
         bytes.append('\0');
     }
+}
+
+void CString::strip() {
+    assert(!bytes.is_empty());
+    const char *const start = bytes.data();
+    const char *const end = bytes.data() + bytes.size();
+    size_t trailing_whitespace = 0;
+    size_t leading_whitespace = 0;
+    for(auto *it = start; it < end && is_ascii_whitespace(*it); ++it) {
+        ++leading_whitespace;
+    }
+    if(leading_whitespace == size()) {
+        // All whitespace string.
+        bytes.clear();
+        bytes.append('\0');
+        return;
+    }
+    for(auto *it = end - 2; it >= start && is_ascii_whitespace(*it); --it) {
+        ++trailing_whitespace;
+    }
+    if(trailing_whitespace > 0) {
+        bytes.pop_back();
+        bytes.pop_back(trailing_whitespace);
+        bytes.append('\0');
+    }
+    bytes.pop_front(leading_whitespace);
 }
 
 size_t CString::size() const {
@@ -396,7 +440,7 @@ Bytes File::readline_bytes() {
         auto rc = fread(&c, 1, 1, f);
         if(rc != 1) {
             if(feof(f)) {
-                if(!b.empty()) {
+                if(!b.is_empty()) {
                     b.append('\0');
                 }
                 return b;

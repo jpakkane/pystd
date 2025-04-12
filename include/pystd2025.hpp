@@ -180,7 +180,8 @@ public:
 
     void append(const char c);
 
-    bool empty() const { return strsize == 0; }
+    bool is_empty() const { return strsize == 0; }
+    void clear() { strsize = 0; }
 
     size_t size() const { return strsize; }
 
@@ -188,6 +189,10 @@ public:
     void shrink(size_t num_bytes) noexcept;
 
     void assign(const char *buf, size_t bufsize);
+
+    void pop_back(size_t num=1);
+
+    void pop_front(size_t num=1);
 
     char operator[](size_t i) const { return buf[i]; }
 
@@ -374,6 +379,9 @@ public:
     const char *c_str() const { return bytes.data(); }
 
     const char *data() const { return bytes.data(); }
+
+    void strip();
+    // CString stripped() const;
 
     size_t size() const;
 

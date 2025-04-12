@@ -18,7 +18,30 @@ const char daikatana[] = "大刀";
 
 #define ASSERT(statement) ASSERT_WITH((statement), "Check failed.\n");
 
-int test_string_simple() {
+int test_cstring_strip() {
+    pystd2025::CString input(" abc \t\n\r ");
+    const pystd2025::CString correct("abc");
+    pystd2025::CString all_whitespace(" ");
+
+    ASSERT(input != correct);
+    input.strip();
+    ASSERT(input == correct);
+    ASSERT(strlen(input.data()) == 3);
+
+    all_whitespace.strip();
+    ASSERT(all_whitespace.size() == 0);
+    ASSERT(strlen(all_whitespace.data()) == 0);
+    return 0;
+}
+
+int test_c_strings() {
+    printf("Testing C strings.\n");
+    int failing_subtests = 0;
+    failing_subtests += test_cstring_strip();
+    return failing_subtests;
+}
+
+int test_u8string_simple() {
     pystd2025::U8String str("abc");
     ASSERT(str.size_bytes() == 3);
     ASSERT_WITH(strcmp("abc", str.c_str()) == 0, "String construction failed.");
@@ -84,10 +107,10 @@ int test_u8_reverse_iterator_cjk() {
     return 0;
 }
 
-int test_strings() {
+int test_u8_strings() {
     printf("Testing U8strings.\n");
     int failing_subtests = 0;
-    failing_subtests += test_string_simple();
+    failing_subtests += test_u8string_simple();
     failing_subtests += test_u8_iterator();
     failing_subtests += test_u8_iterator_cjk();
     failing_subtests += test_u8_reverse_iterator();
@@ -98,7 +121,8 @@ int test_strings() {
 int main(int argc, char **argv) {
     int total_errors = 0;
     try {
-        total_errors += test_strings();
+        total_errors += test_c_strings();
+        total_errors += test_u8_strings();
     } catch(const pystd2025::PyException &e) {
         printf("Testing failed: %s\n", e.what().c_str());
     }
