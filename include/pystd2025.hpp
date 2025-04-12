@@ -97,12 +97,12 @@ private:
 template<typename T> class unique_arr final {
 public:
     unique_arr() noexcept : ptr{nullptr} {}
-    explicit unique_arr(size_t size) noexcept : ptr{new T[size]}, bufsize{size} {}
-    explicit unique_arr(T *t, size_t size = 0) noexcept : ptr{t}, bufsize{size} {}
+    explicit unique_arr(size_t size) noexcept : ptr{new T[size]}, array_size{size} {}
+    explicit unique_arr(T *t, size_t size = 0) noexcept : ptr{t}, array_size{size} {}
     explicit unique_arr(const unique_arr<T> &o) = delete;
-    explicit unique_arr(unique_arr<T> &&o) noexcept : ptr{o.ptr}, bufsize{o.bufsize} {
+    explicit unique_arr(unique_arr<T> &&o) noexcept : ptr{o.ptr}, array_size{o.array_size} {
         o.ptr = nullptr;
-        o.bufsize = 0;
+        o.array_size = 0;
     }
     ~unique_arr() { delete[] ptr; }
 
@@ -113,28 +113,29 @@ public:
         if(this != &o) {
             delete[] ptr;
             ptr = o.ptr;
-            bufsize = o.bufsize;
+            array_size = o.array_size;
             o.ptr = nullptr;
-            o.bufsize = 0;
+            o.array_size = 0;
         }
         // return *this;
     }
 
-    size_t size() const { return bufsize; }
+    size_t size() const { return array_size; }
+    size_t size_bytes() const { return array_size * sizeof(T); }
 
     T *get() { return ptr; }
     const T *get() const { return ptr; }
     T *operator->() { return ptr; }
 
     T &operator[](size_t index) {
-        if(index >= bufsize) {
+        if(index >= array_size) {
             throw "Index out of bounds.";
         }
         return ptr[index];
     }
 
     const T &operator[](size_t index) const {
-        if(index >= bufsize) {
+        if(index >= array_size) {
             throw "Index out of bounds.";
         }
         return ptr[index];
@@ -142,7 +143,7 @@ public:
 
 private:
     T *ptr;
-    size_t bufsize;
+    size_t array_size;
 };
 
 enum class EncodingPolicy {
@@ -184,6 +185,8 @@ public:
     void clear() { bufsize = 0; }
 
     size_t size() const { return bufsize; }
+
+    size_t capacity() const { return buf.size_bytes(); }
 
     void extend(size_t num_bytes) noexcept;
     void shrink(size_t num_bytes) noexcept;
@@ -415,43 +418,45 @@ public:
     U8String(const U8String &o) noexcept = default;
     U8String(Bytes incoming);
     explicit U8String(const char *txt, size_t txtsize = -1);
-    const char *c_str() const { return bytes.data(); }
+    const char *c_str() const { return cstring.data(); }
 
-    size_t size_bytes() const { return bytes.size(); }
+    size_t size_bytes() const { return cstring.size(); }
 
     U8String substr(size_t offset, size_t length) const;
 
     U8String &operator=(const U8String &) noexcept;
     void operator=(U8String &&o) noexcept {
         if(this != &o) {
-            bytes = move(o.bytes);
+            cstring = move(o.cstring);
         }
     }
 
-    bool operator==(const U8String &o) const { return bytes == o.bytes; }
-    bool operator<(const U8String &o) const { return bytes < o.bytes; }
+    bool operator==(const U8String &o) const { return cstring == o.cstring; }
+    bool operator<(const U8String &o) const { return cstring < o.cstring; }
     // Fixme: add <=>
 
-    template<typename Hasher> void feed_hash(Hasher &h) const { bytes.feed_hash(h); }
+    template<typename Hasher> void feed_hash(Hasher &h) const { cstring.feed_hash(h); }
 
-    Vector<U8String> split() const;
+    Vector<U8String> split_ascii() const;
 
-    ValidU8Iterator cbegin() const { return ValidU8Iterator((const unsigned char *)bytes.data()); }
+    ValidU8Iterator cbegin() const {
+        return ValidU8Iterator((const unsigned char *)cstring.data());
+    }
 
     ValidU8Iterator cend() const {
-        return ValidU8Iterator((const unsigned char *)bytes.data() + size_bytes());
+        return ValidU8Iterator((const unsigned char *)cstring.data() + size_bytes());
     }
 
     ValidU8ReverseIterator crbegin() const {
-        return ValidU8ReverseIterator((const unsigned char *)bytes.data(), size_bytes());
+        return ValidU8ReverseIterator((const unsigned char *)cstring.data(), size_bytes());
     }
 
     ValidU8ReverseIterator crend() const {
-        return ValidU8ReverseIterator((const unsigned char *)bytes.data(), -1);
+        return ValidU8ReverseIterator((const unsigned char *)cstring.data(), -1);
     }
 
 private:
-    CString bytes;
+    CString cstring;
     // Store length in codepoints.
 };
 

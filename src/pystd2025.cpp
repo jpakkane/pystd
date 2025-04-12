@@ -354,7 +354,7 @@ U8String::U8String(Bytes incoming) {
     if(!is_valid_utf8(incoming.data(), incoming.size())) {
         throw PyException("Invalid UTF-8.");
     }
-    bytes = move(incoming);
+    cstring = move(incoming);
 }
 
 U8String::U8String(const char *txt, size_t txtsize) {
@@ -364,19 +364,19 @@ U8String::U8String(const char *txt, size_t txtsize) {
     if(!is_valid_utf8(txt, txtsize)) {
         throw PyException(U8String{"Invalid UTF-8."});
     }
-    bytes = CString(txt, txtsize);
+    cstring = CString(txt, txtsize);
 }
 
 U8String U8String::substr(size_t offset, size_t length) const {
     // FIXME, validate range.
-    return U8String(bytes.data() + offset, length);
+    return U8String(cstring.data() + offset, length);
 }
 
-Vector<U8String> U8String::split() const {
+Vector<U8String> U8String::split_ascii() const {
     Vector<U8String> arr;
     size_t i = 0;
     while(i < size_bytes()) {
-        while(i < size_bytes() && is_ascii_whitespace(bytes[i])) {
+        while(i < size_bytes() && is_ascii_whitespace(cstring[i])) {
             ++i;
         }
         if(i == size_bytes()) {
@@ -384,7 +384,7 @@ Vector<U8String> U8String::split() const {
         }
         const auto string_start = i;
         ++i;
-        while(i < size_bytes() && (!is_ascii_whitespace(bytes[i]))) {
+        while(i < size_bytes() && (!is_ascii_whitespace(cstring[i]))) {
             ++i;
         }
         auto sub = substr(string_start, i - string_start);

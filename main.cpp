@@ -37,7 +37,7 @@ int file_main(int argc, char **argv) {
         pystd::File f(argv[1], "r");
         for(auto &&line : f) {
             pystd::U8String u8line(move(line));
-            auto words = u8line.split();
+            auto words = u8line.split_ascii();
             for(const auto &w : words) {
                 auto *c = counts.lookup(w);
                 if(c) {
@@ -84,7 +84,7 @@ int hashmap_main(int, char **) {
 
 int split_main(int, char **) {
     pystd::U8String text("aa bb cc");
-    auto r = text.split();
+    auto r = text.split_ascii();
     printf("Split array size: %d\n", (int)r.size());
     for(size_t i = 0; i < r.size(); ++i) {
         printf(" %s\n", r[i].c_str());
