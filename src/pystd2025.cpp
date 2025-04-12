@@ -143,52 +143,52 @@ void SimpleHasher::feed_bytes(const char *buf, size_t bufsize) noexcept {
     }
 }
 
-Bytes::Bytes() noexcept : buf{new char[default_bufsize], default_bufsize} { strsize = 0; }
+Bytes::Bytes() noexcept : buf{new char[default_bufsize], default_bufsize} { bufsize = 0; }
 
 Bytes::Bytes(size_t initial_size) noexcept : buf{new char[initial_size], initial_size} {
-    strsize = 0;
+    bufsize = 0;
 }
 
-Bytes::Bytes(const char *data, size_t bufsize) noexcept : buf{bufsize} {
-    for(size_t i = 0; i < bufsize; ++i) {
+Bytes::Bytes(const char *data, size_t datasize) noexcept : buf{datasize} {
+    for(size_t i = 0; i < datasize; ++i) {
         buf[i] = data[i];
     }
-    strsize = bufsize;
+    bufsize = datasize;
 }
 
 Bytes::Bytes(Bytes &&o) noexcept {
     buf = move(o.buf);
-    strsize = o.strsize;
-    o.strsize = 0;
+    bufsize = o.bufsize;
+    o.bufsize = 0;
 }
 
 Bytes::Bytes(const Bytes &o) noexcept {
     buf = unique_arr<char>(new char[o.buf.size()], o.buf.size());
     memcpy(buf.get(), o.buf.get(), o.buf.size());
-    strsize = o.strsize;
+    bufsize = o.bufsize;
 }
 
-void Bytes::assign(const char *buf_in, size_t bufsize) {
-    strsize = 0;
-    grow_to(bufsize + 1);               // Prepare for the eventual null terminator.
-    memcpy(buf.get(), buf_in, bufsize); // str might not be null terminated.
-    strsize = bufsize;
+void Bytes::assign(const char *buf_in, size_t in_size) {
+    bufsize = 0;
+    grow_to(in_size + 1);               // Prepare for the eventual null terminator.
+    memcpy(buf.get(), buf_in, in_size); // str might not be null terminated.
+    bufsize = in_size;
 }
 
 void Bytes::pop_back(size_t num) {
-    if(num >= strsize) {
+    if(num >= bufsize) {
         clear();
         return;
     }
-    strsize -= num;
+    bufsize -= num;
 }
 
 void Bytes::pop_front(size_t num) {
-    if(num >= strsize) {
+    if(num >= bufsize) {
         clear();
     }
     memmove(buf.get(), buf.get() + num, buf.size() - num);
-    strsize -= num;
+    bufsize -= num;
 }
 
 void Bytes::grow_to(size_t new_size) {
@@ -201,29 +201,29 @@ void Bytes::grow_to(size_t new_size) {
         new_capacity *= 2;
     }
     unique_arr<char> new_buf(new_capacity);
-    memcpy(new_buf.get(), buf.get(), strsize);
+    memcpy(new_buf.get(), buf.get(), bufsize);
     buf = move(new_buf);
 }
 
 void Bytes::append(const char c) {
-    if(strsize >= buf.size()) {
+    if(bufsize >= buf.size()) {
         grow_to(buf.size() * 2);
     }
-    buf[strsize] = c;
-    ++strsize;
+    buf[bufsize] = c;
+    ++bufsize;
 }
 
 void Bytes::extend(size_t num_bytes) noexcept {
-    const size_t target_size = strsize + num_bytes;
+    const size_t target_size = bufsize + num_bytes;
     grow_to(target_size);
-    strsize += num_bytes;
+    bufsize += num_bytes;
 }
 
 void Bytes::shrink(size_t num_bytes) noexcept {
-    if(num_bytes > strsize) {
-        strsize = 0;
+    if(num_bytes > bufsize) {
+        bufsize = 0;
     } else {
-        strsize -= num_bytes;
+        bufsize -= num_bytes;
     }
 }
 

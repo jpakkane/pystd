@@ -180,37 +180,37 @@ public:
 
     void append(const char c);
 
-    bool is_empty() const { return strsize == 0; }
-    void clear() { strsize = 0; }
+    bool is_empty() const { return bufsize == 0; }
+    void clear() { bufsize = 0; }
 
-    size_t size() const { return strsize; }
+    size_t size() const { return bufsize; }
 
     void extend(size_t num_bytes) noexcept;
     void shrink(size_t num_bytes) noexcept;
 
     void assign(const char *buf, size_t bufsize);
 
-    void pop_back(size_t num=1);
+    void pop_back(size_t num = 1);
 
-    void pop_front(size_t num=1);
+    void pop_front(size_t num = 1);
 
     char operator[](size_t i) const { return buf[i]; }
 
-    void operator=(const Bytes&) noexcept;
+    void operator=(const Bytes &) noexcept;
 
     void operator=(Bytes &&o) noexcept {
         if(this != &o) {
             buf = move(o.buf);
-            strsize = o.strsize;
-            o.strsize = 0;
+            bufsize = o.bufsize;
+            o.bufsize = 0;
         }
     }
 
     bool operator==(const Bytes &o) const noexcept {
-        if(strsize != o.strsize) {
+        if(bufsize != o.bufsize) {
             return false;
         }
-        for(size_t i = 0; i < strsize; ++i) {
+        for(size_t i = 0; i < bufsize; ++i) {
             if(buf[i] != o.buf[i]) {
                 return false;
             }
@@ -219,7 +219,7 @@ public:
     }
 
     bool operator<(const Bytes &o) const {
-        const auto num_its = strsize < o.strsize ? strsize : o.strsize;
+        const auto num_its = bufsize < o.bufsize ? bufsize : o.bufsize;
         for(size_t i = 0; i < num_its; ++i) {
             const auto &c1 = buf[i];
             const auto &c2 = o.buf[i];
@@ -230,16 +230,16 @@ public:
                 return false;
             }
         }
-        return strsize < o.strsize;
+        return bufsize < o.bufsize;
     }
 
-    template<typename Hasher> void feed_hash(Hasher &h) const { h.feed_bytes(buf.get(), strsize); }
+    template<typename Hasher> void feed_hash(Hasher &h) const { h.feed_bytes(buf.get(), bufsize); }
 
 private:
     void grow_to(size_t new_size);
 
     unique_arr<char> buf; // Not zero terminated.
-    size_t strsize;
+    size_t bufsize;
 };
 
 template<typename T> class Vector final {
@@ -389,7 +389,7 @@ public:
 
     char operator[](size_t i) const { return bytes[i]; }
 
-    void operator=(const pystd2025::CString&) noexcept;
+    void operator=(const pystd2025::CString &) noexcept;
     void operator=(CString &&o) noexcept {
         if(this != &o) {
             bytes = move(o.bytes);
@@ -421,7 +421,7 @@ public:
 
     U8String substr(size_t offset, size_t length) const;
 
-    U8String& operator=(const U8String&) noexcept;
+    U8String &operator=(const U8String &) noexcept;
     void operator=(U8String &&o) noexcept {
         if(this != &o) {
             bytes = move(o.bytes);
