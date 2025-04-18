@@ -373,6 +373,15 @@ private:
     bool has_char_info;
 };
 
+class CStringView {
+public:
+
+private:
+    const char* buf;
+    size_t start_offset;
+    size_t end_offset;
+};
+
 // A string guaranteed to end with a zero terminator.
 class CString {
 public:
@@ -416,6 +425,16 @@ public:
 private:
     Bytes bytes;
 };
+
+class U8StringView {
+public:
+
+private:
+    const char* buf;
+    size_t start_offset;
+    size_t end_offset;
+};
+
 
 class U8String {
 public:
