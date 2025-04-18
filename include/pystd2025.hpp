@@ -62,10 +62,13 @@ inline constexpr bool is_well_behaved_v =
 
 template<typename T>
 concept WellBehaved = requires(T a, T b, const T &c, T &d, T &&e) {
+    requires noexcept(a = a);
     requires noexcept(a = b);
+    requires noexcept(a = d);
     requires noexcept(a = e);
-    requires noexcept(d = a);
+    requires noexcept(a = c);
     requires noexcept(d = e);
+    requires noexcept(d = a);
     requires noexcept(T{});
     requires noexcept(T{b});
     requires noexcept(T{c});
@@ -73,9 +76,78 @@ concept WellBehaved = requires(T a, T b, const T &c, T &d, T &&e) {
     requires noexcept(T{e});
 };
 
+template<WellBehaved V, WellBehaved E> class Expected {
+private:
+    enum class UnionState : unsigned char {
+        Empty,
+        Value,
+        Error,
+    };
+
+public:
+    Expected() noexcept : state{UnionState::Empty} {}
+
+    explicit Expected(const V &v) noexcept : state{UnionState::Value} { new(&content.value) V(v); }
+
+    explicit Expected(const E &e) noexcept : state{UnionState::Error} { new(&content.error) E(e); }
+
+    ~Expected() { destroy(); }
+
+    bool has_value() const noexcept { return state == UnionState::Value; }
+
+    bool has_error() const noexcept { return state == UnionState::Error; }
+
+    operator bool() const noexcept { return has_value(); }
+
+    void operator=(Expected<V, E> &&o) noexcept {
+        if(this != &o) {
+            destroy();
+            if(o.has_value()) {
+                new(&content.value) V(o.content.value);
+                state = UnionState::Value;
+            } else if(o.has_error()) {
+                new(&content.error) E(o.content.error);
+                state = UnionState::Error;
+            } else {
+                state = UnionState::Empty;
+            }
+            o.destroy();
+        }
+    }
+
+    V &value() {
+        if(*this) {
+            abort();
+        }
+        return content.value;
+    }
+
+    E &error() {
+        if(!has_error()) {
+            abort();
+        }
+        return content.error;
+    }
+
+private:
+    void destroy() {
+        if(state == UnionState::Value) {
+            content.value.~V();
+        } else if(state == UnionState::Error) {
+            content.error.~E();
+        }
+        state = UnionState::Empty;
+    }
+    union {
+        V value;
+        E error;
+    } content;
+    UnionState state;
+};
+
 template<typename T> class unique_ptr final {
 public:
-    unique_ptr() : ptr{nullptr} {}
+    unique_ptr() noexcept : ptr{nullptr} {}
     explicit unique_ptr(T *t) noexcept : ptr{t} {}
     explicit unique_ptr(const unique_ptr<T> &o) = delete;
     explicit unique_ptr(unique_ptr<T> &&o) noexcept : ptr{o.ptr} { o.ptr = nullptr; }
@@ -92,9 +164,9 @@ public:
         return *this;
     }
 
-    T *get() { return ptr; }
-    T &operator*() { return *ptr; }
-    T *operator->() { return ptr; }
+    T *get() noexcept { return ptr; }
+    T &operator*() { return *ptr; } // FIXME, check not null maybe?
+    T *operator->() noexcept { return ptr; }
 
 private:
     T *ptr;
@@ -378,9 +450,8 @@ private:
 
 class CStringView {
 public:
-
 private:
-    const char* buf;
+    const char *buf;
     size_t start_offset;
     size_t end_offset;
 };
@@ -422,8 +493,7 @@ public:
 
     template<typename Hasher> void feed_hash(Hasher &h) const { bytes.feed_hash(h); }
 
-    template<typename T=CString>
-    Vector<T> split() const;
+    template<typename T = CString> Vector<T> split() const;
 
 private:
     Bytes bytes;
@@ -431,13 +501,11 @@ private:
 
 class U8StringView {
 public:
-
 private:
-    const char* buf;
+    const char *buf;
     size_t start_offset;
     size_t end_offset;
 };
-
 
 class U8String {
 public:
@@ -471,8 +539,7 @@ public:
     // requirement it needs to be.
     //
     // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=119848
-    template<typename T=U8String>
-    Vector<T> split_ascii() const;
+    template<typename T = U8String> Vector<T> split_ascii() const;
 
     ValidatedU8Iterator cbegin() const {
         return ValidatedU8Iterator((const unsigned char *)cstring.data());
