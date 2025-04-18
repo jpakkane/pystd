@@ -372,7 +372,9 @@ U8String U8String::substr(size_t offset, size_t length) const {
     return U8String(cstring.data() + offset, length);
 }
 
-Vector<U8String> U8String::split_ascii() const {
+bool U8String::operator==(const char *str) const { return strcmp(str, cstring.c_str()) == 0; }
+
+template<> Vector<U8String> U8String::split_ascii() const {
     Vector<U8String> arr;
     size_t i = 0;
     while(i < size_bytes()) {

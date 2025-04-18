@@ -25,6 +25,9 @@ template<class T> using remove_reference_t = typename remove_reference<T>::type;
 template<class T> constexpr remove_reference_t<T> &&move(T &&t) noexcept {
     return static_cast<typename remove_reference<T>::type &&>(t);
 }
+/*
+ * In a perfect world these would not be needed, but we may end up
+ * needing them after all.
 
 template<typename...> using __void_t = void;
 
@@ -53,7 +56,7 @@ inline constexpr bool is_well_behaved_v =
     __is_nothrow_constructible(Type) && __is_nothrow_constructible(Type, add_rval_ref_t<Type>) &&
     __is_nothrow_assignable(add_lval_ref_t<Type>, add_rval_ref_t<Type>);
 // FIXME, should also be nothrow copyable maybe?
-
+*/
 /* Also FIXME. The above should be something like the following
  * but I could not make it work.*/
 
@@ -245,7 +248,7 @@ private:
     size_t bufsize;
 };
 
-template<typename T> class Vector final {
+template<WellBehaved T> class Vector final {
 
 public:
     Vector() noexcept = default;
@@ -405,7 +408,8 @@ public:
 
     template<typename Hasher> void feed_hash(Hasher &h) const { bytes.feed_hash(h); }
 
-    Vector<CString> split() const;
+    template<typename T=CString>
+    Vector<T> split() const;
 
 private:
     Bytes bytes;
@@ -435,9 +439,16 @@ public:
     bool operator<(const U8String &o) const { return cstring < o.cstring; }
     // Fixme: add <=>
 
+    bool operator==(const char *str) const;
+
     template<typename Hasher> void feed_hash(Hasher &h) const { cstring.feed_hash(h); }
 
-    Vector<U8String> split_ascii() const;
+    // This should not be a template, but due to the concept
+    // requirement it needs to be.
+    //
+    // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=119848
+    template<typename T=U8String>
+    Vector<T> split_ascii() const;
 
     ValidatedU8Iterator cbegin() const {
         return ValidatedU8Iterator((const unsigned char *)cstring.data());

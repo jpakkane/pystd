@@ -107,6 +107,16 @@ int test_u8_reverse_iterator_cjk() {
     return 0;
 }
 
+int test_u8_split() {
+    pystd2025::U8String source("  aa bb cc  ");
+    auto parts = source.split_ascii();
+    ASSERT(parts.size() == 3);
+    ASSERT(parts[0] == "aa");
+    ASSERT(parts[1] == "bb");
+    ASSERT(parts[2] == "cc");
+    return 0;
+}
+
 int test_u8_strings() {
     printf("Testing U8strings.\n");
     int failing_subtests = 0;
@@ -115,6 +125,7 @@ int test_u8_strings() {
     failing_subtests += test_u8_iterator_cjk();
     failing_subtests += test_u8_reverse_iterator();
     failing_subtests += test_u8_reverse_iterator_cjk();
+    failing_subtests += test_u8_split();
     return failing_subtests;
 }
 
