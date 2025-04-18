@@ -274,6 +274,34 @@ size_t CString::size() const {
     return s - 1;
 }
 
+CString CString::substr(size_t offset, size_t length) const {
+    // FIXME, validate range.
+    return CString(c_str() + offset, length);
+}
+
+template<> Vector<CString> CString::split() const {
+    Vector<CString> arr;
+    size_t i = 0;
+    while(i < size()) {
+        while(i < size() && is_ascii_whitespace(bytes[i])) {
+            ++i;
+        }
+        if(i == size()) {
+            break;
+        }
+        const auto string_start = i;
+        ++i;
+        while(i < size() && (!is_ascii_whitespace(bytes[i]))) {
+            ++i;
+        }
+        auto sub = substr(string_start, i - string_start);
+        arr.push_back(sub);
+    }
+    return arr;
+}
+
+bool CString::operator==(const char *str) { return strcmp(str, c_str()) == 0; }
+
 uint32_t ValidatedU8Iterator::operator*() {
     compute_char_info();
     return char_info.codepoint;

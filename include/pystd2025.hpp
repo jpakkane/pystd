@@ -406,6 +406,8 @@ public:
     bool operator<(const CString &o) const { return bytes < o.bytes; }
     // Fixme: add <=>
 
+    bool operator==(const char *str);
+
     template<typename Hasher> void feed_hash(Hasher &h) const { bytes.feed_hash(h); }
 
     template<typename T=CString>

@@ -34,10 +34,21 @@ int test_cstring_strip() {
     return 0;
 }
 
+int test_cstring_split() {
+    pystd2025::CString source("  aa bb cc  ");
+    auto parts = source.split();
+    ASSERT(parts.size() == 3);
+    ASSERT(parts[0] == "aa");
+    ASSERT(parts[1] == "bb");
+    ASSERT(parts[2] == "cc");
+    return 0;
+}
+
 int test_c_strings() {
     printf("Testing C strings.\n");
     int failing_subtests = 0;
     failing_subtests += test_cstring_strip();
+    failing_subtests += test_cstring_split();
     return failing_subtests;
 }
 
