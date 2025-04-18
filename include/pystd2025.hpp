@@ -61,13 +61,16 @@ inline constexpr bool is_well_behaved_v =
  * but I could not make it work.*/
 
 template<typename T>
-concept WellBehaved = requires(T a, T b, const T &c, T &&d) {
+concept WellBehaved = requires(T a, T b, const T &c, T &d, T &&e) {
     requires noexcept(a = b);
-    requires noexcept(a = move(b));
+    requires noexcept(a = e);
+    requires noexcept(d = a);
+    requires noexcept(d = e);
     requires noexcept(T{});
     requires noexcept(T{b});
     requires noexcept(T{c});
     requires noexcept(T{d});
+    requires noexcept(T{e});
 };
 
 template<typename T> class unique_ptr final {
