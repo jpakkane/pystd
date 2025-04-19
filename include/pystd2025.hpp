@@ -450,11 +450,12 @@ private:
 
 class CStringView {
 public:
-private:
     const char *buf;
     size_t start_offset;
     size_t end_offset;
 };
+
+typedef bool (*CStringViewCallback)(const CStringView &piece, void *ctx);
 
 // A string guaranteed to end with a zero terminator.
 class CString {
@@ -463,6 +464,7 @@ public:
     CString(CString &&o) noexcept = default;
     CString(const CString &o) noexcept = default;
     CString(Bytes incoming);
+    CString(const CStringView &view);
     explicit CString(const char *txt, size_t txtsize = -1);
 
     const char *c_str() const { return bytes.data(); }
@@ -494,6 +496,8 @@ public:
     template<typename Hasher> void feed_hash(Hasher &h) const { bytes.feed_hash(h); }
 
     template<typename T = CString> Vector<T> split() const;
+
+    void split(CStringViewCallback cb, void *ctx) const;
 
 private:
     Bytes bytes;

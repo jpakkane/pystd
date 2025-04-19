@@ -232,6 +232,9 @@ CString::CString(Bytes incoming) {
     bytes.append('\0'); // FIXME, check embedded nulls.
 }
 
+CString::CString(const CStringView &view)
+    : CString(view.buf + view.start_offset, view.end_offset - view.start_offset) {}
+
 CString::CString(const char *txt, size_t txtsize) {
     if(txtsize == (size_t)-1) {
         bytes = Bytes(txt, strlen(txt));
@@ -280,7 +283,18 @@ CString CString::substr(size_t offset, size_t length) const {
 }
 
 template<> Vector<CString> CString::split() const {
+    auto cb_lambda = [](const CStringView &piece, void *ctx) -> bool {
+        auto *arr = static_cast<Vector<CString> *>(ctx);
+        arr->push_back(CString{piece});
+        return true;
+    };
     Vector<CString> arr;
+    split(cb_lambda, static_cast<void *>(&arr));
+
+    return arr;
+}
+
+void CString::split(CStringViewCallback cb, void *ctx) const {
     size_t i = 0;
     while(i < size()) {
         while(i < size() && is_ascii_whitespace(bytes[i])) {
@@ -294,10 +308,11 @@ template<> Vector<CString> CString::split() const {
         while(i < size() && (!is_ascii_whitespace(bytes[i]))) {
             ++i;
         }
-        auto sub = substr(string_start, i - string_start);
-        arr.push_back(sub);
+        CStringView piece{c_str(), string_start, i};
+        if(!cb(piece, ctx)) {
+            break;
+        }
     }
-    return arr;
 }
 
 bool CString::operator==(const char *str) { return strcmp(str, c_str()) == 0; }
