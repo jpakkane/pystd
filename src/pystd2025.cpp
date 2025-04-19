@@ -16,7 +16,7 @@ namespace pystd2025 {
 
 namespace {
 
-bool is_ascii_whitespace(char c) {
+bool is_ascii_whitespace(uint32_t c) {
     return c == ' ' || c == '\n' || c == '\n' || c == '\t' || c == '\r';
 }
 
@@ -400,6 +400,13 @@ U8String::U8String(Bytes incoming) {
     cstring = move(incoming);
 }
 
+U8String::U8String(const U8StringView &view) {
+    if(view.start.buf >= view.end.buf) {
+        throw PyException("Invalid UTF-8 string view.");
+    }
+    cstring = CString((const char *)view.start.buf, view.end.buf - view.start.buf);
+}
+
 U8String::U8String(const char *txt, size_t txtsize) {
     if(txtsize == (size_t)-1) {
         txtsize = strlen(txt);
@@ -418,24 +425,36 @@ U8String U8String::substr(size_t offset, size_t length) const {
 bool U8String::operator==(const char *str) const { return strcmp(str, cstring.c_str()) == 0; }
 
 template<> Vector<U8String> U8String::split_ascii() const {
+    auto cb_lambda = [](const U8StringView &piece, void *ctx) -> bool {
+        auto *arr = static_cast<Vector<U8String> *>(ctx);
+        arr->push_back(U8String{piece});
+        return true;
+    };
     Vector<U8String> arr;
-    size_t i = 0;
-    while(i < size_bytes()) {
-        while(i < size_bytes() && is_ascii_whitespace(cstring[i])) {
+    split(cb_lambda, is_ascii_whitespace, static_cast<void *>(&arr));
+    return arr;
+}
+
+void U8String::split(U8StringViewCallback cb, IsSplittingCharacter issplit, void *ctx) const {
+    ValidatedU8Iterator i = cbegin();
+    const ValidatedU8Iterator end = cend();
+    while(i != end) {
+        while(i != end && issplit(*i)) {
             ++i;
         }
-        if(i == size_bytes()) {
+        if(i == end) {
             break;
         }
         const auto string_start = i;
         ++i;
-        while(i < size_bytes() && (!is_ascii_whitespace(cstring[i]))) {
+        while(i != end && (!issplit(*i))) {
             ++i;
         }
-        auto sub = substr(string_start, i - string_start);
-        arr.push_back(sub);
+        U8StringView piece{string_start, i};
+        if(!cb(piece, ctx)) {
+            break;
+        }
     }
-    return arr;
 }
 
 void ValidatedU8Iterator::compute_char_info() {

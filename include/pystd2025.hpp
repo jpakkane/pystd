@@ -503,13 +503,13 @@ private:
     Bytes bytes;
 };
 
-class U8StringView {
-public:
-private:
-    const char *buf;
-    size_t start_offset;
-    size_t end_offset;
+struct U8StringView {
+    ValidatedU8Iterator start;
+    ValidatedU8Iterator end;
 };
+
+typedef bool (*U8StringViewCallback)(const U8StringView &piece, void *ctx);
+typedef bool (*IsSplittingCharacter)(uint32_t codepoint);
 
 class U8String {
 public:
@@ -517,6 +517,7 @@ public:
     U8String(U8String &&o) noexcept = default;
     U8String(const U8String &o) noexcept = default;
     U8String(Bytes incoming);
+    explicit U8String(const U8StringView &view);
     explicit U8String(const char *txt, size_t txtsize = -1);
     const char *c_str() const { return cstring.data(); }
 
@@ -544,6 +545,8 @@ public:
     //
     // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=119848
     template<typename T = U8String> Vector<T> split_ascii() const;
+
+    void split(U8StringViewCallback cb, IsSplittingCharacter is_split_char, void *ctx) const;
 
     ValidatedU8Iterator cbegin() const {
         return ValidatedU8Iterator((const unsigned char *)cstring.data());
