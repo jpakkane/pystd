@@ -435,11 +435,11 @@ template<> Vector<U8String> U8String::split_ascii() const {
     return arr;
 }
 
-void U8String::split(U8StringViewCallback cb, IsSplittingCharacter issplit, void *ctx) const {
+void U8String::split(U8StringViewCallback cb, IsSplittingCharacter is_split_char, void *ctx) const {
     ValidatedU8Iterator i = cbegin();
     const ValidatedU8Iterator end = cend();
     while(i != end) {
-        while(i != end && issplit(*i)) {
+        while(i != end && is_split_char(*i)) {
             ++i;
         }
         if(i == end) {
@@ -447,7 +447,7 @@ void U8String::split(U8StringViewCallback cb, IsSplittingCharacter issplit, void
         }
         const auto string_start = i;
         ++i;
-        while(i != end && (!issplit(*i))) {
+        while(i != end && (!is_split_char(*i))) {
             ++i;
         }
         U8StringView piece{string_start, i};
