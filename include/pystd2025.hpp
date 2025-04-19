@@ -316,6 +316,10 @@ public:
 
     template<typename Hasher> void feed_hash(Hasher &h) const { h.feed_bytes(buf.get(), bufsize); }
 
+    bool is_ptr_within(const char *ptr) const {
+        return ptr >= buf.get() && ptr < buf.get() + bufsize;
+    }
+
 private:
     void grow_to(size_t new_size);
 
@@ -334,10 +338,20 @@ public:
     }
 
     void push_back(const T &obj) noexcept {
-        backing.extend(sizeof(T));
-        auto obj_loc = objptr(num_entries);
-        new(obj_loc) T(obj);
-        ++num_entries;
+        if(ptr_is_within(&obj) && needs_to_grow_for(1)) {
+            // Fixme, maybe compute index to the backing store
+            // and then use that, skipping the temporary.
+            T tmp{obj};
+            backing.extend(sizeof(T));
+            auto obj_loc = objptr(num_entries);
+            new(obj_loc) T(move(tmp));
+            ++num_entries;
+        } else {
+            backing.extend(sizeof(T));
+            auto obj_loc = objptr(num_entries);
+            new(obj_loc) T(obj);
+            ++num_entries;
+        }
     }
 
     void pop_back() noexcept {
@@ -380,6 +394,12 @@ private:
     const T *objptr(size_t i) const noexcept { return reinterpret_cast<const T *>(rawptr(i)); }
     char *rawptr(size_t i) noexcept { return backing.data() + i * sizeof(T); }
     const T *rawptr(size_t i) const noexcept { return backing.data() + i * sizeof(T); }
+
+    bool needs_to_grow_for(size_t num_new_items) {
+        return num_entries + num_new_items * sizeof(T) > backing.size();
+    }
+
+    bool ptr_is_within(const T *ptr) const { return backing.is_ptr_within((const char *)ptr); }
 
     Bytes backing;
     size_t num_entries = 0;
