@@ -393,6 +393,24 @@ void ValidatedU8ReverseIterator::compute_char_info() {
     }
 };
 
+bool U8StringView::operator==(const char *txt) const {
+    const unsigned char *data_start = start.byte_location();
+    const unsigned char *data_end = end.byte_location();
+    size_t i = 0;
+    while(true) {
+        if(data_start + i > data_end) {
+            return false;
+        }
+        if(data_start + i == data_end) {
+            return txt[i] == '\0';
+        }
+        if(data_start[i] != txt[i]) {
+            return false;
+        }
+        ++i;
+    }
+}
+
 U8String::U8String(Bytes incoming) {
     if(!is_valid_utf8(incoming.data(), incoming.size())) {
         throw PyException("Invalid UTF-8.");

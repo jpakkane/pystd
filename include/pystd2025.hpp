@@ -410,6 +410,8 @@ private:
 class ValidatedU8Iterator {
 public:
     friend class U8String;
+    friend class U8Match;
+    friend class U8StringView;
 
     ValidatedU8Iterator(const ValidatedU8Iterator &) = default;
     ValidatedU8Iterator(ValidatedU8Iterator &&) = default;
@@ -432,6 +434,8 @@ private:
         : buf{utf8_string}, has_char_info{false} {}
 
     void compute_char_info();
+
+    const unsigned char *byte_location() const { return buf; }
 
     const unsigned char *buf;
     CharInfo char_info;
@@ -526,6 +530,8 @@ private:
 struct U8StringView {
     ValidatedU8Iterator start;
     ValidatedU8Iterator end;
+
+    bool operator==(const char *) const;
 };
 
 typedef bool (*U8StringViewCallback)(const U8StringView &piece, void *ctx);
@@ -883,14 +889,14 @@ private:
     size_t offset;
 };
 
-class Regex {
+class U8Regex {
 public:
-    explicit Regex(const U8String &pattern);
-    ~Regex();
+    explicit U8Regex(const U8String &pattern);
+    ~U8Regex();
 
-    Regex() = delete;
-    Regex(const Regex &o) = delete;
-    Regex &operator=(const Regex &o) = delete;
+    U8Regex() = delete;
+    U8Regex(const U8Regex &o) = delete;
+    U8Regex &operator=(const U8Regex &o) = delete;
 
     void *h() const { return handle; }
 
@@ -898,30 +904,32 @@ private:
     void *handle;
 };
 
-class Match {
+class U8Match {
 public:
-    Match(void *h, const U8String *orig) : handle{h}, original{orig} {};
-    ~Match();
+    U8Match(void *h, const U8String *orig) : handle{h}, original{orig} {};
+    ~U8Match();
 
-    Match() = delete;
-    Match(Match &&o) : handle(o.handle), original{o.original} {
+    U8Match() = delete;
+    U8Match(U8Match &&o) : handle(o.handle), original{o.original} {
         o.handle = nullptr;
         o.original = nullptr;
     }
-    Match &operator=(const Match &o) = delete;
+    U8Match &operator=(const U8Match &o) = delete;
 
     void *h() const { return handle; }
 
     U8String get_submatch(size_t i);
 
-    size_t num_matches() const;
+    size_t num_groups() const;
+
+    U8StringView group(size_t group_num) const;
 
 private:
     void *handle;
     const U8String *original; // Not very safe...
 };
 
-Match regex_match(const Regex &pattern, const U8String &text);
+U8Match regex_search(const U8Regex &pattern, const U8String &text);
 
 template<typename T> void sort_relocatable(T *data, size_t bufsize) {
     auto ordering = [](const void *v1, const void *v2) -> int {

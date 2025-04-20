@@ -140,11 +140,33 @@ int test_u8_strings() {
     return failing_subtests;
 }
 
+int test_u8_regex_simple() {
+    pystd2025::U8String text("abcabcabc");
+    pystd2025::U8String retext("(b).*?(a)");
+    pystd2025::U8Regex r(retext);
+
+    auto match = pystd2025::regex_search(r, text);
+    ASSERT(match.num_groups() == 2);
+    ASSERT(match.group(0) == "bca");
+    ASSERT(match.group(1) == "b");
+    ASSERT(match.group(2) == "a");
+
+    return 0;
+}
+
+int test_u8_regex() {
+    printf("Testing U8 regex.\n");
+    int failing_subtests = 0;
+    failing_subtests += test_u8_regex_simple();
+    return failing_subtests;
+}
+
 int main(int argc, char **argv) {
     int total_errors = 0;
     try {
         total_errors += test_c_strings();
         total_errors += test_u8_strings();
+        total_errors += test_u8_regex();
     } catch(const pystd2025::PyException &e) {
         printf("Testing failed: %s\n", e.what().c_str());
     }
