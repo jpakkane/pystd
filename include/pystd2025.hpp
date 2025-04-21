@@ -340,7 +340,7 @@ public:
     }
 
     void push_back(const T &obj) noexcept {
-        if(ptr_is_within(&obj) && needs_to_grow_for(1)) {
+        if(is_ptr_within(&obj) && needs_to_grow_for(1)) {
             // Fixme, maybe compute index to the backing store
             // and then use that, skipping the temporary.
             T tmp{obj};
@@ -401,7 +401,7 @@ private:
         return num_entries + num_new_items * sizeof(T) > backing.size();
     }
 
-    bool ptr_is_within(const T *ptr) const { return backing.is_ptr_within((const char *)ptr); }
+    bool is_ptr_within(const T *ptr) const { return backing.is_ptr_within((const char *)ptr); }
 
     Bytes backing;
     size_t num_entries = 0;
