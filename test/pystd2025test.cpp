@@ -128,7 +128,7 @@ int test_u8_split() {
     return 0;
 }
 
-int test_u8_join() {
+int test_u8_append() {
     pystd2025::U8String buf("aa");
     const pystd2025::U8String add("bb");
 
@@ -136,6 +136,18 @@ int test_u8_join() {
     ASSERT(buf == "aabb");
     buf += buf;
     ASSERT(buf == "aabbaabb");
+    return 0;
+}
+
+int test_u8_join() {
+    pystd2025::U8String separator(", ");
+    pystd2025::Vector<pystd2025::U8String> entries;
+    entries.push_back(pystd2025::U8String("aa"));
+    entries.push_back(pystd2025::U8String("bb"));
+    entries.push_back(pystd2025::U8String("cc"));
+    auto joined = separator.join(entries);
+    ASSERT(joined == "aa, bb, cc");
+
     return 0;
 }
 
@@ -148,6 +160,7 @@ int test_u8_strings() {
     failing_subtests += test_u8_reverse_iterator();
     failing_subtests += test_u8_reverse_iterator_cjk();
     failing_subtests += test_u8_split();
+    failing_subtests += test_u8_append();
     failing_subtests += test_u8_join();
     return failing_subtests;
 }

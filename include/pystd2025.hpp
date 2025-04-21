@@ -279,7 +279,7 @@ public:
 
     void operator=(const Bytes &) noexcept;
 
-    Bytes& operator+=(const Bytes&o) noexcept;
+    Bytes &operator+=(const Bytes &o) noexcept;
 
     void operator=(Bytes &&o) noexcept {
         if(this != &o) {
@@ -388,14 +388,14 @@ public:
     const T *cbegin() const { return objptr(0); }
     const T *cend() const { return objptr(num_entries); }
 
-    T *begin() { return objptr(0); }
-    T *end() { return objptr(num_entries); }
+    T *begin() const { return const_cast<T *>(objptr(0)); }
+    T *end() const { return const_cast<T *>(objptr(num_entries)); }
 
 private:
     T *objptr(size_t i) noexcept { return reinterpret_cast<T *>(rawptr(i)); }
     const T *objptr(size_t i) const noexcept { return reinterpret_cast<const T *>(rawptr(i)); }
     char *rawptr(size_t i) noexcept { return backing.data() + i * sizeof(T); }
-    const T *rawptr(size_t i) const noexcept { return backing.data() + i * sizeof(T); }
+    const char *rawptr(size_t i) const noexcept { return backing.data() + i * sizeof(T); }
 
     bool needs_to_grow_for(size_t num_new_items) {
         return num_entries + num_new_items * sizeof(T) > backing.size();
@@ -519,7 +519,7 @@ public:
 
     bool operator==(const char *str);
 
-    CString& operator+=(const CString &o);
+    CString &operator+=(const CString &o);
 
     template<typename Hasher> void feed_hash(Hasher &h) const { bytes.feed_hash(h); }
 
@@ -555,6 +555,20 @@ public:
 
     U8String substr(size_t offset, size_t length) const;
 
+    template<typename Seq> U8String join(const Seq &sequence) const {
+        size_t i = 0;
+        U8String result;
+        // Fixme, reserve size in advance.
+        for(const auto &e : sequence) {
+            if(i != 0) {
+                result += *this;
+            }
+            result += e;
+            ++i;
+        }
+        return result;
+    }
+
     U8String &operator=(const U8String &) noexcept;
     void operator=(U8String &&o) noexcept {
         if(this != &o) {
@@ -568,7 +582,7 @@ public:
 
     bool operator==(const char *str) const;
 
-    U8String& operator+=(const U8String &o);
+    U8String &operator+=(const U8String &o);
 
     template<typename Hasher> void feed_hash(Hasher &h) const { cstring.feed_hash(h); }
 
