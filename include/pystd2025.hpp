@@ -279,6 +279,8 @@ public:
 
     void operator=(const Bytes &) noexcept;
 
+    Bytes& operator+=(const Bytes&o) noexcept;
+
     void operator=(Bytes &&o) noexcept {
         if(this != &o) {
             buf = move(o.buf);
@@ -517,6 +519,8 @@ public:
 
     bool operator==(const char *str);
 
+    CString& operator+=(const CString &o);
+
     template<typename Hasher> void feed_hash(Hasher &h) const { bytes.feed_hash(h); }
 
     template<typename T = CString> Vector<T> split() const;
@@ -563,6 +567,8 @@ public:
     // Fixme: add <=>
 
     bool operator==(const char *str) const;
+
+    U8String& operator+=(const U8String &o);
 
     template<typename Hasher> void feed_hash(Hasher &h) const { cstring.feed_hash(h); }
 

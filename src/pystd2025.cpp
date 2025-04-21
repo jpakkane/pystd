@@ -227,6 +227,18 @@ void Bytes::shrink(size_t num_bytes) noexcept {
     }
 }
 
+Bytes &Bytes::operator+=(const Bytes &o) noexcept {
+    if(this == &o) {
+        // FIXME, make fast.
+        Bytes tmp{o};
+        return *this += tmp;
+    }
+    grow_to(bufsize + o.bufsize);
+    memcpy(buf.get() + bufsize, o.buf.get(), o.bufsize);
+    bufsize += o.bufsize;
+    return *this;
+}
+
 CString::CString(Bytes incoming) {
     bytes = move(bytes);
     bytes.append('\0'); // FIXME, check embedded nulls.
@@ -316,6 +328,17 @@ void CString::split(CStringViewCallback cb, void *ctx) const {
 }
 
 bool CString::operator==(const char *str) { return strcmp(str, c_str()) == 0; }
+
+CString &CString::operator+=(const CString &o) {
+    if(this == &o) {
+        // FIXME make fast.
+        CString copy(o);
+        return *this += copy;
+    }
+    bytes.pop_back();
+    bytes += o.bytes;
+    return *this;
+}
 
 uint32_t ValidatedU8Iterator::operator*() {
     compute_char_info();
@@ -441,6 +464,11 @@ U8String U8String::substr(size_t offset, size_t length) const {
 }
 
 bool U8String::operator==(const char *str) const { return strcmp(str, cstring.c_str()) == 0; }
+
+U8String &U8String::operator+=(const U8String &o) {
+    cstring += o.cstring;
+    return *this;
+}
 
 template<> Vector<U8String> U8String::split_ascii() const {
     auto cb_lambda = [](const U8StringView &piece, void *ctx) -> bool {

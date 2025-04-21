@@ -128,6 +128,17 @@ int test_u8_split() {
     return 0;
 }
 
+int test_u8_join() {
+    pystd2025::U8String buf("aa");
+    const pystd2025::U8String add("bb");
+
+    buf += add;
+    ASSERT(buf == "aabb");
+    buf += buf;
+    ASSERT(buf == "aabbaabb");
+    return 0;
+}
+
 int test_u8_strings() {
     printf("Testing U8strings.\n");
     int failing_subtests = 0;
@@ -137,6 +148,7 @@ int test_u8_strings() {
     failing_subtests += test_u8_reverse_iterator();
     failing_subtests += test_u8_reverse_iterator_cjk();
     failing_subtests += test_u8_split();
+    failing_subtests += test_u8_join();
     return failing_subtests;
 }
 
