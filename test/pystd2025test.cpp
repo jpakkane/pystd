@@ -186,12 +186,34 @@ int test_u8_regex() {
     return failing_subtests;
 }
 
+int test_optional() {
+    pystd2025::Optional<uint64_t> empty;
+    pystd2025::Optional<uint64_t> filled(666);
+
+    ASSERT(!empty);
+    ASSERT(filled);
+    ASSERT(*filled == 666);
+
+    empty = pystd2025::move(filled);
+
+    ASSERT(empty);
+    ASSERT(!filled);
+    ASSERT(*empty == 666);
+
+    filled = 86;
+    ASSERT(*filled == 86);
+    filled = 1024;
+    ASSERT(*filled == 1024);
+    return 0;
+}
+
 int main(int argc, char **argv) {
     int total_errors = 0;
     try {
         total_errors += test_c_strings();
         total_errors += test_u8_strings();
         total_errors += test_u8_regex();
+        total_errors += test_optional();
     } catch(const pystd2025::PyException &e) {
         printf("Testing failed: %s\n", e.what().c_str());
     }

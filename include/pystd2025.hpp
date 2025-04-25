@@ -224,6 +224,85 @@ private:
     size_t array_size;
 };
 
+template<WellBehaved T> class Optional final {
+public:
+    Optional() noexcept {
+        data.nothing = 0;
+        has_value = false;
+    }
+
+    explicit Optional(T &&o) noexcept {
+        new(&data.value) T{o};
+        has_value = true;
+    }
+
+    Optional(Optional<T> &&o) noexcept {
+        if(o) {
+            new(&data.value) T{o.data};
+            has_value = true;
+            o.destroy();
+        } else {
+            data.nothing = 0;
+            has_value = false;
+        }
+    }
+
+    ~Optional() { destroy(); }
+
+    operator bool() const noexcept { return has_value; }
+
+    void operator=(Optional<T> &&o) noexcept {
+        if(this != &o) {
+            destroy();
+            if(o) {
+                new(&data.value) T{o.data.value};
+                has_value = true;
+                o.destroy();
+            }
+        }
+    }
+
+    void operator=(T &&o) noexcept {
+        if(&o == &data.value) {
+            return;
+        }
+        if(*this) {
+            data.value = o;
+        } else {
+            new(&data.value) T{o};
+            has_value = true;
+        }
+    }
+
+    T &operator*() {
+        if(!*this) {
+            throw "Empty optional.";
+        }
+        return data.value;
+    }
+
+    const T &operator*() const {
+        if(!*this) {
+            throw "Empty optional.";
+        }
+        return data.value;
+    }
+
+private:
+    void destroy() {
+        if(has_value) {
+            data.value.~T();
+            has_value = false;
+        }
+    }
+
+    union {
+        T value;
+        char nothing;
+    } data;
+    bool has_value;
+};
+
 enum class EncodingPolicy {
     Enforce,
     Substitute,
