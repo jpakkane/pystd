@@ -18,7 +18,10 @@ const char daikatana[] = "大刀";
 
 #define ASSERT(statement) ASSERT_WITH((statement), "Check failed.\n");
 
+#define TEST_START printf("Test: %s\n", __PRETTY_FUNCTION__)
+
 int test_cstring_strip() {
+    TEST_START;
     pystd2025::CString input(" abc \t\n\r ");
     const pystd2025::CString correct("abc");
     pystd2025::CString all_whitespace(" ");
@@ -35,6 +38,7 @@ int test_cstring_strip() {
 }
 
 int test_cstring_split() {
+    TEST_START;
     pystd2025::CString source("  aa bb cc  ");
     auto parts = source.split();
     ASSERT(parts.size() == 3);
@@ -45,7 +49,7 @@ int test_cstring_split() {
 }
 
 int test_c_strings() {
-    printf("Testing C strings.\n");
+    TEST_START;
     int failing_subtests = 0;
     failing_subtests += test_cstring_strip();
     failing_subtests += test_cstring_split();
@@ -53,6 +57,7 @@ int test_c_strings() {
 }
 
 int test_u8string_simple() {
+    TEST_START;
     pystd2025::U8String str("abc");
     ASSERT(str.size_bytes() == 3);
     ASSERT_WITH(strcmp("abc", str.c_str()) == 0, "String construction failed.");
@@ -60,6 +65,7 @@ int test_u8string_simple() {
 }
 
 int test_u8_iterator() {
+    TEST_START;
     pystd2025::U8String ascii("abc");
     auto start = ascii.cbegin();
     auto end = ascii.cend();
@@ -76,6 +82,7 @@ int test_u8_iterator() {
 }
 
 int test_u8_iterator_cjk() {
+    TEST_START;
     pystd2025::U8String cjk(daikatana);
     auto it = cjk.cbegin();
     auto c1 = *it;
@@ -89,6 +96,7 @@ int test_u8_iterator_cjk() {
 }
 
 int test_u8_reverse_iterator() {
+    TEST_START;
     pystd2025::U8String ascii("abc");
     ASSERT(ascii.size_bytes() == 3);
     auto start = ascii.crbegin();
@@ -106,6 +114,7 @@ int test_u8_reverse_iterator() {
 }
 
 int test_u8_reverse_iterator_cjk() {
+    TEST_START;
     pystd2025::U8String cjk(daikatana);
     auto it = cjk.crbegin();
     auto c1 = *it;
@@ -119,6 +128,7 @@ int test_u8_reverse_iterator_cjk() {
 }
 
 int test_u8_split() {
+    TEST_START;
     pystd2025::U8String source("  aa bb cc  ");
     auto parts = source.split_ascii();
     ASSERT(parts.size() == 3);
@@ -129,6 +139,7 @@ int test_u8_split() {
 }
 
 int test_u8_append() {
+    TEST_START;
     pystd2025::U8String buf("aa");
     const pystd2025::U8String add("bb");
 
@@ -140,6 +151,7 @@ int test_u8_append() {
 }
 
 int test_u8_join() {
+    TEST_START;
     pystd2025::U8String separator(", ");
     pystd2025::Vector<pystd2025::U8String> entries;
     entries.push_back(pystd2025::U8String("aa"));
@@ -152,7 +164,7 @@ int test_u8_join() {
 }
 
 int test_u8_strings() {
-    printf("Testing U8strings.\n");
+    TEST_START;
     int failing_subtests = 0;
     failing_subtests += test_u8string_simple();
     failing_subtests += test_u8_iterator();
@@ -166,6 +178,7 @@ int test_u8_strings() {
 }
 
 int test_u8_regex_simple() {
+    TEST_START;
     pystd2025::U8String text("abcabcabc");
     pystd2025::U8String retext("(b).*?(a)");
     pystd2025::U8Regex r(retext);
@@ -180,13 +193,14 @@ int test_u8_regex_simple() {
 }
 
 int test_u8_regex() {
-    printf("Testing U8 regex.\n");
+    TEST_START;
     int failing_subtests = 0;
     failing_subtests += test_u8_regex_simple();
     return failing_subtests;
 }
 
 int test_optional() {
+    TEST_START;
     pystd2025::Optional<uint64_t> empty;
     pystd2025::Optional<uint64_t> filled(666);
 
@@ -207,6 +221,20 @@ int test_optional() {
     return 0;
 }
 
+int test_range() {
+    TEST_START;
+    pystd2025::Range r(3);
+
+    auto n = r.next();
+    ASSERT(*n == 0);
+    n = r.next();
+    ASSERT(*n == 1);
+    n = r.next();
+    ASSERT(*n == 2);
+    n = r.next();
+    ASSERT(!n);
+    return 0;
+}
 int main(int argc, char **argv) {
     int total_errors = 0;
     try {
@@ -214,6 +242,7 @@ int main(int argc, char **argv) {
         total_errors += test_u8_strings();
         total_errors += test_u8_regex();
         total_errors += test_optional();
+        total_errors += test_range();
     } catch(const pystd2025::PyException &e) {
         printf("Testing failed: %s\n", e.what().c_str());
     }

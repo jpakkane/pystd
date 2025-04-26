@@ -231,6 +231,11 @@ public:
         has_value = false;
     }
 
+    explicit Optional(const T &o) noexcept {
+        new(&data.value) T{o};
+        has_value = true;
+    }
+
     explicit Optional(T &&o) noexcept {
         new(&data.value) T{o};
         has_value = true;
@@ -238,7 +243,7 @@ public:
 
     Optional(Optional<T> &&o) noexcept {
         if(o) {
-            new(&data.value) T{o.data};
+            new(&data.value) T(move(o.data.value));
             has_value = true;
             o.destroy();
         } else {
@@ -293,6 +298,7 @@ private:
         if(has_value) {
             data.value.~T();
             has_value = false;
+            data.nothing = -1;
         }
     }
 
@@ -1038,6 +1044,20 @@ template<typename T> void sort_relocatable(T *data, size_t bufsize) {
     };
     qsort(data, bufsize, sizeof(T), ordering);
 }
+
+class Range {
+public:
+    explicit Range(int64_t end);
+    Range(int64_t start, int64_t end);
+    Range(int64_t start, int64_t end, int64_t step);
+
+    Optional<int64_t> next();
+
+private:
+    int64_t i;
+    int64_t end;
+    int64_t step;
+};
 
 /*
 template<WellBehaved Type>

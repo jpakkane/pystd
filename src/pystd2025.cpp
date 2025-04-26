@@ -567,4 +567,20 @@ Bytes File::readline_bytes() {
     }
 }
 
+Range::Range(int64_t end_) : Range(0, end_) {}
+
+Range::Range(int64_t start, int64_t end_) : Range(start, end_, 1) {}
+
+Range::Range(int64_t start, int64_t end_, int64_t step_) : i{start}, end{end_}, step{step_} {}
+
+Optional<int64_t> Range::next() {
+    if(i >= end) {
+        return {};
+    }
+
+    auto result = Optional<int64_t>{i};
+    i += step;
+    return result;
+}
+
 } // namespace pystd2025
