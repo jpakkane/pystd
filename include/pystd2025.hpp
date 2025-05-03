@@ -25,55 +25,23 @@ template<class T> using remove_reference_t = typename remove_reference<T>::type;
 template<class T> constexpr remove_reference_t<T> &&move(T &&t) noexcept {
     return static_cast<typename remove_reference<T>::type &&>(t);
 }
-/*
- * In a perfect world these would not be needed, but we may end up
- * needing them after all.
 
-template<typename...> using __void_t = void;
-
-template<typename Type, typename = void> struct add_rvalue_reference_helper {
-    using type = Type;
-};
-
-template<typename Type> struct add_rvalue_reference_helper<Type, __void_t<Type &&>> {
-    using type = Type &&;
-};
-
-template<typename Type> using add_rval_ref_t = typename add_rvalue_reference_helper<Type>::type;
-
-template<typename Type, typename = void> struct add_lvalue_reference_helper {
-    using type = Type;
-};
-
-template<typename Type> struct add_lvalue_reference_helper<Type, __void_t<Type &>> {
-    using type = Type &;
-};
-
-template<typename Type> using add_lval_ref_t = typename add_lvalue_reference_helper<Type>::type;
-
-template<typename Type>
-inline constexpr bool is_well_behaved_v =
-    __is_nothrow_constructible(Type) && __is_nothrow_constructible(Type, add_rval_ref_t<Type>) &&
-    __is_nothrow_assignable(add_lval_ref_t<Type>, add_rval_ref_t<Type>);
-// FIXME, should also be nothrow copyable maybe?
-*/
-/* Also FIXME. The above should be something like the following
- * but I could not make it work.*/
-
+// This is still WIP. But basically require that objects of the
+// given type can be default constructed and moved without exceptions.
 template<typename T>
 concept WellBehaved = requires(T a, T b, const T &c, T &d, T &&e) {
-    requires noexcept(a = a);
-    requires noexcept(a = b);
-    requires noexcept(a = d);
-    requires noexcept(a = e);
-    requires noexcept(a = c);
-    requires noexcept(d = e);
-    requires noexcept(d = a);
+    //requires noexcept(a = a);
+    //requires noexcept(a = b);
+    //requires noexcept(a = d);
+    requires noexcept(a = move(a));
+    //requires noexcept(a = c);
+    requires noexcept(d = move(e));
+    //requires noexcept(d = a);
     requires noexcept(T{});
-    requires noexcept(T{b});
-    requires noexcept(T{c});
-    requires noexcept(T{d});
-    requires noexcept(T{e});
+    //requires noexcept(T{b});
+    //requires noexcept(T{c});
+    //requires noexcept(T{d});
+    requires noexcept(T{move(a)});
 };
 
 template<WellBehaved V, WellBehaved E> class Expected {
@@ -441,12 +409,29 @@ public:
         }
     }
 
+    void emplace_back(T &&obj) noexcept {
+        if(is_ptr_within(&obj) && needs_to_grow_for(1)) {
+            // Fixme, maybe compute index to the backing store
+            // and then use that, skipping the temporary.
+            T tmp{move(obj)};
+            backing.extend(sizeof(T));
+            auto obj_loc = objptr(num_entries);
+            new(obj_loc) T(move(tmp));
+            ++num_entries;
+        } else {
+            backing.extend(sizeof(T));
+            auto obj_loc = objptr(num_entries);
+            new(obj_loc) T(move(obj));
+            ++num_entries;
+        }
+    }
+
     void pop_back() noexcept {
         if(num_entries == 0) {
             return;
         }
-        T *obj = objptr(num_entries);
-        obj->~obj();
+        T *obj = objptr(num_entries-1);
+        obj->~T();
         backing.shrink(sizeof(T));
         --num_entries;
     }

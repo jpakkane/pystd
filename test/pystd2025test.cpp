@@ -235,6 +235,42 @@ int test_range() {
     ASSERT(!n);
     return 0;
 }
+
+int test_vector_simple() {
+    pystd2025::U8String text("abcabcabc");
+    pystd2025::Vector<pystd2025::U8String> v;
+
+    ASSERT(v.size() == 0);
+    v.push_back(text);
+    ASSERT(v.size() == 1);
+    ASSERT(v[0] == text);
+    v.pop_back();
+    ASSERT(v.size() == 0);
+
+    return 0;
+}
+
+int test_vector_uptr() {
+    pystd2025::U8String text("abcabcabc");
+    pystd2025::Vector<pystd2025::unique_ptr<pystd2025::U8String>> v;
+
+    ASSERT(v.size() == 0);
+    v.emplace_back(pystd2025::unique_ptr<pystd2025::U8String>(new pystd2025::U8String(text)));
+    ASSERT(v.size() == 1);
+    ASSERT(*v[0] == text);
+    v.pop_back();
+    ASSERT(v.size() == 0);
+
+    return 0;
+}
+
+int test_vector() {
+    printf("Testing Vector.\n");
+    int failing_subtests = 0;
+    failing_subtests += test_vector_simple();
+    return failing_subtests;
+}
+
 int main(int argc, char **argv) {
     int total_errors = 0;
     try {
@@ -243,6 +279,7 @@ int main(int argc, char **argv) {
         total_errors += test_u8_regex();
         total_errors += test_optional();
         total_errors += test_range();
+        total_errors += test_vector();
     } catch(const pystd2025::PyException &e) {
         printf("Testing failed: %s\n", e.what().c_str());
     }
