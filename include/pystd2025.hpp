@@ -30,17 +30,17 @@ template<class T> constexpr remove_reference_t<T> &&move(T &&t) noexcept {
 // given type can be default constructed and moved without exceptions.
 template<typename T>
 concept WellBehaved = requires(T a, T b, const T &c, T &d, T &&e) {
-    //requires noexcept(a = a);
-    //requires noexcept(a = b);
-    //requires noexcept(a = d);
+    // requires noexcept(a = a);
+    // requires noexcept(a = b);
+    // requires noexcept(a = d);
     requires noexcept(a = move(a));
-    //requires noexcept(a = c);
+    // requires noexcept(a = c);
     requires noexcept(d = move(e));
-    //requires noexcept(d = a);
+    // requires noexcept(d = a);
     requires noexcept(T{});
-    //requires noexcept(T{b});
-    //requires noexcept(T{c});
-    //requires noexcept(T{d});
+    // requires noexcept(T{b});
+    // requires noexcept(T{c});
+    // requires noexcept(T{d});
     requires noexcept(T{move(a)});
 };
 
@@ -430,7 +430,7 @@ public:
         if(num_entries == 0) {
             return;
         }
-        T *obj = objptr(num_entries-1);
+        T *obj = objptr(num_entries - 1);
         obj->~T();
         backing.shrink(sizeof(T));
         --num_entries;
@@ -596,6 +596,8 @@ public:
     template<typename T = CString> Vector<T> split() const;
 
     void split(CStringViewCallback cb, void *ctx) const;
+
+    bool is_empty() const { return bytes.is_empty(); }
 
 private:
     Bytes bytes;
@@ -1044,15 +1046,20 @@ private:
     int64_t step;
 };
 
-/*
-template<WellBehaved Type>
-struct Bob {
-    Vector<Type> x;
-};
+class Path {
+public:
+    Path() noexcept {};
+    explicit Path(const char *path) : buf{path} {};
+    explicit Path(CString path) : buf{move(path)} {};
 
-inline Bob<U8String> gig;
-inline Bob<CString> gig2;
-inline Bob<Bytes> gig3;
-*/
+    bool exists() const;
+    bool is_file() const;
+    bool is_dir() const;
+
+    bool is_abs() const;
+
+private:
+    CString buf;
+};
 
 } // namespace pystd2025
