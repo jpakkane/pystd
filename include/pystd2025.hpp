@@ -375,6 +375,9 @@ public:
         return ptr >= buf.get() && ptr < buf.get() + bufsize;
     }
 
+    char front() const;
+    char back() const;
+
 private:
     void grow_to(size_t new_size);
 
@@ -591,6 +594,8 @@ public:
 
     CString &operator+=(const CString &o);
 
+    void append(const char c) noexcept;
+
     template<typename Hasher> void feed_hash(Hasher &h) const { bytes.feed_hash(h); }
 
     template<typename T = CString> Vector<T> split() const;
@@ -598,6 +603,12 @@ public:
     void split(CStringViewCallback cb, void *ctx) const;
 
     bool is_empty() const { return bytes.is_empty(); }
+
+    char front() const { return bytes.front(); }
+
+    char back() const { return bytes.back(); }
+
+    void pop_back() noexcept { bytes.pop_back(); }
 
 private:
     Bytes bytes;
@@ -1049,14 +1060,16 @@ private:
 class Path {
 public:
     Path() noexcept {};
-    explicit Path(const char *path) : buf{path} {};
-    explicit Path(CString path) : buf{move(path)} {};
+    explicit Path(const char *path);
+    explicit Path(CString path);
 
-    bool exists() const;
-    bool is_file() const;
-    bool is_dir() const;
+    bool exists() const noexcept;
+    bool is_file() const noexcept;
+    bool is_dir() const noexcept;
 
     bool is_abs() const;
+
+    Path operator/(const Path &o) const noexcept;
 
 private:
     CString buf;

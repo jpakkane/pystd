@@ -239,6 +239,20 @@ Bytes &Bytes::operator+=(const Bytes &o) noexcept {
     return *this;
 }
 
+char Bytes::front() const {
+    if(is_empty()) {
+        throw PyException("Buffer underrun.");
+    }
+    return buf[0];
+}
+
+char Bytes::back() const {
+    if(is_empty()) {
+        throw PyException("Buffer underrun.");
+    }
+    return buf[buf.size_bytes() - 1];
+}
+
 CString::CString(Bytes incoming) {
     bytes = move(bytes);
     bytes.append('\0'); // FIXME, check embedded nulls.
@@ -339,6 +353,8 @@ CString &CString::operator+=(const CString &o) {
     bytes += o.bytes;
     return *this;
 }
+
+void CString::append(const char c) noexcept { bytes.append(c); }
 
 uint32_t ValidatedU8Iterator::operator*() {
     compute_char_info();
