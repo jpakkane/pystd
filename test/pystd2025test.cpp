@@ -48,11 +48,22 @@ int test_cstring_split() {
     return 0;
 }
 
+int test_cstring_splice() {
+    TEST_START;
+    pystd2025::CString text("This is short.");
+    pystd2025::CString splice("not at all particularly ");
+    pystd2025::CString result("This is not at all particularly short.");
+    text.insert(8, splice.view());
+    ASSERT(text == result);
+    return 0;
+}
+
 int test_c_strings() {
     TEST_START;
     int failing_subtests = 0;
     failing_subtests += test_cstring_strip();
     failing_subtests += test_cstring_split();
+    failing_subtests += test_cstring_splice();
     return failing_subtests;
 }
 

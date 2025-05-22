@@ -322,7 +322,8 @@ public:
     void extend(size_t num_bytes) noexcept;
     void shrink(size_t num_bytes) noexcept;
 
-    void assign(const char *buf, size_t bufsize);
+    void assign(const char *buf_in, size_t in_size);
+    void insert(size_t i, const char *buf_in, size_t in_size);
 
     void pop_back(size_t num = 1);
 
@@ -570,6 +571,8 @@ public:
 
     const char *data() const { return bytes.data(); }
 
+    CStringView view() const;
+
     void strip();
     // CString stripped() const;
 
@@ -610,7 +613,11 @@ public:
 
     void pop_back() noexcept { bytes.pop_back(); }
 
+    void insert(size_t i, const CStringView &v) noexcept;
+
 private:
+    bool view_points_to_this(const CStringView &v) const;
+
     Bytes bytes;
 };
 

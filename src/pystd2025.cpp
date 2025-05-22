@@ -175,6 +175,23 @@ void Bytes::assign(const char *buf_in, size_t in_size) {
     bufsize = in_size;
 }
 
+void Bytes::insert(size_t i, const char *buf_in, size_t in_size) {
+    if(i >= bufsize) {
+        throw PyException("Invalid index for insert.");
+    }
+    // FIXME
+    assert(!is_ptr_within(buf_in));
+    auto new_size = bufsize + in_size;
+    grow_to(new_size);
+    auto splice_point = buf.get() + i;
+    auto tail_size = bufsize - i;
+    auto new_tail_point = buf.get() + i + in_size;
+
+    memmove(new_tail_point, splice_point, tail_size);
+    memcpy(splice_point, buf_in, in_size);
+    bufsize = new_size;
+}
+
 void Bytes::pop_back(size_t num) {
     if(num >= bufsize) {
         clear();
@@ -354,7 +371,24 @@ CString &CString::operator+=(const CString &o) {
     return *this;
 }
 
-void CString::append(const char c) noexcept { bytes.append(c); }
+void CString::append(const char c) noexcept {
+    bytes.pop_back();
+    bytes.append(c);
+    bytes.append('\0');
+}
+
+CStringView CString::view() const { return CStringView{bytes.data(), 0, bytes.size() - 1}; }
+
+void CString::insert(size_t i, const CStringView &v) noexcept {
+    if(view_points_to_this(v)) {
+        CString string_copy(v);
+        insert(i, string_copy.view());
+        return;
+    }
+    bytes.insert(i, v.buf + v.start_offset, v.end_offset - v.start_offset);
+}
+
+bool CString::view_points_to_this(const CStringView &v) const { return bytes.is_ptr_within(v.buf); }
 
 uint32_t ValidatedU8Iterator::operator*() {
     compute_char_info();
