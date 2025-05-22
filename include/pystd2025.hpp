@@ -143,6 +143,37 @@ private:
     T &underlying;
 };
 
+// Same as above, but takes ownership of the passed object.
+// The name is a portmanteau of "loop" and "consume".
+template<WellBehaved T> class Loopsume {
+public:
+    friend struct T_looper_it;
+    struct T_looper_sentinel;
+    struct T_looper_it {
+        Loopsume *orig;
+        decltype(orig->underlying.next()) holder;
+        bool operator==(const T_looper_sentinel &) const { return !holder; }
+        decltype(*holder) operator*() { return *holder; }
+        void operator++() { holder = orig->underlying.next(); }
+    };
+
+    struct T_looper_sentinel {};
+
+    explicit Loopsume(T original) : underlying{move(original)} {}
+    explicit Loopsume(T &original) = delete;
+    Loopsume(Loopsume &) = delete;
+    Loopsume(Loopsume &&) = delete;
+
+    Loopsume() = delete;
+
+    T_looper_it begin() { return T_looper_it{this, underlying.next()}; }
+
+    T_looper_sentinel end() { return T_looper_sentinel{}; }
+
+private:
+    T underlying;
+};
+
 template<typename T> class unique_ptr final {
 public:
     unique_ptr() noexcept : ptr{nullptr} {}
@@ -1088,11 +1119,15 @@ template<typename T> void sort_relocatable(T *data, size_t bufsize) {
 
 class Range {
 public:
+    Range() noexcept : Range(0) {};
+    Range(Range &&o) noexcept = default;
     explicit Range(int64_t end);
     Range(int64_t start, int64_t end);
     Range(int64_t start, int64_t end, int64_t step);
 
     Optional<int64_t> next();
+
+    Range &operator=(const Range &o) noexcept = default;
 
 private:
     int64_t i;

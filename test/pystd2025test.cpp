@@ -264,7 +264,17 @@ int test_range2() {
     TEST_START;
     pystd2025::Range r(10);
     pystd2025::Vector<int64_t> result;
-    for(auto value : pystd2025::LoopView(r)) {
+    for(auto &value : pystd2025::LoopView(r)) {
+        result.push_back(value);
+    }
+    ASSERT(result.size() == 10);
+    return 0;
+}
+
+int test_range3() {
+    TEST_START;
+    pystd2025::Vector<int64_t> result;
+    for(auto &value : pystd2025::Loopsume(pystd2025::Range(10))) {
         result.push_back(value);
     }
     ASSERT(result.size() == 10);
@@ -315,6 +325,7 @@ int main(int argc, char **argv) {
         total_errors += test_optional();
         total_errors += test_range();
         total_errors += test_range2();
+        total_errors += test_range3();
         total_errors += test_vector();
     } catch(const pystd2025::PyException &e) {
         printf("Testing failed: %s\n", e.what().c_str());
