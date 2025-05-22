@@ -625,6 +625,8 @@ struct U8StringView {
     ValidatedU8Iterator start;
     ValidatedU8Iterator end;
 
+    CStringView raw_view() const;
+
     bool operator==(const char *) const;
 };
 
@@ -644,6 +646,8 @@ public:
     size_t size_bytes() const { return cstring.size(); }
 
     U8String substr(size_t offset, size_t length) const;
+
+    U8StringView view() const;
 
     template<typename Seq> U8String join(const Seq &sequence) const {
         size_t i = 0;
@@ -699,6 +703,8 @@ public:
     ValidatedU8ReverseIterator crend() const {
         return ValidatedU8ReverseIterator((const unsigned char *)cstring.data(), -1);
     }
+
+    void insert(const ValidatedU8Iterator &it, U8StringView view);
 
 private:
     CString cstring;

@@ -466,6 +466,12 @@ void ValidatedU8ReverseIterator::compute_char_info() {
     }
 };
 
+CStringView U8StringView::raw_view() const {
+    return CStringView{(const char *)start.byte_location(),
+                       0,
+                       (size_t)(end.byte_location() - start.byte_location())};
+}
+
 bool U8StringView::operator==(const char *txt) const {
     const unsigned char *data_start = start.byte_location();
     const unsigned char *data_end = end.byte_location();
@@ -513,6 +519,8 @@ U8String U8String::substr(size_t offset, size_t length) const {
     return U8String(cstring.data() + offset, length);
 }
 
+U8StringView U8String::view() const { return U8StringView{cbegin(), cend()}; }
+
 bool U8String::operator==(const char *str) const { return strcmp(str, cstring.c_str()) == 0; }
 
 U8String &U8String::operator+=(const U8String &o) {
@@ -551,6 +559,10 @@ void U8String::split(U8StringViewCallback cb, IsSplittingCharacter is_split_char
             break;
         }
     }
+}
+
+void U8String::insert(const ValidatedU8Iterator &it, U8StringView view) {
+    cstring.insert(it.byte_location() - (const unsigned char *)cstring.data(), view.raw_view());
 }
 
 void ValidatedU8Iterator::compute_char_info() {
