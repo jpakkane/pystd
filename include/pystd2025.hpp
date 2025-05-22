@@ -113,6 +113,36 @@ private:
     UnionState state;
 };
 
+// Helper class to convert between Pythons .next() based iteration
+// and C++'s begin/end based iteration.
+template<typename T> class LoopView {
+public:
+    friend struct T_looper_it;
+    struct T_looper_sentinel;
+    struct T_looper_it {
+        LoopView *orig;
+        decltype(orig->underlying.next()) holder;
+        bool operator==(const T_looper_sentinel &) const { return !holder; }
+        decltype(*holder) operator*() { return *holder; }
+        void operator++() { holder = orig->underlying.next(); }
+    };
+
+    struct T_looper_sentinel {};
+
+    explicit LoopView(T &original) : underlying{original} {}
+    LoopView(LoopView &) = delete;
+    LoopView(LoopView &&) = delete;
+
+    LoopView() = delete;
+
+    T_looper_it begin() { return T_looper_it{this, underlying.next()}; }
+
+    T_looper_sentinel end() { return T_looper_sentinel{}; }
+
+private:
+    T &underlying;
+};
+
 template<typename T> class unique_ptr final {
 public:
     unique_ptr() noexcept : ptr{nullptr} {}
