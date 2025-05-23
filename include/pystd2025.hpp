@@ -113,6 +113,35 @@ private:
     UnionState state;
 };
 
+template<typename T> class EnumerateView {
+public:
+    explicit EnumerateView(T &o) : underlying{o}, i{0} {};
+
+    template<typename VALTYPE> struct EnumValue {
+        size_t i;
+        VALTYPE &value;
+    };
+
+    template<typename IT> struct EnumIterator {
+        size_t i;
+        IT it;
+        template<typename IT2> bool operator==(const IT2 &o) const { return it == o.it; }
+        auto operator*() { return EnumValue{i, *it}; }
+        void operator++() {
+            ++i;
+            ++it;
+        }
+    };
+
+    auto begin() { return EnumIterator{0, underlying.begin()}; }
+
+    auto end() { return EnumIterator((size_t)-1, underlying.end()); }
+
+private:
+    T &underlying;
+    size_t i;
+};
+
 // Helper class to convert between Pythons .next() based iteration
 // and C++'s begin/end based iteration.
 template<typename T> class LoopView {

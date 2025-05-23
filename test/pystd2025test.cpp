@@ -245,7 +245,7 @@ int test_optional() {
     return 0;
 }
 
-int test_range() {
+int test_range1() {
     TEST_START;
     pystd2025::Range r(3);
 
@@ -278,6 +278,16 @@ int test_range3() {
         result.push_back(value);
     }
     ASSERT(result.size() == 10);
+    return 0;
+}
+
+int test_range4() {
+    TEST_START;
+    pystd2025::Range r(10);
+    pystd2025::Loopsume loop(pystd2025::move(r));
+    for(auto [i, value] : pystd2025::EnumerateView(loop)) {
+        ASSERT(i == (size_t)value);
+    }
     return 0;
 }
 
@@ -316,6 +326,16 @@ int test_vector() {
     return failing_subtests;
 }
 
+int test_range() {
+    printf("Testing Range.\n");
+    int failing_subtests = 0;
+    failing_subtests += test_range1();
+    failing_subtests += test_range2();
+    failing_subtests += test_range3();
+    failing_subtests += test_range4();
+    return failing_subtests;
+}
+
 int main(int argc, char **argv) {
     int total_errors = 0;
     try {
@@ -327,6 +347,7 @@ int main(int argc, char **argv) {
         total_errors += test_range2();
         total_errors += test_range3();
         total_errors += test_vector();
+        total_errors += test_range();
     } catch(const pystd2025::PyException &e) {
         printf("Testing failed: %s\n", e.what().c_str());
     }
