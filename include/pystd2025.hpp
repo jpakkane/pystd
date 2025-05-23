@@ -360,9 +360,11 @@ private:
         }
     }
 
-    union {
+    union Data {
         T value;
         char nothing;
+        Data() {}
+        ~Data() {};
     } data;
     bool has_value;
 };
@@ -411,6 +413,7 @@ public:
 
     void extend(size_t num_bytes) noexcept;
     void shrink(size_t num_bytes) noexcept;
+    void resize_to(size_t num_bytes) noexcept;
 
     void assign(const char *buf_in, size_t in_size);
     void insert(size_t i, const char *buf_in, size_t in_size);
@@ -653,7 +656,7 @@ public:
     CString() noexcept { bytes.append('0'); }
     CString(CString &&o) noexcept = default;
     CString(const CString &o) noexcept = default;
-    CString(Bytes incoming);
+    explicit CString(Bytes incoming);
     CString(const CStringView &view);
     explicit CString(const char *txt, size_t txtsize = -1);
 
@@ -699,9 +702,9 @@ public:
 
     char front() const { return bytes.front(); }
 
-    char back() const { return bytes.back(); }
+    char back() const;
 
-    void pop_back() noexcept { bytes.pop_back(); }
+    void pop_back() noexcept;
 
     void insert(size_t i, const CStringView &v) noexcept;
 
@@ -1177,6 +1180,10 @@ public:
     bool is_abs() const;
 
     Path operator/(const Path &o) const noexcept;
+    Path operator/(const char *str) const noexcept;
+
+    Optional<Bytes> load_bytes();
+    Optional<U8String> load_text();
 
 private:
     CString buf;

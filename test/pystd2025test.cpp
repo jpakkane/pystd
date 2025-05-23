@@ -2,6 +2,7 @@
 // Copyright 2025 Jussi Pakkanen
 
 #include <pystd2025.hpp>
+#include <pystd_testconfig.hpp>
 #include <string.h>
 
 namespace {
@@ -292,6 +293,7 @@ int test_range4() {
 }
 
 int test_vector_simple() {
+    TEST_START;
     pystd2025::U8String text("abcabcabc");
     pystd2025::Vector<pystd2025::U8String> v;
 
@@ -336,6 +338,23 @@ int test_range() {
     return failing_subtests;
 }
 
+int test_file_load() {
+    TEST_START;
+    pystd2025::Path testdir(PYSTD_TESTDIR);
+    auto testfile = testdir / "testfile.txt";
+    auto contents = testfile.load_text();
+    ASSERT(contents);
+    ASSERT(*contents == "This is a test file.\n");
+    return 0;
+}
+
+int test_files() {
+    printf("Testing file access.\n");
+    int failing_subtests = 0;
+    failing_subtests += test_file_load();
+    return failing_subtests;
+}
+
 int main(int argc, char **argv) {
     int total_errors = 0;
     try {
@@ -348,6 +367,7 @@ int main(int argc, char **argv) {
         total_errors += test_range3();
         total_errors += test_vector();
         total_errors += test_range();
+        total_errors += test_files();
     } catch(const pystd2025::PyException &e) {
         printf("Testing failed: %s\n", e.what().c_str());
     }

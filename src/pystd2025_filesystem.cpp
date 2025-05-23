@@ -55,4 +55,44 @@ Path Path::operator/(const Path &o) const noexcept {
     return Path(move(newpath));
 }
 
+Path Path::operator/(const char *str) const noexcept {
+    Path p(str);
+    return *this / p;
+}
+
+Optional<Bytes> Path::load_bytes() {
+    FILE *f = fopen(buf.c_str(), "rb");
+    if(!f) {
+        return Optional<Bytes>();
+    }
+    fseek(f, 0, SEEK_END);
+    const auto file_size = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    Bytes contents;
+    contents.resize_to(file_size);
+    auto bytes_read = fread(contents.data(), 1, file_size, f);
+    if(ferror(f) != 0) {
+        fclose(f);
+        return Optional<Bytes>();
+    }
+    fclose(f);
+    if(bytes_read != (size_t)file_size) {
+        return Optional<Bytes>();
+    }
+    return Optional<Bytes>(move(contents));
+}
+
+Optional<U8String> Path::load_text() {
+    auto raw = load_bytes();
+    if(!raw) {
+        return Optional<U8String>();
+    }
+    try {
+        U8String u(move(*raw));
+        return Optional<U8String>(move(u));
+    } catch(...) {
+    }
+    return Optional<U8String>();
+}
+
 } // namespace pystd2025

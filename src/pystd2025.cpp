@@ -244,6 +244,15 @@ void Bytes::shrink(size_t num_bytes) noexcept {
     }
 }
 
+void Bytes::resize_to(size_t num_bytes) noexcept {
+    if(num_bytes < bufsize) {
+        bufsize = num_bytes;
+    } else if(num_bytes > bufsize) {
+        grow_to(num_bytes);
+        bufsize = num_bytes;
+    }
+}
+
 Bytes &Bytes::operator+=(const Bytes &o) noexcept {
     if(this == &o) {
         // FIXME, make fast.
@@ -267,11 +276,12 @@ char Bytes::back() const {
     if(is_empty()) {
         throw PyException("Buffer underrun.");
     }
-    return buf[buf.size_bytes() - 1];
+    auto result = buf[buf.size_bytes() - 1];
+    return result;
 }
 
 CString::CString(Bytes incoming) {
-    bytes = move(bytes);
+    bytes = move(incoming);
     bytes.append('\0'); // FIXME, check embedded nulls.
 }
 
@@ -378,6 +388,20 @@ void CString::append(const char c) noexcept {
 }
 
 CStringView CString::view() const { return CStringView{bytes.data(), 0, bytes.size() - 1}; }
+
+char CString::back() const {
+    if(bytes.size() < 2) {
+        throw PyException("Called back() on empty string.");
+    }
+    auto last_char = bytes[bytes.size() - 2];
+    return last_char;
+}
+
+void CString::pop_back() noexcept {
+    bytes.pop_back();
+    bytes.pop_back();
+    bytes.append('\0');
+}
 
 void CString::insert(size_t i, const CStringView &v) noexcept {
     if(view_points_to_this(v)) {
@@ -494,7 +518,7 @@ U8String::U8String(Bytes incoming) {
     if(!is_valid_utf8(incoming.data(), incoming.size())) {
         throw PyException("Invalid UTF-8.");
     }
-    cstring = move(incoming);
+    cstring = CString(move(incoming));
 }
 
 U8String::U8String(const U8StringView &view) {
