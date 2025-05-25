@@ -355,6 +355,24 @@ int test_files() {
     return failing_subtests;
 }
 
+int test_hashset() {
+    TEST_START;
+    pystd2025::HashSet<int> set;
+    ASSERT(set.size() == 0);
+    ASSERT(!set.contains(10));
+    set.insert(10);
+    ASSERT(set.size() == 1);
+    ASSERT(set.contains(10));
+    ASSERT(!set.contains(11));
+
+    set.insert(10);
+    ASSERT(set.size() == 1);
+    ASSERT(set.contains(10));
+    ASSERT(!set.contains(11));
+
+    return 0;
+}
+
 int main(int argc, char **argv) {
     int total_errors = 0;
     try {
@@ -368,6 +386,7 @@ int main(int argc, char **argv) {
         total_errors += test_vector();
         total_errors += test_range();
         total_errors += test_files();
+        total_errors += test_hashset();
     } catch(const pystd2025::PyException &e) {
         printf("Testing failed: %s\n", e.what().c_str());
     }

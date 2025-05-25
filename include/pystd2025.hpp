@@ -384,6 +384,33 @@ public:
         feed_bytes((const char *)&c, sizeof(c));
     }
 
+    void feed(int8_t i) noexcept { feed_primitive(i); }
+
+    void feed(uint8_t i) noexcept { feed_primitive(i); }
+
+    void feed(int16_t i) noexcept { feed_primitive(i); }
+
+    void feed(uint16_t i) noexcept { feed_primitive(i); }
+
+    void feed(int32_t i) noexcept { feed_primitive(i); }
+
+    void feed(uint32_t i) noexcept { feed_primitive(i); }
+
+    void feed(int64_t i) noexcept { feed_primitive(i); }
+
+    void feed(uint64_t i) noexcept { feed_primitive(i); }
+
+    void feed(float i) noexcept { feed_primitive(i); }
+
+    void feed(double i) noexcept { feed_primitive(i); }
+
+    template<typename T> void feed(T *o) noexcept {
+        static_assert(sizeof(void *) == 8);
+        feed_primitive((uint64_t)o);
+    }
+
+    template<typename T> void feed(const T &o) noexcept { o.feed_hash(*this); }
+
     size_t get_hash() const { return value; }
 
 private:
@@ -1046,8 +1073,8 @@ private:
 
     size_t hash_for(const Key &k) const {
         Hasher h;
-        h.feed_primitive(salt);
-        k.feed_hash(h);
+        h.feed(salt);
+        h.feed(k);
         auto raw_hash = h.get_hash();
         if(raw_hash == FREE_SLOT) {
             raw_hash = FREE_SLOT + 1;
@@ -1105,6 +1132,24 @@ private:
 
     HashMap<Key, Value> *map;
     size_t offset;
+};
+
+template<WellBehaved Key, typename Hasher = SimpleHasher> class HashSet final {
+public:
+    void insert(const Key &key) { map.insert(key, 1); }
+
+    bool contains(const Key &key) const { return map.contains(key); }
+
+    // void remove(const Key &k);
+
+    size_t size() const { return map.size(); }
+
+private:
+    // This is inefficient.
+    // It is just to get the implementation going
+    // and work out the API.
+    // Replace with a proper implementation later.
+    HashMap<Key, int, Hasher> map;
 };
 
 class U8Regex {
@@ -1209,7 +1254,7 @@ public:
     }
     ~MMapping();
 
-    BytesView view() const { return BytesView{(const char*)buf, 0, bufsize}; }
+    BytesView view() const { return BytesView{(const char *)buf, 0, bufsize}; }
 
     MMapping &operator=(MMapping &&o) noexcept {
         if(this != &o) {

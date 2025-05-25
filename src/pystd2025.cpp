@@ -692,13 +692,12 @@ MMapping::~MMapping() {
     if(buf) {
         if(munmap((void *)buf, bufsize) != 0) {
             perror(nullptr);
-            return;
         }
     }
 }
 
 Optional<MMapping> mmap_file(const char *path) {
-    FILE *f = fopen(path, "r");
+    FILE *f = fopen(path, "rb");
     if(!f) {
         return Optional<MMapping>();
     }
