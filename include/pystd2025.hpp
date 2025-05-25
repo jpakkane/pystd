@@ -147,7 +147,7 @@ private:
 template<typename T> class LoopView {
 public:
     friend struct T_looper_it;
-    struct T_looper_sentinel;
+    struct T_looper_sentinel {};
     struct T_looper_it {
         LoopView *orig;
         decltype(orig->underlying.next()) holder;
@@ -155,8 +155,6 @@ public:
         decltype(*holder) operator*() { return *holder; }
         void operator++() { holder = orig->underlying.next(); }
     };
-
-    struct T_looper_sentinel {};
 
     explicit LoopView(T &original) : underlying{original} {}
     LoopView(LoopView &) = delete;
@@ -942,6 +940,35 @@ public:
         insert_internal(hashval, key, v);
     }
 
+    void remove(const Key &key) {
+        const auto hashval = hash_for(key);
+        auto slot = hash_to_slot(hashval);
+        while(true) {
+            if(data.hashes[slot] == FREE_SLOT) {
+                return;
+            } else if(data.hashes[slot] == TOMBSTONE) {
+
+            } else if(data.hashes[slot] == hashval) {
+                auto *potential_key = data.keyptr(slot);
+                if(*potential_key == key) {
+                    auto *value_loc = data.valueptr(slot);
+                    value_loc->~Value();
+                    const auto previous_slot = (slot + table_size() - 1) & mod_mask;
+                    const auto next_slot = (slot + 1) % mod_mask;
+                    if(data.hashes[previous_slot] == FREE_SLOT &&
+                       data.hashes[next_slot] == FREE_SLOT) {
+                        data.hashes[slot] = FREE_SLOT;
+                    } else {
+                        data.hashes[slot] = TOMBSTONE;
+                    }
+                    --num_entries;
+                    return;
+                }
+            }
+            slot = (slot + 1) & mod_mask;
+        }
+    }
+
     bool contains(const Key &key) const { return lookup(key) != nullptr; }
 
     size_t size() const { return num_entries; }
@@ -1135,12 +1162,13 @@ private:
 };
 
 template<WellBehaved Key, typename Hasher = SimpleHasher> class HashSet final {
+
 public:
     void insert(const Key &key) { map.insert(key, 1); }
 
     bool contains(const Key &key) const { return map.contains(key); }
 
-    // void remove(const Key &k);
+    void remove(const Key &k) { map.remove(k); }
 
     size_t size() const { return map.size(); }
 

@@ -370,6 +370,21 @@ int test_hashset() {
     ASSERT(set.contains(10));
     ASSERT(!set.contains(11));
 
+    set.insert(11);
+    ASSERT(set.size() == 2);
+    ASSERT(set.contains(10));
+    ASSERT(set.contains(11));
+
+    set.remove(10);
+    ASSERT(set.size() == 1);
+    ASSERT(!set.contains(10));
+    ASSERT(set.contains(11));
+
+    set.remove(11);
+    ASSERT(set.size() == 0);
+    ASSERT(!set.contains(10));
+    ASSERT(!set.contains(11));
+
     return 0;
 }
 
