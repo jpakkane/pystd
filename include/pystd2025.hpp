@@ -295,7 +295,7 @@ public:
     }
 
     explicit Optional(T &&o) noexcept {
-        new(&data.value) T{o};
+        new(&data.value) T{move(o)};
         has_value = true;
     }
 
@@ -391,6 +391,13 @@ private:
 };
 
 class PyException;
+
+class BytesView {
+public:
+    const char *buf;
+    size_t start_offset;
+    size_t end_offset;
+};
 
 class Bytes {
 public:
@@ -690,7 +697,7 @@ public:
 
     CString &operator+=(const CString &o);
 
-    void append(const char c) noexcept;
+    void append(const char c);
 
     template<typename Hasher> void feed_hash(Hasher &h) const { bytes.feed_hash(h); }
 
@@ -710,6 +717,8 @@ public:
 
 private:
     bool view_points_to_this(const CStringView &v) const;
+
+    void check_embedded_nuls() const;
 
     Bytes bytes;
 };
@@ -1188,5 +1197,35 @@ public:
 private:
     CString buf;
 };
+
+class MMapping {
+public:
+    MMapping() noexcept : buf{nullptr}, bufsize{0} {};
+    MMapping(void *buf_, size_t bufsize_) : buf{buf_}, bufsize(bufsize_) {}
+    MMapping(const MMapping &) = delete;
+    MMapping(MMapping &&o) noexcept : buf{o.buf}, bufsize{o.bufsize} {
+        o.buf = nullptr;
+        o.bufsize = 0;
+    }
+    ~MMapping();
+
+    BytesView view() const { return BytesView{(const char*)buf, 0, bufsize}; }
+
+    MMapping &operator=(MMapping &&o) noexcept {
+        if(this != &o) {
+            buf = o.buf;
+            bufsize = o.bufsize;
+            o.buf = nullptr;
+            o.bufsize = 0;
+        }
+        return *this;
+    }
+
+private:
+    void *buf;
+    size_t bufsize;
+};
+
+Optional<MMapping> mmap_file(const char *path);
 
 } // namespace pystd2025

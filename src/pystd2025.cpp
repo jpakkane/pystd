@@ -6,6 +6,12 @@
 #include <string.h>
 #include <assert.h>
 
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <sys/mman.h>
+#endif
+
 void *operator new(size_t count) { return malloc(count); }
 
 void operator delete(void *ptr) noexcept { free(ptr); }
@@ -282,7 +288,8 @@ char Bytes::back() const {
 
 CString::CString(Bytes incoming) {
     bytes = move(incoming);
-    bytes.append('\0'); // FIXME, check embedded nulls.
+    bytes.append('\0');
+    check_embedded_nuls();
 }
 
 CString::CString(const CStringView &view)
@@ -295,6 +302,15 @@ CString::CString(const char *txt, size_t txtsize) {
     } else {
         bytes = Bytes(txt, txtsize);
         bytes.append('\0');
+        check_embedded_nuls();
+    }
+}
+
+void CString::check_embedded_nuls() const {
+    for(size_t i = 0; i < bytes.size() - 1; ++i) {
+        if(bytes[i] == '\0') {
+            throw PyException("Embedded null in CString contents.");
+        }
     }
 }
 
@@ -381,7 +397,10 @@ CString &CString::operator+=(const CString &o) {
     return *this;
 }
 
-void CString::append(const char c) noexcept {
+void CString::append(const char c) {
+    if(c == '\0') {
+        throw PyException("Tried to add null byte to a CString.");
+    }
     bytes.pop_back();
     bytes.append(c);
     bytes.append('\0');
@@ -667,6 +686,36 @@ Optional<int64_t> Range::next() {
     auto result = Optional<int64_t>{i};
     i += step;
     return result;
+}
+
+MMapping::~MMapping() {
+    if(buf) {
+        if(munmap((void *)buf, bufsize) != 0) {
+            perror(nullptr);
+            return;
+        }
+    }
+}
+
+Optional<MMapping> mmap_file(const char *path) {
+    FILE *f = fopen(path, "r");
+    if(!f) {
+        return Optional<MMapping>();
+    }
+    fseek(f, 0, SEEK_END);
+    const auto bufsize = ftell(f);
+    if(bufsize == 0) {
+        fclose(f);
+        return Optional<MMapping>();
+    }
+    fseek(f, 0, SEEK_SET);
+    int fd = fileno(f);
+    auto *buf = mmap(nullptr, bufsize, PROT_READ, MAP_PRIVATE, fd, 0);
+    fclose(f);
+    if(buf == MAP_FAILED) {
+        return Optional<MMapping>();
+    }
+    return Optional<MMapping>(MMapping(buf, bufsize));
 }
 
 } // namespace pystd2025
