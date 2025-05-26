@@ -678,6 +678,12 @@ public:
     const char *buf;
     size_t start_offset;
     size_t end_offset;
+
+    bool operator==(const char *str);
+    bool is_empty() const { return start_offset == end_offset; }
+
+    char front() const;
+    bool starts_with(const char *str) const;
 };
 
 typedef bool (*CStringViewCallback)(const CStringView &piece, void *ctx);
@@ -771,6 +777,7 @@ public:
     const char *c_str() const { return cstring.data(); }
 
     size_t size_bytes() const { return cstring.size(); }
+    bool is_empty() const { return cstring.is_empty(); }
 
     U8String substr(size_t offset, size_t length) const;
 

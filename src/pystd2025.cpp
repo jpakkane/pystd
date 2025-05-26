@@ -286,6 +286,37 @@ char Bytes::back() const {
     return result;
 }
 
+bool CStringView::operator==(const char *str) {
+    for(size_t i = 0; i < end_offset - start_offset; ++i) {
+        if(str[i] == '\0') {
+            return false;
+        }
+        if(str[i] != buf[start_offset + i]) {
+            return false;
+        }
+    }
+    return str[end_offset - start_offset] == '\0';
+}
+
+char CStringView::front() const {
+    if(is_empty()) {
+        throw "Front requested on empty string.";
+    }
+    return buf[start_offset];
+}
+
+bool CStringView::starts_with(const char *str) const {
+    for(size_t i = 0; i < end_offset - start_offset; ++i) {
+        if(str[i] == '\0') {
+            return true;
+        }
+        if(str[i] != buf[start_offset + i]) {
+            return false;
+        }
+    }
+    return str[end_offset - start_offset] == '\0';
+}
+
 CString::CString(Bytes incoming) {
     bytes = move(incoming);
     bytes.append('\0');

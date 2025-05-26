@@ -11,3 +11,4 @@ executable('pystd', 'main.cpp',
   dependencies: stdlib_dep)
 
 subdir('test')
+subdir('tools')
