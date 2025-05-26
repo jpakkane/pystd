@@ -286,35 +286,65 @@ char Bytes::back() const {
     return result;
 }
 
+CStringView::CStringView(const char *str) noexcept : buf{str}, bufsize{strlen(str)} {}
+
+CStringView::CStringView(const char *str, size_t length) {
+    // FIXME, check embedded nulls.
+    buf = str;
+    bufsize = length;
+}
+
 bool CStringView::operator==(const char *str) {
-    for(size_t i = 0; i < end_offset - start_offset; ++i) {
+    for(size_t i = 0; i < bufsize; ++i) {
         if(str[i] == '\0') {
             return false;
         }
-        if(str[i] != buf[start_offset + i]) {
+        if(str[i] != buf[i]) {
             return false;
         }
     }
-    return str[end_offset - start_offset] == '\0';
+    return str[bufsize] == '\0';
 }
 
 char CStringView::front() const {
     if(is_empty()) {
         throw "Front requested on empty string.";
     }
-    return buf[start_offset];
+    return buf[0];
 }
 
 bool CStringView::starts_with(const char *str) const {
-    for(size_t i = 0; i < end_offset - start_offset; ++i) {
+    for(size_t i = 0; i < bufsize; ++i) {
         if(str[i] == '\0') {
             return true;
         }
-        if(str[i] != buf[start_offset + i]) {
+        if(str[i] != buf[i]) {
             return false;
         }
     }
-    return str[end_offset - start_offset] == '\0';
+    return str[bufsize] == '\0';
+}
+
+size_t CStringView::find(char c) const {
+    for(size_t i = 0; i < bufsize; ++i) {
+        if(buf[i] == c) {
+            return i;
+        }
+    }
+    return (size_t)-1;
+}
+
+CStringView CStringView::substr(size_t pos, size_t count) const {
+    if(pos >= bufsize) {
+        throw PyException("Index out of bounds.");
+    }
+    size_t actual_count = count;
+    if(count == (size_t)-1) {
+        actual_count = bufsize - pos;
+    } else if(pos + count > bufsize) {
+        actual_count = bufsize - pos;
+    }
+    return CStringView(buf + pos, actual_count);
 }
 
 CString::CString(Bytes incoming) {
@@ -323,8 +353,7 @@ CString::CString(Bytes incoming) {
     check_embedded_nuls();
 }
 
-CString::CString(const CStringView &view)
-    : CString(view.buf + view.start_offset, view.end_offset - view.start_offset) {}
+CString::CString(const CStringView &view) : CString(view.data(), view.size()) {}
 
 CString::CString(const char *txt, size_t txtsize) {
     if(txtsize == (size_t)-1) {
@@ -408,7 +437,7 @@ void CString::split(CStringViewCallback cb, void *ctx) const {
         while(i < size() && (!is_ascii_whitespace(bytes[i]))) {
             ++i;
         }
-        CStringView piece{c_str(), string_start, i};
+        CStringView piece{c_str() + string_start, i - string_start};
         if(!cb(piece, ctx)) {
             break;
         }
@@ -437,7 +466,7 @@ void CString::append(const char c) {
     bytes.append('\0');
 }
 
-CStringView CString::view() const { return CStringView{bytes.data(), 0, bytes.size() - 1}; }
+CStringView CString::view() const { return CStringView{bytes.data(), bytes.size() - 1}; }
 
 char CString::back() const {
     if(bytes.size() < 2) {
@@ -459,10 +488,12 @@ void CString::insert(size_t i, const CStringView &v) noexcept {
         insert(i, string_copy.view());
         return;
     }
-    bytes.insert(i, v.buf + v.start_offset, v.end_offset - v.start_offset);
+    bytes.insert(i, v.data(), v.size());
 }
 
-bool CString::view_points_to_this(const CStringView &v) const { return bytes.is_ptr_within(v.buf); }
+bool CString::view_points_to_this(const CStringView &v) const {
+    return bytes.is_ptr_within(v.data());
+}
 
 uint32_t ValidatedU8Iterator::operator*() {
     compute_char_info();
@@ -542,7 +573,6 @@ void ValidatedU8ReverseIterator::compute_char_info() {
 
 CStringView U8StringView::raw_view() const {
     return CStringView{(const char *)start.byte_location(),
-                       0,
                        (size_t)(end.byte_location() - start.byte_location())};
 }
 

@@ -24,6 +24,7 @@ struct Argument {
     char short_arg = 0;
     CString long_arg;
     U8String help;
+    CString name;
     ArgumentType atype;
     ArgumentAction aaction;
     int64_t minval, maxval;
@@ -40,6 +41,8 @@ public:
     Optional<ParseResult> parse_args(int argc, const char **argv);
 
 private:
+    int process_long_argument(
+        int argc, const char **argv, ParseResult &result, int i, CStringView current);
     [[noreturn]] void print_help_and_exit();
     const char *progname = nullptr;
     U8String description;
@@ -49,10 +52,16 @@ private:
     Vector<CString> posargs;
 };
 
+void ArgParse::add_argument(Argument a) {
+    // FIXME, check for dupes.
+    arguments.emplace_back(move(a));
+}
+
 Optional<ParseResult> ArgParse::parse_args(int argc, const char **argv) {
     progname = argv[0];
+    ParseResult result;
     for(int i = 1; i < argc; ++i) {
-        CStringView current(argv[1], 0, strlen(argv[1]));
+        CStringView current(argv[1]);
         if(current.is_empty()) {
             printf("Empty argument in argumentlist.\n");
             exit(1);
@@ -61,8 +70,8 @@ Optional<ParseResult> ArgParse::parse_args(int argc, const char **argv) {
             print_help_and_exit();
         }
         if(current.starts_with("--")) {
-            fprintf(stderr, "Long options not supported yet.\n");
-            abort();
+            const auto consumed_extra_args = process_long_argument(argc, argv, result, i, current);
+            i += consumed_extra_args;
         } else if(current.starts_with("-")) {
             fprintf(stderr, "Short options not supported yet.\n");
             abort();
@@ -71,7 +80,22 @@ Optional<ParseResult> ArgParse::parse_args(int argc, const char **argv) {
             abort();
         }
     }
-    return Optional<ParseResult>();
+    return Optional<ParseResult>(move(result));
+}
+
+int ArgParse::process_long_argument(
+    int argc, const char **argv, ParseResult &result, int i, CStringView current) {
+    CStringView keypart;
+    CStringView valuepart;
+    auto splitpoint = current.find('=');
+    if(splitpoint != (size_t)-1) {
+        keypart = current.substr(0, splitpoint);
+        valuepart = current.substr(splitpoint + 1);
+    } else {
+        keypart = current;
+    }
+
+    return 0;
 }
 
 void ArgParse::print_help_and_exit() {

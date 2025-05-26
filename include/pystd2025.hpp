@@ -673,17 +673,29 @@ private:
     bool has_char_info;
 };
 
+// No embedded null chars
+// NOT guaranteed to be null terminated.
 class CStringView {
 public:
-    const char *buf;
-    size_t start_offset;
-    size_t end_offset;
+    CStringView() noexcept : buf{nullptr}, bufsize{0} {}
+    explicit CStringView(const char *str) noexcept;
+    CStringView(const char *str, size_t length);
 
     bool operator==(const char *str);
-    bool is_empty() const { return start_offset == end_offset; }
+    bool is_empty() const { return bufsize == 0; }
 
     char front() const;
     bool starts_with(const char *str) const;
+
+    const char *data() const { return buf; }
+    size_t size() const { return bufsize; }
+    size_t find(char c) const;
+    CStringView substr(size_t pos = 0, size_t count = (size_t)-1) const;
+
+private:
+    const char *buf;
+    size_t bufsize;
+
 };
 
 typedef bool (*CStringViewCallback)(const CStringView &piece, void *ctx);
