@@ -1519,19 +1519,19 @@ private:
 
     void destroy() noexcept {
         if(type_id == 0) {
-            destroy_by_type<0>();
+            destroy_by_index<0>();
         } else if(type_id == 1) {
-            destroy_by_type<1>();
+            destroy_by_index<1>();
         } else if(type_id == 2) {
-            destroy_by_type<2>();
+            destroy_by_index<2>();
         } else if(type_id == 3) {
-            destroy_by_type<3>();
+            destroy_by_index<3>();
         } else if(type_id == 4) {
-            destroy_by_type<4>();
+            destroy_by_index<4>();
         }
     }
 
-    template<int index> constexpr void destroy_by_type() noexcept {
+    template<int index> constexpr void destroy_by_index() noexcept {
         if constexpr(index < sizeof...(T)) {
             using curtype = T...[index];
             reinterpret_cast<curtype *>(buf)->~curtype();
