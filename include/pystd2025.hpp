@@ -1501,7 +1501,8 @@ private:
         type_id = o.type_id;
     }
 
-    template<typename Desired, int index, typename... A> constexpr int get_index_for_type() const {
+    template<typename Desired, int8_t index, typename... A>
+    constexpr int8_t get_index_for_type() const {
         if constexpr(index >= sizeof...(T)) {
             static_assert(index < sizeof...(T));
         } else {
@@ -1513,7 +1514,7 @@ private:
         }
     }
 
-    template<typename Desired> constexpr int get_index_for_type() const {
+    template<typename Desired> constexpr int8_t get_index_for_type() const {
         return get_index_for_type<Desired, 0, T...>();
     }
 
@@ -1543,7 +1544,7 @@ private:
     static_assert(sizeof...(T) <= MAX_TYPES);
     static_assert(sizeof...(T) > 0);
     char buf[compute_size<0, T...>()] alignas(compute_alignment<0, T...>());
-    int type_id;
+    int8_t type_id;
 };
 
 } // namespace pystd2025
