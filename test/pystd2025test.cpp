@@ -395,6 +395,13 @@ int test_variant() {
 
     ASSERT(v.contains<int32_t>());
     ASSERT(!v.contains<int64_t>());
+    ASSERT(v.get<int32_t>() == 0);
+
+    v.insert(int64_t(33));
+    ASSERT(!v.contains<int32_t>());
+    ASSERT(v.contains<int64_t>());
+
+    ASSERT(v.get<int64_t>() == 33);
     return 0;
 }
 

@@ -1363,8 +1363,37 @@ public:
         new(buf) T...[0]{};
     }
 
-    int *get_int() { return reinterpret_cast<int *>(buf); }
+    ~Variant() { destroy(); }
 
+    template<WellBehaved Q> bool contains() const {
+        const auto id = get_index_for_type<Q>();
+        return id == type_id;
+    }
+
+    template<typename Desired> Desired *get_if() {
+        const int computed_type = get_index_for_type<Desired>();
+        if(computed_type == type_id) {
+            return reinterpret_cast<Desired *>(buf);
+        }
+        return nullptr;
+    }
+
+    template<typename Desired> Desired &get() {
+        auto *ptr = get_if<Desired>();
+        if(!ptr) {
+            throw PyException("Variant does not hold the requested type.");
+        }
+        return *ptr;
+    }
+
+    template<typename OBJ> void insert(OBJ o) {
+        constexpr int new_type = get_index_for_type<OBJ>();
+        destroy();
+        new(buf) OBJ(move(o));
+        type_id = new_type;
+    }
+
+private:
     template<typename Desired, int index, typename... A> constexpr int get_index_for_type() const {
         if constexpr(index >= sizeof...(T)) {
             static_assert(index < sizeof...(T));
@@ -1377,41 +1406,36 @@ public:
         }
     }
 
-    template<WellBehaved Q> bool contains() const {
-        const auto id = get_index_for_type<Q, 0, T...>();
-        return id == type_id;
+    template<typename Desired> constexpr int get_index_for_type() const {
+        return get_index_for_type<Desired, 0, T...>();
     }
 
-    template<int index> constexpr void destroy() {
+    void destroy() {
+        if(type_id == 0) {
+            destroy_by_type<0>();
+        } else if(type_id == 1) {
+            destroy_by_type<1>();
+        } else if(type_id == 2) {
+            destroy_by_type<2>();
+        } else if(type_id == 3) {
+            destroy_by_type<3>();
+        } else if(type_id == 4) {
+            destroy_by_type<4>();
+        }
+    }
+
+    template<int index> constexpr void destroy_by_type() {
         if constexpr(index < sizeof...(T)) {
             using curtype = T...[index];
             reinterpret_cast<curtype *>(buf)->~curtype();
         }
+        type_id = -1;
     }
 
-    void blub(int x) {
-        if(x == 0) {
-            destroy<0>();
-        } else if(x == 1) {
-            destroy<1>();
-        } else if(x == 2) {
-            destroy<2>();
-        }
-    }
-
-    template<typename Desired> Desired *get_if() {
-        const int computed_type = get_index_for_type<Desired, 0>();
-        if(computed_type == type_id) {
-            return reinterpret_cast<Desired *>(buf);
-        }
-        return nullptr;
-    }
-
-private:
     static constexpr int MAX_TYPES = 5;
     static_assert(sizeof...(T) <= MAX_TYPES);
-    int type_id;
     char buf[compute_size<0, T...>()] alignas(compute_alignment<0, T...>());
+    int type_id;
 };
 
 } // namespace pystd2025
