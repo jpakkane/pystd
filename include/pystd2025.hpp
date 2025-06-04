@@ -113,7 +113,6 @@ private:
     UnionState state;
 };
 
-// Disabled for now because this does not work with GCC 15.
 template<typename T> class EnumerateView {
 public:
     explicit EnumerateView(T &o) : underlying{o}, i{0} {};
@@ -170,7 +169,7 @@ public:
         LoopView *orig;
         decltype(orig->underlying.next()) holder;
         bool operator==(const T_looper_sentinel &) const { return !holder; }
-        decltype(*holder) operator*() { return *holder; }
+        decltype(*holder) &operator*() { return *holder; }
         void operator++() { holder = orig->underlying.next(); }
     };
 };
@@ -202,7 +201,7 @@ public:
         Loopsume *orig;
         decltype(orig->underlying.next()) holder;
         bool operator==(const T_looper_sentinel &) const { return !holder; }
-        decltype(*holder) operator*() { return *holder; }
+        decltype(*holder) &operator*() { return *holder; }
         void operator++() { holder = orig->underlying.next(); }
     };
 
