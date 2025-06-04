@@ -1371,12 +1371,12 @@ public:
 
     ~Variant() { destroy(); }
 
-    template<WellBehaved Q> bool contains() const {
+    template<WellBehaved Q> bool contains() const noexcept {
         const auto id = get_index_for_type<Q>();
         return id == type_id;
     }
 
-    template<typename Desired> Desired *get_if() {
+    template<typename Desired> Desired *get_if() noexcept {
         const int computed_type = get_index_for_type<Desired>();
         if(computed_type == type_id) {
             return reinterpret_cast<Desired *>(buf);
@@ -1384,7 +1384,7 @@ public:
         return nullptr;
     }
 
-    template<typename Desired> const Desired *get_if() const {
+    template<typename Desired> const Desired *get_if() const noexcept {
         const int computed_type = get_index_for_type<Desired>();
         if(computed_type == type_id) {
             return reinterpret_cast<const Desired *>(buf);
@@ -1408,7 +1408,7 @@ public:
         return *ptr;
     }
 
-    template<typename OBJ> void insert(OBJ o) {
+    template<typename OBJ> void insert(OBJ o) noexcept {
         constexpr int new_type = get_index_for_type<OBJ>();
         destroy();
         new(buf) OBJ(move(o));
@@ -1501,7 +1501,7 @@ private:
     }
 
     template<typename Desired, int8_t index, typename... A>
-    constexpr int8_t get_index_for_type() const {
+    constexpr int8_t get_index_for_type() const noexcept {
         if constexpr(index >= sizeof...(T)) {
             static_assert(index < sizeof...(T));
         } else {
@@ -1513,11 +1513,11 @@ private:
         }
     }
 
-    template<typename Desired> constexpr int8_t get_index_for_type() const {
+    template<typename Desired> constexpr int8_t get_index_for_type() const noexcept {
         return get_index_for_type<Desired, 0, T...>();
     }
 
-    void destroy() {
+    void destroy() noexcept {
         if(type_id == 0) {
             destroy_by_type<0>();
         } else if(type_id == 1) {
@@ -1531,7 +1531,7 @@ private:
         }
     }
 
-    template<int index> constexpr void destroy_by_type() {
+    template<int index> constexpr void destroy_by_type() noexcept {
         if constexpr(index < sizeof...(T)) {
             using curtype = T...[index];
             reinterpret_cast<curtype *>(buf)->~curtype();
