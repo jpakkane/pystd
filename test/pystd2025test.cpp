@@ -417,7 +417,7 @@ int test_variant2() {
     v1 = pystd2025::move(v2);
 
     ASSERT(v1.contains<int64_t>());
-    //    ASSERT(v1.get<int64_t>() == 6);
+    ASSERT(v1.get<int64_t>() == 6);
 
     return 0;
 }
