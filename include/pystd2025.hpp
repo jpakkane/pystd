@@ -113,7 +113,6 @@ private:
     UnionState state;
 };
 
-#if 0
 // Disabled for now because this does not work with GCC 15.
 template<typename T> class EnumerateView {
 public:
@@ -149,14 +148,8 @@ private:
 template<typename T> class LoopView {
 public:
     friend struct T_looper_it;
-    struct T_looper_sentinel {};
-    struct T_looper_it {
-        LoopView *orig;
-        decltype(orig->underlying.next()) holder;
-        bool operator==(const T_looper_sentinel &) const { return !holder; }
-        decltype(*holder) operator*() { return *holder; }
-        void operator++() { holder = orig->underlying.next(); }
-    };
+    struct T_looper_it;
+    struct T_looper_sentinel;
 
     explicit LoopView(T &original) : underlying{original} {}
     LoopView(LoopView &) = delete;
@@ -170,6 +163,16 @@ public:
 
 private:
     T &underlying;
+
+public:
+    struct T_looper_sentinel {};
+    struct T_looper_it {
+        LoopView *orig;
+        decltype(orig->underlying.next()) holder;
+        bool operator==(const T_looper_sentinel &) const { return !holder; }
+        decltype(*holder) operator*() { return *holder; }
+        void operator++() { holder = orig->underlying.next(); }
+    };
 };
 
 // Same as above, but takes ownership of the passed object.
@@ -178,15 +181,7 @@ template<WellBehaved T> class Loopsume {
 public:
     friend struct T_looper_it;
     struct T_looper_sentinel;
-    struct T_looper_it {
-        Loopsume *orig;
-        decltype(orig->underlying.next()) holder;
-        bool operator==(const T_looper_sentinel &) const { return !holder; }
-        decltype(*holder) operator*() { return *holder; }
-        void operator++() { holder = orig->underlying.next(); }
-    };
-
-    struct T_looper_sentinel {};
+    struct T_looper_it;
 
     explicit Loopsume(T original) : underlying{move(original)} {}
     explicit Loopsume(T &original) = delete;
@@ -201,8 +196,18 @@ public:
 
 private:
     T underlying;
+
+public:
+    struct T_looper_it {
+        Loopsume *orig;
+        decltype(orig->underlying.next()) holder;
+        bool operator==(const T_looper_sentinel &) const { return !holder; }
+        decltype(*holder) operator*() { return *holder; }
+        void operator++() { holder = orig->underlying.next(); }
+    };
+
+    struct T_looper_sentinel {};
 };
-#endif
 
 template<typename T> class unique_ptr final {
 public:
