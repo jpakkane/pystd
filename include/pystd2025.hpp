@@ -1362,6 +1362,8 @@ public:
         type_id = 0;
         new(buf) T...[0]{};
     }
+    Variant(const Variant<T...> &o) { copy_value_in(o, false); }
+    Variant(Variant<T...> &&o) noexcept { move_to_uninitialized_memory(o); }
 
     ~Variant() { destroy(); }
 
@@ -1378,7 +1380,23 @@ public:
         return nullptr;
     }
 
+    template<typename Desired> const Desired *get_if() const {
+        const int computed_type = get_index_for_type<Desired>();
+        if(computed_type == type_id) {
+            return reinterpret_cast<const Desired *>(buf);
+        }
+        return nullptr;
+    }
+
     template<typename Desired> Desired &get() {
+        auto *ptr = get_if<Desired>();
+        if(!ptr) {
+            throw PyException("Variant does not hold the requested type.");
+        }
+        return *ptr;
+    }
+
+    template<typename Desired> const Desired &get() const {
         auto *ptr = get_if<Desired>();
         if(!ptr) {
             throw PyException("Variant does not hold the requested type.");
@@ -1398,7 +1416,20 @@ public:
             return *this;
         }
         destroy();
-        type_id = o.type_id;
+        move_to_uninitialized_memory(move(o));
+        return *this;
+    }
+
+    Variant<T...> &operator=(const Variant<T...> &o) noexcept {
+        if(this == &o) {
+            return *this;
+        }
+        copy_value_in(o, true);
+        return *this;
+    }
+
+private:
+    void move_to_uninitialized_memory(Variant<T...> &&o) noexcept {
         if(type_id == 0) {
             new(buf) T...[0](move(o.get<T...[0]>()));
         } else if(type_id == 1) {
@@ -1418,10 +1449,53 @@ public:
                 new(buf) T...[4]{move(o.get<T...[4]>())};
             }
         }
-        return *this;
+        type_id = o.type_id;
     }
 
-private:
+    void copy_value_in(const Variant<T...> &o, bool has_existing_value) {
+        // If copy construction throws, keep the old value.
+        if(o.type_id == 0) {
+            T...[0] tmp(o.get<T...[0]>());
+            if(has_existing_value) {
+                destroy();
+            }
+            new(buf) T...[0](move(tmp));
+        } else if(o.type_id == 1) {
+            if constexpr(1 < sizeof...(T)) {
+                T...[1] tmp(o.get<T...[1]>());
+                if(has_existing_value) {
+                    destroy();
+                }
+                new(buf) T...[1](move(tmp));
+            }
+        } else if(o.type_id == 2) {
+            if constexpr(2 < sizeof...(T)) {
+                T...[2] tmp(o.get<T...[2]>());
+                if(has_existing_value) {
+                    destroy();
+                }
+                new(buf) T...[2](move(tmp));
+            }
+        } else if(o.type_id == 3) {
+            if constexpr(3 < sizeof...(T)) {
+                T...[3] tmp(o.get<T...[3]>());
+                if(has_existing_value) {
+                    destroy();
+                }
+                new(buf) T...[3](move(tmp));
+            }
+        } else if(o.type_id == 4) {
+            if constexpr(4 < sizeof...(T)) {
+                T...[4] tmp(o.get<T...[4]>());
+                if(has_existing_value) {
+                    destroy();
+                }
+                new(buf) T...[4](move(tmp));
+            }
+        }
+        type_id = o.type_id;
+    }
+
     template<typename Desired, int index, typename... A> constexpr int get_index_for_type() const {
         if constexpr(index >= sizeof...(T)) {
             static_assert(index < sizeof...(T));
