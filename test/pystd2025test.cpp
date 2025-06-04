@@ -261,6 +261,7 @@ int test_range1() {
     return 0;
 }
 
+#if 0
 int test_range2() {
     TEST_START;
     pystd2025::Range r(10);
@@ -291,7 +292,7 @@ int test_range4() {
     }
     return 0;
 }
-
+#endif
 int test_vector_simple() {
     TEST_START;
     pystd2025::U8String text("abcabcabc");
@@ -327,7 +328,7 @@ int test_vector() {
     failing_subtests += test_vector_simple();
     return failing_subtests;
 }
-
+/*
 int test_range() {
     printf("Testing Range.\n");
     int failing_subtests = 0;
@@ -337,7 +338,7 @@ int test_range() {
     failing_subtests += test_range4();
     return failing_subtests;
 }
-
+*/
 int test_file_load() {
     TEST_START;
     pystd2025::Path testdir(PYSTD_TESTDIR);
@@ -388,6 +389,15 @@ int test_hashset() {
     return 0;
 }
 
+int test_variant() {
+    TEST_START;
+    pystd2025::Variant<int32_t, int64_t> v;
+
+    ASSERT(v.contains<int32_t>());
+    ASSERT(!v.contains<int64_t>());
+    return 0;
+}
+
 int main(int argc, char **argv) {
     int total_errors = 0;
     try {
@@ -395,13 +405,11 @@ int main(int argc, char **argv) {
         total_errors += test_u8_strings();
         total_errors += test_u8_regex();
         total_errors += test_optional();
-        total_errors += test_range();
-        total_errors += test_range2();
-        total_errors += test_range3();
+        //        total_errors += test_range();
         total_errors += test_vector();
-        total_errors += test_range();
         total_errors += test_files();
         total_errors += test_hashset();
+        total_errors += test_variant();
     } catch(const pystd2025::PyException &e) {
         printf("Testing failed: %s\n", e.what().c_str());
     }

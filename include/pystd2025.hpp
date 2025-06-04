@@ -113,6 +113,8 @@ private:
     UnionState state;
 };
 
+#if 0
+// Disabled for now because this does not work with GCC 15.
 template<typename T> class EnumerateView {
 public:
     explicit EnumerateView(T &o) : underlying{o}, i{0} {};
@@ -200,6 +202,7 @@ public:
 private:
     T underlying;
 };
+#endif
 
 template<typename T> class unique_ptr final {
 public:
@@ -695,7 +698,6 @@ public:
 private:
     const char *buf;
     size_t bufsize;
-
 };
 
 typedef bool (*CStringViewCallback)(const CStringView &piece, void *ctx);
@@ -1319,5 +1321,97 @@ private:
 };
 
 Optional<MMapping> mmap_file(const char *path);
+
+struct true_type {
+    static constexpr bool value = true;
+};
+
+struct false_type {
+    static constexpr bool value = false;
+};
+
+template<typename U, typename V> struct is_same : false_type {};
+
+template<typename U> struct is_same<U, U> : true_type {};
+
+template<typename U, typename V> constexpr bool is_same_v = is_same<U, V>::value;
+
+template<typename T1, typename T2> constexpr int maxval(const T1 &a, const T2 &b) {
+    return a > b ? a : b;
+}
+
+template<int index, typename... T> constexpr size_t compute_size() {
+    if constexpr(index >= sizeof...(T)) {
+        return 0;
+    } else {
+        return maxval(sizeof(T...[index]), compute_size<index + 1, T...>());
+    }
+}
+
+template<int index, typename... T> constexpr size_t compute_alignment() {
+    if constexpr(index >= sizeof...(T)) {
+        return 0;
+    } else {
+        return maxval(alignof(T...[index]), compute_alignment<index + 1, T...>());
+    }
+}
+
+template<WellBehaved... T> class Variant {
+public:
+    Variant() noexcept {
+        type_id = 0;
+        new(buf) T...[0]{};
+    }
+
+    int *get_int() { return reinterpret_cast<int *>(buf); }
+
+    template<typename Desired, int index, typename... A> constexpr int get_index_for_type() const {
+        if constexpr(index >= sizeof...(T)) {
+            static_assert(index < sizeof...(T));
+        } else {
+            if constexpr(is_same_v<Desired, T...[index]>) {
+                return index;
+            } else {
+                return get_index_for_type<Desired, index + 1>();
+            }
+        }
+    }
+
+    template<WellBehaved Q> bool contains() const {
+        const auto id = get_index_for_type<Q, 0, T...>();
+        return id == type_id;
+    }
+
+    template<int index> constexpr void destroy() {
+        if constexpr(index < sizeof...(T)) {
+            using curtype = T...[index];
+            reinterpret_cast<curtype *>(buf)->~curtype();
+        }
+    }
+
+    void blub(int x) {
+        if(x == 0) {
+            destroy<0>();
+        } else if(x == 1) {
+            destroy<1>();
+        } else if(x == 2) {
+            destroy<2>();
+        }
+    }
+
+    template<typename Desired> Desired *get_if() {
+        const int computed_type = get_index_for_type<Desired, 0>();
+        if(computed_type == type_id) {
+            return reinterpret_cast<Desired *>(buf);
+        }
+        return nullptr;
+    }
+
+private:
+    static constexpr int MAX_TYPES = 5;
+    static_assert(sizeof...(T) <= MAX_TYPES);
+    int type_id;
+    char buf[compute_size<0, T...>()] alignas(compute_alignment<0, T...>());
+};
 
 } // namespace pystd2025
