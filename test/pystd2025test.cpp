@@ -389,7 +389,7 @@ int test_hashset() {
     return 0;
 }
 
-int test_variant() {
+int test_variant1() {
     TEST_START;
     pystd2025::Variant<int32_t, int64_t> v;
 
@@ -403,6 +403,32 @@ int test_variant() {
 
     ASSERT(v.get<int64_t>() == 33);
     return 0;
+}
+
+int test_variant2() {
+    TEST_START;
+    pystd2025::Variant<int32_t, int64_t> v1, v2;
+
+    v1.insert(999);
+    v2.insert(int64_t{6});
+
+    ASSERT(v1.contains<int32_t>());
+    ASSERT(v1.get<int32_t>() == 999);
+
+    v1 = pystd2025::move(v2);
+
+    ASSERT(v1.contains<int64_t>());
+    ASSERT(v1.get<int64_t>() == 6);
+
+    return 0;
+}
+
+int test_variant() {
+    printf("Testing variants.\n");
+    int failing_subtests = 0;
+    failing_subtests += test_variant1();
+    failing_subtests += test_variant2();
+    return failing_subtests;
 }
 
 int main(int argc, char **argv) {

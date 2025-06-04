@@ -1393,6 +1393,34 @@ public:
         type_id = new_type;
     }
 
+    Variant<T...> &operator=(Variant<T...> &&o) noexcept {
+        if(this == &o) {
+            return *this;
+        }
+        destroy();
+        type_id = o.type_id;
+        if(type_id == 0) {
+            new(buf) T...[0](move(o.get<T...[0]>()));
+        } else if(type_id == 1) {
+            if constexpr(1 < sizeof...(T)) {
+                new(buf) T...[1]{move(o.get<T...[1]>())};
+            }
+        } else if(type_id == 2) {
+            if constexpr(2 < sizeof...(T)) {
+                new(buf) T...[2]{move(o.get<T...[2]>())};
+            }
+        } else if(type_id == 3) {
+            if constexpr(3 < sizeof...(T)) {
+                new(buf) T...[3]{move(o.get<T...[3]>())};
+            }
+        } else if(type_id == 4) {
+            if constexpr(4 < sizeof...(T)) {
+                new(buf) T...[4]{move(o.get<T...[4]>())};
+            }
+        }
+        return *this;
+    }
+
 private:
     template<typename Desired, int index, typename... A> constexpr int get_index_for_type() const {
         if constexpr(index >= sizeof...(T)) {
@@ -1434,6 +1462,7 @@ private:
 
     static constexpr int MAX_TYPES = 5;
     static_assert(sizeof...(T) <= MAX_TYPES);
+    static_assert(sizeof...(T) > 0);
     char buf[compute_size<0, T...>()] alignas(compute_alignment<0, T...>());
     int type_id;
 };
