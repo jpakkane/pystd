@@ -422,11 +422,31 @@ int test_variant2() {
     return 0;
 }
 
+int test_variant3() {
+    TEST_START;
+    pystd2025::Variant<int32_t, pystd2025::U8String> v1, v2;
+
+    v1.insert(999);
+    v2.insert(pystd2025::U8String("String"));
+    ASSERT(v1.contains<int32_t>());
+    ASSERT(v1.get<int32_t>() == 999);
+    ASSERT(v2.contains<pystd2025::U8String>());
+    ASSERT(v2.get<pystd2025::U8String>() == "String");
+
+    v1 = pystd2025::move(v2);
+
+    ASSERT(v1.contains<pystd2025::U8String>());
+    ASSERT(v1.get<pystd2025::U8String>() == "String");
+
+    return 0;
+}
+
 int test_variant() {
     printf("Testing variants.\n");
     int failing_subtests = 0;
     failing_subtests += test_variant1();
     failing_subtests += test_variant2();
+    failing_subtests += test_variant3();
     return failing_subtests;
 }
 
