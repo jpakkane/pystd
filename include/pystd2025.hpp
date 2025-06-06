@@ -1436,7 +1436,7 @@ public:
     }
 
 private:
-#define PYSTD2015_VAR_IF_MOVE_SWITCH(i)                                                            \
+#define PYSTD2015_VAR_MOVE_SWITCH(i)                                                               \
     {                                                                                              \
         if constexpr(i < sizeof...(T)) {                                                           \
             new(buf) T... [i] { move(o.get<T...[i]>()) };                                          \
@@ -1447,15 +1447,15 @@ private:
     void move_to_uninitialized_memory(Variant<T...> &&o) noexcept {
         switch(o.type_id) {
         case 0:
-            PYSTD2015_VAR_IF_MOVE_SWITCH(0);
+            PYSTD2015_VAR_MOVE_SWITCH(0);
         case 1:
-            PYSTD2015_VAR_IF_MOVE_SWITCH(1);
+            PYSTD2015_VAR_MOVE_SWITCH(1);
         case 2:
-            PYSTD2015_VAR_IF_MOVE_SWITCH(2);
+            PYSTD2015_VAR_MOVE_SWITCH(2);
         case 3:
-            PYSTD2015_VAR_IF_MOVE_SWITCH(3);
+            PYSTD2015_VAR_MOVE_SWITCH(3);
         case 4:
-            PYSTD2015_VAR_IF_MOVE_SWITCH(4);
+            PYSTD2015_VAR_MOVE_SWITCH(4);
         default:
             internal_failure("Unreachable code in variant move.");
         }
@@ -1464,7 +1464,7 @@ private:
 
 // FIXME, update to do a constexpr check to see if the
 // value can be nothrow copied.
-#define PYSTD2015_VAR_IF_COPY_SWITCH(i)                                                            \
+#define PYSTD2015_VAR_COPY_SWITCH(i)                                                               \
     {                                                                                              \
         T...[i] tmp(o.get<T...[i]>());                                                             \
         if(has_existing_value) {                                                                   \
@@ -1478,15 +1478,15 @@ private:
         // If copy construction throws, keep the old value.
         switch(o.type_id) {
         case 0:
-            PYSTD2015_VAR_IF_COPY_SWITCH(0);
+            PYSTD2015_VAR_COPY_SWITCH(0);
         case 1:
-            PYSTD2015_VAR_IF_COPY_SWITCH(1);
+            PYSTD2015_VAR_COPY_SWITCH(1);
         case 2:
-            PYSTD2015_VAR_IF_COPY_SWITCH(2);
+            PYSTD2015_VAR_COPY_SWITCH(2);
         case 3:
-            PYSTD2015_VAR_IF_COPY_SWITCH(3);
+            PYSTD2015_VAR_COPY_SWITCH(3);
         case 4:
-            PYSTD2015_VAR_IF_COPY_SWITCH(4);
+            PYSTD2015_VAR_COPY_SWITCH(4);
         default:
             internal_failure("Unreachable code in variant copy.");
         }
