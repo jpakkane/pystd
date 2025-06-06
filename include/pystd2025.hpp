@@ -1494,8 +1494,7 @@ private:
         type_id = o.type_id;
     }
 
-    template<typename Desired, int8_t index, typename... A>
-    constexpr int8_t get_index_for_type() const noexcept {
+    template<typename Desired, int8_t index> constexpr int8_t get_index_for_type() const noexcept {
         if constexpr(index >= sizeof...(T)) {
             static_assert(index < sizeof...(T));
         } else {
@@ -1508,7 +1507,7 @@ private:
     }
 
     template<typename Desired> constexpr int8_t get_index_for_type() const noexcept {
-        return get_index_for_type<Desired, 0, T...>();
+        return get_index_for_type<Desired, 0>();
     }
 
     void destroy() noexcept {
