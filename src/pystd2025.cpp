@@ -143,6 +143,12 @@ ValidatedU8Iterator::CharInfo extract_one_codepoint(const unsigned char *buf) {
 
 } // namespace
 
+void internal_failure(const char *message) noexcept {
+    fprintf(stderr, "Pystd encountered an internal failure: %s\n", message);
+    fprintf(stderr, "Killing process for your security.\n");
+    abort();
+}
+
 void SimpleHasher::feed_bytes(const char *buf, size_t bufsize) noexcept {
     for(size_t i = 0; i < bufsize; ++i) {
         value = 13 * value ^ (unsigned char)buf[i];

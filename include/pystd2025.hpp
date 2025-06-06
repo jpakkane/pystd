@@ -26,22 +26,20 @@ template<class T> constexpr remove_reference_t<T> &&move(T &&t) noexcept {
     return static_cast<typename remove_reference<T>::type &&>(t);
 }
 
+[[noreturn]] void internal_failure(const char *message) noexcept;
+
 // This is still WIP. But basically require that objects of the
 // given type can be default constructed and moved without exceptions.
 template<typename T>
-concept WellBehaved = requires(T a, T b, const T &c, T &d, T &&e) {
-    // requires noexcept(a = a);
-    // requires noexcept(a = b);
-    // requires noexcept(a = d);
+concept WellBehaved = requires(T a, T &b, T &&c) {
     requires noexcept(a = move(a));
-    // requires noexcept(a = c);
-    requires noexcept(d = move(e));
-    // requires noexcept(d = a);
+    requires noexcept(a = move(b));
+    requires noexcept(b = move(a));
+    requires noexcept(a = move(c));
     requires noexcept(T{});
-    // requires noexcept(T{b});
-    // requires noexcept(T{c});
-    // requires noexcept(T{d});
     requires noexcept(T{move(a)});
+    requires noexcept(T{move(b)});
+    requires noexcept(T{move(c)});
 };
 
 template<WellBehaved V, WellBehaved E> class Expected {
@@ -1361,6 +1359,11 @@ template<int index, typename... T> constexpr size_t compute_alignment() {
 }
 
 template<WellBehaved... T> class Variant {
+
+    static constexpr int MAX_TYPES = 5;
+    static_assert(sizeof...(T) <= MAX_TYPES);
+    static_assert(sizeof...(T) > 0);
+
 public:
     Variant() noexcept {
         type_id = 0;
@@ -1433,70 +1436,61 @@ public:
     }
 
 private:
+#define PYSTD2015_VAR_IF_MOVE_SWITCH(i)                                                            \
+    {                                                                                              \
+        if constexpr(i < sizeof...(T)) {                                                           \
+            new(buf) T... [i] { move(o.get<T...[i]>()) };                                          \
+        }                                                                                          \
+    }                                                                                              \
+    break;
+
     void move_to_uninitialized_memory(Variant<T...> &&o) noexcept {
-        if(o.type_id == 0) {
-            new(buf) T...[0](move(o.get<T...[0]>()));
-        } else if(o.type_id == 1) {
-            if constexpr(1 < sizeof...(T)) {
-                new(buf) T...[1]{move(o.get<T...[1]>())};
-            }
-        } else if(o.type_id == 2) {
-            if constexpr(2 < sizeof...(T)) {
-                new(buf) T...[2]{move(o.get<T...[2]>())};
-            }
-        } else if(o.type_id == 3) {
-            if constexpr(3 < sizeof...(T)) {
-                new(buf) T...[3]{move(o.get<T...[3]>())};
-            }
-        } else if(o.type_id == 4) {
-            if constexpr(4 < sizeof...(T)) {
-                new(buf) T...[4]{move(o.get<T...[4]>())};
-            }
+        switch(o.type_id) {
+        case 0:
+            PYSTD2015_VAR_IF_MOVE_SWITCH(0);
+        case 1:
+            PYSTD2015_VAR_IF_MOVE_SWITCH(1);
+        case 2:
+            PYSTD2015_VAR_IF_MOVE_SWITCH(2);
+        case 3:
+            PYSTD2015_VAR_IF_MOVE_SWITCH(3);
+        case 4:
+            PYSTD2015_VAR_IF_MOVE_SWITCH(4);
+        default:
+            internal_failure("Unreachable code in variant move.");
         }
         type_id = o.type_id;
     }
 
+// FIXME, update to do a constexpr check to see if the
+// value can be nothrow copied.
+#define PYSTD2015_VAR_IF_COPY_SWITCH(i)                                                            \
+    {                                                                                              \
+        T...[i] tmp(o.get<T...[i]>());                                                             \
+        if(has_existing_value) {                                                                   \
+            destroy();                                                                             \
+        }                                                                                          \
+        new(buf) T...[i](move(tmp));                                                               \
+    }                                                                                              \
+    break;
+
     void copy_value_in(const Variant<T...> &o, bool has_existing_value) {
         // If copy construction throws, keep the old value.
-        if(o.type_id == 0) {
-            T...[0] tmp(o.get<T...[0]>());
-            if(has_existing_value) {
-                destroy();
-            }
-            new(buf) T...[0](move(tmp));
-        } else if(o.type_id == 1) {
-            if constexpr(1 < sizeof...(T)) {
-                T...[1] tmp(o.get<T...[1]>());
-                if(has_existing_value) {
-                    destroy();
-                }
-                new(buf) T...[1](move(tmp));
-            }
-        } else if(o.type_id == 2) {
-            if constexpr(2 < sizeof...(T)) {
-                T...[2] tmp(o.get<T...[2]>());
-                if(has_existing_value) {
-                    destroy();
-                }
-                new(buf) T...[2](move(tmp));
-            }
-        } else if(o.type_id == 3) {
-            if constexpr(3 < sizeof...(T)) {
-                T...[3] tmp(o.get<T...[3]>());
-                if(has_existing_value) {
-                    destroy();
-                }
-                new(buf) T...[3](move(tmp));
-            }
-        } else if(o.type_id == 4) {
-            if constexpr(4 < sizeof...(T)) {
-                T...[4] tmp(o.get<T...[4]>());
-                if(has_existing_value) {
-                    destroy();
-                }
-                new(buf) T...[4](move(tmp));
-            }
+        switch(o.type_id) {
+        case 0:
+            PYSTD2015_VAR_IF_COPY_SWITCH(0);
+        case 1:
+            PYSTD2015_VAR_IF_COPY_SWITCH(1);
+        case 2:
+            PYSTD2015_VAR_IF_COPY_SWITCH(2);
+        case 3:
+            PYSTD2015_VAR_IF_COPY_SWITCH(3);
+        case 4:
+            PYSTD2015_VAR_IF_COPY_SWITCH(4);
+        default:
+            internal_failure("Unreachable code in variant copy.");
         }
+
         type_id = o.type_id;
     }
 
@@ -1528,6 +1522,8 @@ private:
             destroy_by_index<3>();
         } else if(type_id == 4) {
             destroy_by_index<4>();
+        } else {
+            internal_failure("Unreachable code in variant destroy.");
         }
     }
 
@@ -1539,9 +1535,6 @@ private:
         type_id = -1;
     }
 
-    static constexpr int MAX_TYPES = 5;
-    static_assert(sizeof...(T) <= MAX_TYPES);
-    static_assert(sizeof...(T) > 0);
     char buf[compute_size<0, T...>()] alignas(compute_alignment<0, T...>());
     int8_t type_id;
 };
