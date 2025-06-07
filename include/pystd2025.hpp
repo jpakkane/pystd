@@ -1538,4 +1538,9 @@ private:
     int8_t type_id;
 };
 
+// Note: uses C format specifiers currently.
+typedef void (*StringFormatCallback)(const char *buf, size_t bufsize, void *ctx);
+CString format(const char *format, ...);
+void format_with_cb(StringFormatCallback cb, void *ctx, const char *format, ...);
+
 } // namespace pystd2025

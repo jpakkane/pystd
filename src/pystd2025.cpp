@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <stdarg.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -782,6 +783,32 @@ Optional<MMapping> mmap_file(const char *path) {
         return Optional<MMapping>();
     }
     return Optional<MMapping>(MMapping(buf, bufsize));
+}
+
+CString format(const char *format, ...) {
+    CString result;
+    va_list args;
+    va_start(args, format);
+    auto converter = [](const char *buf, size_t bufsize, void *ctx) {
+        auto *s = reinterpret_cast<CString *>(ctx);
+        *s = CString(buf, bufsize);
+    };
+    format_with_cb(converter, &result, format, args);
+    va_end(args);
+    return result;
+}
+
+void format_with_cb(StringFormatCallback cb, void *ctx, const char *format, ...) {
+    const int bufsize = 1024;
+    char buf[bufsize];
+    va_list args;
+    va_start(args, format);
+    auto rc = vsnprintf(buf, bufsize, format, args);
+    if(rc < bufsize) {
+        internal_failure("Temp buffer was not big enough.");
+    }
+    va_end(args);
+    cb(buf, bufsize, ctx);
 }
 
 } // namespace pystd2025

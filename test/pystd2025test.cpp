@@ -450,6 +450,19 @@ int test_variant() {
     return failing_subtests;
 }
 
+int test_format1() {
+    TEST_START;
+    auto str = pystd2025::format("Number is %d.", 86);
+    ASSERT(str == "Number is 86.");
+    return 0;
+}
+
+int test_format() {
+    printf("Testing format.\n");
+    int failing_subtests = 0;
+    return failing_subtests;
+}
+
 int main(int argc, char **argv) {
     int total_errors = 0;
     try {
@@ -462,6 +475,7 @@ int main(int argc, char **argv) {
         total_errors += test_files();
         total_errors += test_hashset();
         total_errors += test_variant();
+        total_errors += test_format();
     } catch(const pystd2025::PyException &e) {
         printf("Testing failed: %s\n", e.what().c_str());
     }
