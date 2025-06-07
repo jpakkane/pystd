@@ -457,9 +457,20 @@ int test_format1() {
     return 0;
 }
 
+int test_format2() {
+    TEST_START;
+    pystd2025::CString output("prefix: ");
+
+    pystd2025::format_append(output, "Number is %d.", 86);
+    ASSERT(output == "prefix: Number is 86.");
+    return 0;
+}
+
 int test_format() {
     printf("Testing format.\n");
     int failing_subtests = 0;
+    failing_subtests += test_format1();
+    failing_subtests += test_format2();
     return failing_subtests;
 }
 

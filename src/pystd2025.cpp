@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include <stdarg.h>
+#include <limits.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -798,17 +798,21 @@ CString format(const char *format, ...) {
     return result;
 }
 
-void format_with_cb(StringFormatCallback cb, void *ctx, const char *format, ...) {
+void format_with_cb(StringFormatCallback cb, void *ctx, const char *format, va_list ap) {
     const int bufsize = 1024;
     char buf[bufsize];
-    va_list args;
-    va_start(args, format);
-    auto rc = vsnprintf(buf, bufsize, format, args);
-    if(rc < bufsize) {
-        internal_failure("Temp buffer was not big enough.");
+    auto rc = vsnprintf(buf, bufsize, format, ap);
+    if(rc >= bufsize) {
+        if(INT_MAX - 1 >= rc) {
+            // Almost certainly either a bug or an exploit.
+            internal_failure("Tried to format a buffer that is too big.");
+        }
+        unique_arr<char> bigbuf(bufsize + 1);
+        rc = vsnprintf(buf, bufsize, format, ap);
+        cb(bigbuf.get(), rc, ctx);
+    } else {
+        cb(buf, rc, ctx);
     }
-    va_end(args);
-    cb(buf, bufsize, ctx);
 }
 
 } // namespace pystd2025

@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdarg.h>
 
 void *operator new(size_t, void *ptr) noexcept;
 
@@ -759,6 +760,7 @@ public:
     char back() const;
 
     void pop_back() noexcept;
+    void push_back(const char c) noexcept { append(c); }
 
     void insert(size_t i, const CStringView &v) noexcept;
 
@@ -1541,6 +1543,19 @@ private:
 // Note: uses C format specifiers currently.
 typedef void (*StringFormatCallback)(const char *buf, size_t bufsize, void *ctx);
 CString format(const char *format, ...);
-void format_with_cb(StringFormatCallback cb, void *ctx, const char *format, ...);
+void format_with_cb(StringFormatCallback cb, void *ctx, const char *format, va_list ap);
+
+template<typename T> void format_append(T &oobj, const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+    auto converter = [](const char *buf, size_t bufsize, void *ctx) {
+        auto *s = reinterpret_cast<T *>(ctx);
+        for(size_t i = 0; i < bufsize; ++i) {
+            s->push_back(buf[i]);
+        }
+    };
+    format_with_cb(converter, &oobj, format, args);
+    va_end(args);
+}
 
 } // namespace pystd2025
