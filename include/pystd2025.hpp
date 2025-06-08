@@ -8,7 +8,9 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-constexpr void *operator new(size_t, void *ptr) noexcept;
+#ifndef __GLIBCXX__
+void *operator new(size_t, void *ptr) noexcept;
+#endif
 
 namespace pystd2025 {
 
@@ -443,7 +445,7 @@ public:
     void append(const char c);
 
     bool is_empty() const { return bufsize == 0; }
-    void clear() { bufsize = 0; }
+    void clear() noexcept { bufsize = 0; }
 
     size_t size() const { return bufsize; }
 
@@ -521,6 +523,11 @@ template<WellBehaved T> class Vector final {
 
 public:
     Vector() noexcept = default;
+
+    Vector(Vector<T> &&o) noexcept : backing(move(o.backing)), num_entries{o.num_entries} {
+            o.num_entries = 0;
+    }
+
     ~Vector() {
         for(size_t i = 0; i < num_entries; ++i) {
             objptr(i)->~T();
@@ -620,6 +627,15 @@ public:
             throw "Index out of bounds.";
         }
         return *objptr(i);
+    }
+
+    Vector<T>& operator=(Vector<T> &&o) noexcept {
+        if(this != &o) {
+            backing = move(o.backing);
+            num_entries = o.num_entries;
+            o.num_entries = 0;
+        }
+        return *this;
     }
 
     const T *cbegin() const { return objptr(0); }
@@ -758,6 +774,10 @@ public:
 
     size_t size() const;
 
+    void clear() noexcept {
+        bytes.clear();
+    }
+
     CString substr(size_t offset, size_t length) const;
 
     char operator[](size_t i) const { return bytes[i]; }
@@ -776,6 +796,8 @@ public:
     bool operator==(const char *str);
 
     CString &operator+=(const CString &o);
+
+    CString &operator+=(const char * str);
 
     void append(const char c);
 
@@ -1575,6 +1597,11 @@ private:
 template<typename T>
 class Stack {
 public:
+
+    Stack() = default;
+    Stack(Stack &&o) = default;
+
+    Stack& operator=(Stack &&o) noexcept = default;
 
     bool is_empty() const {
         return buf.is_empty();

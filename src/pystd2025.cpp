@@ -21,8 +21,12 @@
 void *operator new(size_t count) { return malloc(count); }
 
 void operator delete(void *ptr) noexcept { free(ptr); }
+void *operator new(size_t, void *ptr) noexcept { return ptr; }
 */
-constexpr void *operator new(size_t, void *ptr) noexcept { return ptr; }
+
+#ifndef __GLIBCXX__
+void *operator new(size_t, void *ptr) noexcept { return ptr; }
+#endif
 
 namespace pystd2025 {
 
@@ -180,8 +184,8 @@ Bytes::Bytes(Bytes &&o) noexcept {
     o.bufsize = 0;
 }
 
-Bytes::Bytes(const Bytes &o) noexcept {
-    buf = unique_arr<char>(new char[o.buf.size()], o.buf.size());
+Bytes::Bytes(const Bytes &o) noexcept
+    : buf(unique_arr<char>(new char[o.buf.size()], o.buf.size())) {
     memcpy(buf.get(), o.buf.get(), o.buf.size());
     bufsize = o.bufsize;
 }
@@ -371,6 +375,9 @@ CString::CString(const char *txt, size_t txtsize) {
     if(txtsize == (size_t)-1) {
         bytes = Bytes(txt, strlen(txt));
         bytes.append('\0');
+    } else if(txtsize == 0) {
+        assert(bytes.is_empty());
+        bytes.append('\0');
     } else {
         bytes = Bytes(txt, txtsize);
         bytes.append('\0');
@@ -466,6 +473,12 @@ CString &CString::operator+=(const CString &o) {
     }
     bytes.pop_back();
     bytes += o.bytes;
+    return *this;
+}
+
+CString &CString::operator+=(const char *str) {
+    CStringView v(str);
+    *this += v;
     return *this;
 }
 
@@ -803,17 +816,22 @@ CString format(const char *format, ...) {
     return result;
 }
 
+#include <errno.h>
+
 void format_with_cb(StringFormatCallback cb, void *ctx, const char *format, va_list ap) {
     const int bufsize = 1024;
     char buf[bufsize];
     auto rc = vsnprintf(buf, bufsize, format, ap);
-    if(rc >= bufsize) {
+    if(rc < 0) {
+        throw PyException(strerror(errno));
+    } else if(rc >= bufsize) {
         if(INT_MAX - 1 >= rc) {
             // Almost certainly either a bug or an exploit.
             internal_failure("Tried to format a buffer that is too big.");
         }
         unique_arr<char> bigbuf(bufsize + 1);
         rc = vsnprintf(buf, bufsize, format, ap);
+        assert(rc > 0);
         cb(bigbuf.get(), rc, ctx);
     } else {
         cb(buf, rc, ctx);
