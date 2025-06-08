@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-void *operator new(size_t, void *ptr) noexcept;
+constexpr void *operator new(size_t, void *ptr) noexcept;
 
 namespace pystd2025 {
 
@@ -571,8 +571,40 @@ public:
         --num_entries;
     }
 
-    size_t capacity() noexcept { return backing.size() / sizeof(T); }
-    size_t size() noexcept { return num_entries; }
+    size_t capacity() const noexcept { return backing.size() / sizeof(T); }
+    size_t size() const noexcept { return num_entries; }
+
+    bool is_empty() const noexcept {
+        return size() == 0;
+    }
+
+    T& front() {
+        if(is_empty()) {
+            throw PyException("Tried to access empty array.");
+        }
+        return (*this)[0];
+    }
+
+    const T& front() const {
+        if(is_empty()) {
+            throw PyException("Tried to access empty array.");
+        }
+        return (*this)[0];
+    }
+
+    T& back() {
+        if(is_empty()) {
+            throw PyException("Tried to access empty array.");
+        }
+        return (*this)[size()-1];
+    }
+
+    const T& back() const {
+        if(is_empty()) {
+            throw PyException("Tried to access empty array.");
+        }
+        return (*this)[size()-1];
+    }
 
     T *data() { return (T *)backing.data(); }
 
@@ -1538,6 +1570,38 @@ private:
 
     char buf[compute_size<0, T...>()] alignas(compute_alignment<0, T...>());
     int8_t type_id;
+};
+
+template<typename T>
+class Stack {
+public:
+
+    bool is_empty() const {
+        return buf.is_empty();
+    }
+
+    T& top() {
+        return buf.back();
+    }
+
+    const T& top() const {
+        return buf.back();
+    }
+
+    size_t size() const noexcept {
+        return buf.size();
+    }
+
+    void pop() {
+        buf.pop_back();
+    }
+
+    void push(const T& obj) {
+        buf.push_back(obj);
+    }
+
+private:
+    Vector<T> buf;
 };
 
 // Note: uses C format specifiers currently.
