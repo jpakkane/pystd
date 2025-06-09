@@ -528,7 +528,7 @@ void CString::insert(size_t i, const CStringView &v) noexcept {
 
 size_t CString::rfind(const char c) const noexcept {
     size_t i = bytes.size() - 1;
-    while(i != -1) {
+    while(i != (size_t)-1) {
         if(bytes[i] == c) {
             return i;
         }

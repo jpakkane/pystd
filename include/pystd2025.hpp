@@ -817,7 +817,10 @@ public:
 
     void split(CStringViewCallback cb, void *ctx) const;
 
-    bool is_empty() const { return bytes.is_empty(); }
+    bool is_empty() const {
+        // The buffer always has a null terminator.
+        return bytes.size() == 1;
+    }
 
     char front() const { return bytes.front(); }
 
@@ -1343,7 +1346,7 @@ private:
 class Path {
 public:
     Path() noexcept {};
-    explicit Path(const char *path);
+    Path(const char *path);
     explicit Path(CString path);
 
     bool exists() const noexcept;
@@ -1353,6 +1356,7 @@ public:
     bool is_abs() const;
 
     CString extension() const;
+    Path filename() const;
 
     Path operator/(const Path &o) const noexcept;
     Path operator/(const char *str) const noexcept;
@@ -1360,7 +1364,19 @@ public:
     Optional<Bytes> load_bytes();
     Optional<U8String> load_text();
 
+    void replace_extension(CStringView new_extension);
+    void replace_extension(const char *str) {
+        replace_extension(CStringView(str));
+    }
+
     const char * c_str() const noexcept { return buf.c_str(); }
+    size_t size() const noexcept { return buf.size(); }
+
+    bool is_empty() const noexcept {
+        return buf.is_empty();
+    }
+
+    bool rename_to(const Path &targetname) const noexcept;
 
 private:
     CString buf;

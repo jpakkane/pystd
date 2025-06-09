@@ -68,6 +68,14 @@ CString Path::extension() const {
     return buf.substr(loc);
 }
 
+Path Path::filename() const {
+    auto loc = buf.rfind('/');
+    if(loc == (size_t)-1) {
+        return Path(buf);
+    }
+    return Path(buf.substr(loc + 1));
+}
+
 Optional<Bytes> Path::load_bytes() {
     FILE *f = fopen(buf.c_str(), "rb");
     if(!f) {
@@ -101,6 +109,32 @@ Optional<U8String> Path::load_text() {
     } catch(...) {
     }
     return Optional<U8String>();
+}
+
+void Path::replace_extension(CStringView new_extension) {
+    // FIXME, assumes an extension can be found before
+    // a path separator.
+    auto extpoint = buf.rfind('.');
+    if(extpoint == (size_t)-1) {
+        buf += new_extension;
+    } else {
+        while(buf.size() > extpoint) {
+            buf.pop_back();
+        }
+        buf += new_extension;
+    }
+}
+
+bool Path::rename_to(const Path &targetname) const noexcept {
+    if(targetname.is_dir()) {
+        fprintf(stderr, "Can not rename a file to a directory.");
+        return false;
+    }
+    auto rc = rename(c_str(), targetname.c_str());
+    if(rc != 0) {
+        perror(nullptr);
+    }
+    return rc == 0;
 }
 
 } // namespace pystd2025
