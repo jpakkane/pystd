@@ -295,14 +295,25 @@ public:
         has_value = false;
     }
 
-    explicit Optional(const T &o) noexcept {
+    Optional(const T &o) {
         new(&data.value) T{o};
         has_value = true;
     }
 
-    explicit Optional(T &&o) noexcept {
+    Optional(T &&o) noexcept {
         new(&data.value) T{move(o)};
         has_value = true;
+    }
+
+    Optional(const Optional<T> &o) {
+        if(o) {
+            new(&data.value) T(o.data.value);
+            has_value = true;
+        } else {
+            data.nothing = 0;
+            has_value = false;
+        }
+
     }
 
     Optional(Optional<T> &&o) noexcept {
@@ -331,6 +342,16 @@ public:
         }
     }
 
+    void operator=(const Optional<T> &o) noexcept {
+        if(this != &o) {
+            destroy();
+            if(o) {
+                new(&data.value) T{o.data.value};
+                has_value = true;
+            }
+        }
+    }
+
     void operator=(T &&o) noexcept {
         if(&o == &data.value) {
             return;
@@ -343,7 +364,48 @@ public:
         }
     }
 
+    void operator=(T &o) noexcept {
+        if(&o == &data.value) {
+            return;
+        }
+        if(*this) {
+            data.value = move(o);
+        } else {
+            new(&data.value) T{move(o)};
+            has_value = true;
+        }
+    }
+
     T &operator*() {
+        if(!*this) {
+            throw "Empty optional.";
+        }
+        return data.value;
+    }
+
+    T *operator->() {
+        if(!*this) {
+            throw "Empty optional.";
+        }
+        return &data.value;
+    }
+
+    const T *operator->() const {
+        if(!*this) {
+            throw "Empty optional.";
+        }
+        return &data.value;
+    }
+
+
+    T & value() {
+        if(!*this) {
+            throw "Empty optional.";
+        }
+        return data.value;
+    }
+
+    const T & value() const {
         if(!*this) {
             throw "Empty optional.";
         }
@@ -355,6 +417,10 @@ public:
             throw "Empty optional.";
         }
         return data.value;
+    }
+
+    void reset() {
+        destroy();
     }
 
 private:
