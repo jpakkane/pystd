@@ -29,20 +29,43 @@ template<class T> constexpr remove_reference_t<T> &&move(T &&t) noexcept {
     return static_cast<typename remove_reference<T>::type &&>(t);
 }
 
+struct true_type {
+    static constexpr bool value = true;
+};
+
+struct false_type {
+    static constexpr bool value = false;
+};
+
+template<typename U, typename V> struct is_same : false_type {};
+
+template<typename U> struct is_same<U, U> : true_type {};
+
+template<typename U, typename V> constexpr bool is_same_v = is_same<U, V>::value;
+
+template<class T> struct is_const : pystd2025::false_type {};
+template<class T> struct is_const<const T> : pystd2025::true_type {};
+template<class T> constexpr bool is_const_v = is_const<T>::value;
+
+template<class T> struct is_volatile : pystd2025::false_type {};
+template<class T> struct is_volatile<volatile T> : pystd2025::true_type {};
+template<class T> constexpr bool is_volatile_v = is_volatile<T>::value;
+
 [[noreturn]] void internal_failure(const char *message) noexcept;
 
 // This is still WIP. But basically require that objects of the
 // given type can be default constructed and moved without exceptions.
 template<typename T>
 concept WellBehaved = requires(T a, T &b, T &&c) {
-    requires noexcept(a = move(a));
-    requires noexcept(a = move(b));
-    requires noexcept(b = move(a));
-    requires noexcept(a = move(c));
+    requires noexcept(a = ::pystd2025::move(a));
+    requires noexcept(a = ::pystd2025::move(b));
+    requires noexcept(b = ::pystd2025::move(a));
+    requires noexcept(a = ::pystd2025::move(c));
     requires noexcept(T{});
-    requires noexcept(T{move(a)});
-    requires noexcept(T{move(b)});
-    requires noexcept(T{move(c)});
+    requires noexcept(T{::pystd2025::move(a)});
+    requires noexcept(T{::pystd2025::move(b)});
+    requires noexcept(T{::pystd2025::move(c)});
+    requires !is_volatile_v<T>;
 };
 
 template<WellBehaved V, WellBehaved E> class Expected {
@@ -1464,20 +1487,6 @@ private:
 
 Optional<MMapping> mmap_file(const char *path);
 
-struct true_type {
-    static constexpr bool value = true;
-};
-
-struct false_type {
-    static constexpr bool value = false;
-};
-
-template<typename U, typename V> struct is_same : false_type {};
-
-template<typename U> struct is_same<U, U> : true_type {};
-
-template<typename U, typename V> constexpr bool is_same_v = is_same<U, V>::value;
-
 template<typename T1, typename T2> constexpr int maxval(const T1 &a, const T2 &b) {
     return a > b ? a : b;
 }
@@ -1486,6 +1495,8 @@ template<int index, typename... T> constexpr size_t compute_size() {
     if constexpr(index >= sizeof...(T)) {
         return 0;
     } else {
+        // Not the best place for this, but here we get it for free.
+        static_assert(!is_const_v<T...[index]>);
         return maxval(sizeof(T...[index]), compute_size<index + 1, T...>());
     }
 }
