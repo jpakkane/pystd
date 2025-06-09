@@ -476,6 +476,13 @@ CString &CString::operator+=(const CString &o) {
     return *this;
 }
 
+CString &CString::operator+=(char c) {
+    bytes.pop_back();
+    bytes.append(c);
+    bytes.append('\0');
+    return *this;
+}
+
 CString &CString::operator+=(const char *str) {
     CStringView v(str);
     *this += v;

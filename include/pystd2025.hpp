@@ -585,6 +585,12 @@ public:
         return size() == 0;
     }
 
+    void clear() noexcept {
+        while(!is_empty()) {
+            pop_back();
+        }
+    }
+
     T& front() {
         if(is_empty()) {
             throw PyException("Tried to access empty array.");
@@ -756,7 +762,9 @@ typedef bool (*CStringViewCallback)(const CStringView &piece, void *ctx);
 // A string guaranteed to end with a zero terminator.
 class CString {
 public:
-    CString() noexcept { bytes.append('0'); }
+    CString() noexcept : bytes() {
+        bytes.append('\0');
+    }
     CString(CString &&o) noexcept = default;
     CString(const CString &o) noexcept = default;
     explicit CString(Bytes incoming);
@@ -796,6 +804,8 @@ public:
     bool operator==(const char *str);
 
     CString &operator+=(const CString &o);
+
+    CString &operator+=(char c);
 
     CString &operator+=(const char * str);
 
@@ -1604,31 +1614,35 @@ public:
     Stack& operator=(Stack &&o) noexcept = default;
 
     bool is_empty() const {
-        return buf.is_empty();
+        return backing.is_empty();
     }
 
     T& top() {
-        return buf.back();
+        return backing.back();
     }
 
     const T& top() const {
-        return buf.back();
+        return backing.back();
     }
 
     size_t size() const noexcept {
-        return buf.size();
+        return backing.size();
     }
 
     void pop() {
-        buf.pop_back();
+        backing.pop_back();
     }
 
     void push(const T& obj) {
-        buf.push_back(obj);
+        backing.push_back(obj);
+    }
+
+    void clear() noexcept {
+        backing.clear();
     }
 
 private:
-    Vector<T> buf;
+    Vector<T> backing;
 };
 
 // Note: uses C format specifiers currently.
@@ -1641,8 +1655,12 @@ template<typename T> void format_append(T &oobj, const char *format, ...) {
     va_start(args, format);
     auto converter = [](const char *buf, size_t bufsize, void *ctx) {
         auto *s = reinterpret_cast<T *>(ctx);
-        for(size_t i = 0; i < bufsize; ++i) {
-            s->push_back(buf[i]);
+        if constexpr(is_same_v<T, CString>) {
+            *s += buf;
+        } else  {
+            for(size_t i = 0; i < bufsize; ++i) {
+                s->push_back(buf[i]);
+            }
         }
     };
     format_with_cb(converter, &oobj, format, args);
