@@ -313,7 +313,6 @@ public:
             data.nothing = 0;
             has_value = false;
         }
-
     }
 
     Optional(Optional<T> &&o) noexcept {
@@ -397,15 +396,14 @@ public:
         return &data.value;
     }
 
-
-    T & value() {
+    T &value() {
         if(!*this) {
             throw "Empty optional.";
         }
         return data.value;
     }
 
-    const T & value() const {
+    const T &value() const {
         if(!*this) {
             throw "Empty optional.";
         }
@@ -419,9 +417,7 @@ public:
         return data.value;
     }
 
-    void reset() {
-        destroy();
-    }
+    void reset() { destroy(); }
 
 private:
     void destroy() {
@@ -591,7 +587,7 @@ public:
     Vector() noexcept = default;
 
     Vector(Vector<T> &&o) noexcept : backing(move(o.backing)), num_entries{o.num_entries} {
-            o.num_entries = 0;
+        o.num_entries = 0;
     }
 
     ~Vector() {
@@ -647,9 +643,7 @@ public:
     size_t capacity() const noexcept { return backing.size() / sizeof(T); }
     size_t size() const noexcept { return num_entries; }
 
-    bool is_empty() const noexcept {
-        return size() == 0;
-    }
+    bool is_empty() const noexcept { return size() == 0; }
 
     void clear() noexcept {
         while(!is_empty()) {
@@ -657,32 +651,32 @@ public:
         }
     }
 
-    T& front() {
+    T &front() {
         if(is_empty()) {
             throw PyException("Tried to access empty array.");
         }
         return (*this)[0];
     }
 
-    const T& front() const {
+    const T &front() const {
         if(is_empty()) {
             throw PyException("Tried to access empty array.");
         }
         return (*this)[0];
     }
 
-    T& back() {
+    T &back() {
         if(is_empty()) {
             throw PyException("Tried to access empty array.");
         }
-        return (*this)[size()-1];
+        return (*this)[size() - 1];
     }
 
-    const T& back() const {
+    const T &back() const {
         if(is_empty()) {
             throw PyException("Tried to access empty array.");
         }
-        return (*this)[size()-1];
+        return (*this)[size() - 1];
     }
 
     T *data() { return (T *)backing.data(); }
@@ -701,7 +695,7 @@ public:
         return *objptr(i);
     }
 
-    Vector<T>& operator=(Vector<T> &&o) noexcept {
+    Vector<T> &operator=(Vector<T> &&o) noexcept {
         if(this != &o) {
             backing = move(o.backing);
             num_entries = o.num_entries;
@@ -828,9 +822,7 @@ typedef bool (*CStringViewCallback)(const CStringView &piece, void *ctx);
 // A string guaranteed to end with a zero terminator.
 class CString {
 public:
-    CString() noexcept : bytes() {
-        bytes.append('\0');
-    }
+    CString() noexcept : bytes() { bytes.append('\0'); }
     CString(CString &&o) noexcept = default;
     CString(const CString &o) noexcept = default;
     explicit CString(Bytes incoming);
@@ -848,11 +840,9 @@ public:
 
     size_t size() const;
 
-    void clear() noexcept {
-        bytes.clear();
-    }
+    void clear() noexcept { bytes.clear(); }
 
-    CString substr(size_t offset, size_t length=-1) const;
+    CString substr(size_t offset, size_t length = -1) const;
 
     char operator[](size_t i) const { return bytes[i]; }
 
@@ -873,7 +863,7 @@ public:
 
     CString &operator+=(char c);
 
-    CString &operator+=(const char * str);
+    CString &operator+=(const char *str);
 
     void append(const char c);
 
@@ -1431,16 +1421,12 @@ public:
     Optional<U8String> load_text();
 
     void replace_extension(CStringView new_extension);
-    void replace_extension(const char *str) {
-        replace_extension(CStringView(str));
-    }
+    void replace_extension(const char *str) { replace_extension(CStringView(str)); }
 
-    const char * c_str() const noexcept { return buf.c_str(); }
+    const char *c_str() const noexcept { return buf.c_str(); }
     size_t size() const noexcept { return buf.size(); }
 
-    bool is_empty() const noexcept {
-        return buf.is_empty();
-    }
+    bool is_empty() const noexcept { return buf.is_empty(); }
 
     bool rename_to(const Path &targetname) const noexcept;
 
@@ -1514,7 +1500,7 @@ template<int index, typename... T> constexpr size_t compute_alignment() {
 
 template<WellBehaved... T> class Variant {
 
-    static constexpr int MAX_TYPES = 5;
+    static constexpr int MAX_TYPES = 10;
     static_assert(sizeof...(T) <= MAX_TYPES);
     static_assert(sizeof...(T) > 0);
 
@@ -1610,6 +1596,16 @@ private:
             PYSTD2015_VAR_MOVE_SWITCH(3);
         case 4:
             PYSTD2015_VAR_MOVE_SWITCH(4);
+        case 5:
+            PYSTD2015_VAR_MOVE_SWITCH(5);
+        case 6:
+            PYSTD2015_VAR_MOVE_SWITCH(6);
+        case 7:
+            PYSTD2015_VAR_MOVE_SWITCH(7);
+        case 8:
+            PYSTD2015_VAR_MOVE_SWITCH(8);
+        case 9:
+            PYSTD2015_VAR_MOVE_SWITCH(9);
         default:
             internal_failure("Unreachable code in variant move.");
         }
@@ -1641,11 +1637,60 @@ private:
             PYSTD2015_VAR_COPY_SWITCH(3);
         case 4:
             PYSTD2015_VAR_COPY_SWITCH(4);
+        case 5:
+            PYSTD2015_VAR_COPY_SWITCH(5);
+        case 6:
+            PYSTD2015_VAR_COPY_SWITCH(6);
+        case 7:
+            PYSTD2015_VAR_COPY_SWITCH(7);
+        case 8:
+            PYSTD2015_VAR_COPY_SWITCH(8);
+        case 9:
+            PYSTD2015_VAR_COPY_SWITCH(9);
         default:
             internal_failure("Unreachable code in variant copy.");
         }
 
         type_id = o.type_id;
+    }
+
+#define PYSTD2015_VAR_COMPARE_SWITCH(i)                                                            \
+    {                                                                                              \
+        const T...[i] &v1 = get<T...[i]>();                                                        \
+        const T...[i] &v2 = o.get<T...[i]>();                                                      \
+        return v1 == v2;                                                                           \
+    }
+
+    bool operator==(const Variant &o) const {
+        if(this == &o) {
+            return true;
+        }
+        if(type_id != o.type_id) {
+            return false;
+        }
+        switch(o.type_id) {
+        case 0:
+            PYSTD2015_VAR_COMPARE_SWITCH(0);
+        case 1:
+            PYSTD2015_VAR_COMPARE_SWITCH(1);
+        case 2:
+            PYSTD2015_VAR_COMPARE_SWITCH(2);
+        case 3:
+            PYSTD2015_VAR_COMPARE_SWITCH(3);
+        case 4:
+            PYSTD2015_VAR_COMPARE_SWITCH(4);
+        case 5:
+            PYSTD2015_VAR_COMPARE_SWITCH(5);
+        case 6:
+            PYSTD2015_VAR_COMPARE_SWITCH(6);
+        case 7:
+            PYSTD2015_VAR_COMPARE_SWITCH(7);
+        case 8:
+            PYSTD2015_VAR_COMPARE_SWITCH(8);
+        case 9:
+            PYSTD2015_VAR_COMPARE_SWITCH(9);
+        }
+        internal_failure("Unreachable code in variant compare.");
     }
 
     template<typename Desired, int8_t index> constexpr int8_t get_index_for_type() const noexcept {
@@ -1675,6 +1720,16 @@ private:
             destroy_by_index<3>();
         } else if(type_id == 4) {
             destroy_by_index<4>();
+        } else if(type_id == 5) {
+            destroy_by_index<5>();
+        } else if(type_id == 6) {
+            destroy_by_index<6>();
+        } else if(type_id == 7) {
+            destroy_by_index<7>();
+        } else if(type_id == 8) {
+            destroy_by_index<8>();
+        } else if(type_id == 9) {
+            destroy_by_index<9>();
         } else {
             internal_failure("Unreachable code in variant destroy.");
         }
@@ -1692,42 +1747,26 @@ private:
     int8_t type_id;
 };
 
-template<typename T>
-class Stack {
+template<typename T> class Stack {
 public:
-
     Stack() = default;
     Stack(Stack &&o) = default;
 
-    Stack& operator=(Stack &&o) noexcept = default;
+    Stack &operator=(Stack &&o) noexcept = default;
 
-    bool is_empty() const {
-        return backing.is_empty();
-    }
+    bool is_empty() const { return backing.is_empty(); }
 
-    T& top() {
-        return backing.back();
-    }
+    T &top() { return backing.back(); }
 
-    const T& top() const {
-        return backing.back();
-    }
+    const T &top() const { return backing.back(); }
 
-    size_t size() const noexcept {
-        return backing.size();
-    }
+    size_t size() const noexcept { return backing.size(); }
 
-    void pop() {
-        backing.pop_back();
-    }
+    void pop() { backing.pop_back(); }
 
-    void push(const T& obj) {
-        backing.push_back(obj);
-    }
+    void push(const T &obj) { backing.push_back(obj); }
 
-    void clear() noexcept {
-        backing.clear();
-    }
+    void clear() noexcept { backing.clear(); }
 
 private:
     Vector<T> backing;
@@ -1745,7 +1784,7 @@ template<typename T> void format_append(T &oobj, const char *format, ...) {
         auto *s = reinterpret_cast<T *>(ctx);
         if constexpr(is_same_v<T, CString>) {
             *s += buf;
-        } else  {
+        } else {
             for(size_t i = 0; i < bufsize; ++i) {
                 s->push_back(buf[i]);
             }
