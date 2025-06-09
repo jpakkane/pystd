@@ -786,7 +786,7 @@ public:
         bytes.clear();
     }
 
-    CString substr(size_t offset, size_t length) const;
+    CString substr(size_t offset, size_t length=-1) const;
 
     char operator[](size_t i) const { return bytes[i]; }
 
@@ -827,6 +827,8 @@ public:
     void push_back(const char c) noexcept { append(c); }
 
     void insert(size_t i, const CStringView &v) noexcept;
+
+    size_t rfind(const char c) const noexcept;
 
 private:
     bool view_points_to_this(const CStringView &v) const;
@@ -1350,11 +1352,15 @@ public:
 
     bool is_abs() const;
 
+    CString extension() const;
+
     Path operator/(const Path &o) const noexcept;
     Path operator/(const char *str) const noexcept;
 
     Optional<Bytes> load_bytes();
     Optional<U8String> load_text();
+
+    const char * c_str() const noexcept { return buf.c_str(); }
 
 private:
     CString buf;

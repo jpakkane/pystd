@@ -60,6 +60,14 @@ Path Path::operator/(const char *str) const noexcept {
     return *this / p;
 }
 
+CString Path::extension() const {
+    auto loc = buf.rfind('.');
+    if(loc == (size_t)-1) {
+        return CString();
+    }
+    return buf.substr(loc);
+}
+
 Optional<Bytes> Path::load_bytes() {
     FILE *f = fopen(buf.c_str(), "rb");
     if(!f) {

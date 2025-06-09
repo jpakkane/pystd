@@ -426,6 +426,9 @@ size_t CString::size() const {
 }
 
 CString CString::substr(size_t offset, size_t length) const {
+    if(length == (size_t)-1) {
+        CString(c_str() + offset, size() - offset);
+    }
     // FIXME, validate range.
     return CString(c_str() + offset, length);
 }
@@ -521,6 +524,17 @@ void CString::insert(size_t i, const CStringView &v) noexcept {
         return;
     }
     bytes.insert(i, v.data(), v.size());
+}
+
+size_t CString::rfind(const char c) const noexcept {
+    size_t i = bytes.size() - 1;
+    while(i != -1) {
+        if(bytes[i] == c) {
+            return i;
+        }
+        --i;
+    }
+    return -1;
 }
 
 bool CString::view_points_to_this(const CStringView &v) const {
