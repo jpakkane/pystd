@@ -68,6 +68,44 @@ concept WellBehaved = requires(T a, T &b, T &&c) {
     requires !is_volatile_v<T>;
 };
 
+template<typename Hasher, typename Object> struct HashFeeder {
+};
+
+template<typename Hasher> struct HashFeeder<Hasher, int32_t> {
+    void operator()(Hasher &h, const int32_t &num) noexcept {
+        h.feed_bytes(reinterpret_cast<const char*>(&num), sizeof(int32_t));
+    }
+};
+
+template<typename Hasher> struct HashFeeder<Hasher, uint64_t> {
+    void operator()(Hasher &h, const uint64_t &num) noexcept {
+        h.feed_bytes(reinterpret_cast<const char*>(&num), sizeof(uint64_t));
+    }
+};
+
+struct HashTemp {
+    template<typename Hasher, typename Object>
+    void feed_hash(Hasher &h, const Object &o) {
+        HashFeeder<Hasher, Object> hf;
+        hf(h, o);
+    }
+};
+
+
+/*
+
+    void operator()(Hasher &h, const uint32_t &i) noexcept { feed_primitive(h, i); }
+
+    void operator()(Hasher &h, const int64_t &i) noexcept { feed_primitive(h, i); }
+
+    void operator()(Hasher &h, const uint64_t &i) noexcept { feed_primitive(h, i); }
+
+    void operator()(Hasher &h, const float &i) noexcept { feed_primitive(h, i); }
+
+    void operator()(Hasher &h, const double &i) noexcept { feed_primitive(h, i); }
+
+};
+*/
 template<WellBehaved V, WellBehaved E> class Expected {
 private:
     enum class UnionState : unsigned char {
@@ -469,38 +507,6 @@ enum class EncodingPolicy {
 class SimpleHasher final {
 public:
     void feed_bytes(const char *buf, size_t bufsize) noexcept;
-
-    template<typename T> void feed_primitive(const T &c) noexcept {
-        // FIXME, add concept to only accept ints and floats.
-        feed_bytes((const char *)&c, sizeof(c));
-    }
-
-    void feed(int8_t i) noexcept { feed_primitive(i); }
-
-    void feed(uint8_t i) noexcept { feed_primitive(i); }
-
-    void feed(int16_t i) noexcept { feed_primitive(i); }
-
-    void feed(uint16_t i) noexcept { feed_primitive(i); }
-
-    void feed(int32_t i) noexcept { feed_primitive(i); }
-
-    void feed(uint32_t i) noexcept { feed_primitive(i); }
-
-    void feed(int64_t i) noexcept { feed_primitive(i); }
-
-    void feed(uint64_t i) noexcept { feed_primitive(i); }
-
-    void feed(float i) noexcept { feed_primitive(i); }
-
-    void feed(double i) noexcept { feed_primitive(i); }
-
-    template<typename T> void feed(T *o) noexcept {
-        static_assert(sizeof(void *) == 8);
-        feed_primitive((uint64_t)o);
-    }
-
-    template<typename T> void feed(const T &o) noexcept { o.feed_hash(*this); }
 
     size_t get_hash() const { return value; }
 
@@ -1046,6 +1052,13 @@ private:
     // Store length in codepoints.
 };
 
+template<typename Hasher> struct HashFeeder<Hasher, U8String> {
+    void operator()(Hasher &h, const U8String &u8) noexcept {
+        u8.feed_hash(h);
+    }
+};
+
+
 class PyException {
 public:
     explicit PyException(const char *msg);
@@ -1104,6 +1117,10 @@ private:
     FILE *f;
     EncodingPolicy policy;
 };
+
+template<typename Hasher> void feed_hash(Hasher &h, int32_t i) noexcept { h.feed_primitive(i); }
+
+template<typename Hasher> void feed_hash(Hasher &h, size_t i) noexcept { h.feed_primitive(i); }
 
 template<typename Key, typename Value> class HashMapIterator;
 
@@ -1318,8 +1335,9 @@ private:
 
     size_t hash_for(const Key &k) const {
         Hasher h;
-        h.feed(salt);
-        h.feed(k);
+        HashTemp hf;
+        hf.feed_hash(h, salt);
+        hf.feed_hash(h, k);
         auto raw_hash = h.get_hash();
         if(raw_hash == FREE_SLOT) {
             raw_hash = FREE_SLOT + 1;
