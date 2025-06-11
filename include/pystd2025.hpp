@@ -611,7 +611,7 @@ public:
 
     Vector(const Vector<T> &o) {
         reserve(o.size());
-        for(const auto &i: o) {
+        for(const auto &i : o) {
             push_back(i);
         }
     }
@@ -643,8 +643,7 @@ public:
         }
     }
 
-    template<typename Iter1, typename Iter2>
-    void append(Iter1 start, Iter2 end) {
+    template<typename Iter1, typename Iter2> void append(Iter1 start, Iter2 end) {
         if(is_ptr_within(&(*start))) {
             throw "FIXME, appending contents of vector not handled yet.";
         }
@@ -654,8 +653,7 @@ public:
         }
     }
 
-    template<typename Iter1, typename Iter2>
-    void assign(Iter1 start, Iter2 end) {
+    template<typename Iter1, typename Iter2> void assign(Iter1 start, Iter2 end) {
         if(is_ptr_within(&(*start))) {
             throw "FIXME, assigning subset of vector itself is not supported.";
         }
@@ -745,14 +743,9 @@ public:
         return *objptr(i);
     }
 
-    T &at(size_t i) {
-        return (*this)[i];
-    }
+    T &at(size_t i) { return (*this)[i]; }
 
-    const T &at(size_t i) const {
-        return (*this)[i];
-    }
-
+    const T &at(size_t i) const { return (*this)[i]; }
 
     Vector<T> &operator=(Vector<T> &&o) noexcept {
         if(this != &o) {
@@ -771,7 +764,7 @@ public:
 
     void reserve(size_t new_size) {
         if(new_size > size()) {
-            backing.resize_to(new_size*sizeof(T));
+            backing.resize_to(new_size * sizeof(T));
         }
     }
 
@@ -1192,6 +1185,11 @@ public:
 
     HashMapIterator<Key, Value> end() { return HashMapIterator<Key, Value>(this, table_size()); }
 
+    void clear() {
+        data.clear();
+        num_entries = 0;
+    }
+
 private:
     // This is neither fast, memory efficient nor elegant.
     // At this point in the project life cycle it does not need to be.
@@ -1229,13 +1227,13 @@ private:
             return (const Value *)(valuedata.data() + i * sizeof(Value));
         }
 
-        void reset_hash_values() {
+        void reset_hash_values() noexcept {
             for(size_t i = 0; i < hashes.size(); ++i) {
                 hashes[i] = FREE_SLOT;
             }
         }
 
-        void deallocate_contents() {
+        void deallocate_contents() noexcept {
             for(size_t i = 0; i < hashes.size(); ++i) {
                 if(!has_value(i)) {
                     continue;
@@ -1243,6 +1241,11 @@ private:
                 keyptr(i)->~Key();
                 valueptr(i)->~Value();
             }
+        }
+
+        void clear() noexcept {
+            deallocate_contents();
+            reset_hash_values();
         }
 
         bool has_value(size_t offset) const {
@@ -1376,6 +1379,23 @@ private:
     size_t offset;
 };
 
+template<typename Key> class HashSetIterator final {
+public:
+    HashSetIterator(HashMapIterator<Key, int> it_) : it{it_} {}
+
+    Key &operator*() { return *(*it).key; }
+
+    bool operator!=(const HashSetIterator<Key> &o) const { return it != o.it; };
+
+    HashSetIterator<Key> &operator++() {
+        ++it;
+        return *this;
+    }
+
+private:
+    HashMapIterator<Key, int> it;
+};
+
 template<WellBehaved Key, typename Hasher = SimpleHasher> class HashSet final {
 
 public:
@@ -1385,7 +1405,15 @@ public:
 
     void remove(const Key &k) { map.remove(k); }
 
-    size_t size() const { return map.size(); }
+    size_t size() const noexcept { return map.size(); }
+
+    bool is_empty() const noexcept { return size() == 0; }
+
+    void clear() noexcept { map.clear(); }
+
+    HashSetIterator<Key> begin() { return HashSetIterator<Key>(map.begin()); }
+
+    HashSetIterator<Key> end() { return HashSetIterator<Key>(map.end()); }
 
 private:
     // This is inefficient.
