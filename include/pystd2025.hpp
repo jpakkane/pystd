@@ -609,6 +609,13 @@ template<WellBehaved T> class Vector final {
 public:
     Vector() noexcept = default;
 
+    Vector(const Vector<T> &o) {
+        reserve(o.size());
+        for(const auto &i: o) {
+            push_back(i);
+        }
+    }
+
     Vector(Vector<T> &&o) noexcept : backing(move(o.backing)), num_entries{o.num_entries} {
         o.num_entries = 0;
     }
@@ -718,6 +725,15 @@ public:
         return *objptr(i);
     }
 
+    T &at(size_t i) {
+        return (*this)[i];
+    }
+
+    const T &at(size_t i) const {
+        return (*this)[i];
+    }
+
+
     Vector<T> &operator=(Vector<T> &&o) noexcept {
         if(this != &o) {
             backing = move(o.backing);
@@ -732,6 +748,12 @@ public:
 
     T *begin() const { return const_cast<T *>(objptr(0)); }
     T *end() const { return const_cast<T *>(objptr(num_entries)); }
+
+    void reserve(size_t new_size) {
+        if(new_size > size()) {
+            backing.resize_to(new_size*sizeof(T));
+        }
+    }
 
 private:
     T *objptr(size_t i) noexcept { return reinterpret_cast<T *>(rawptr(i)); }
