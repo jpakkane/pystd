@@ -633,7 +633,7 @@ public:
             T tmp{obj};
             backing.extend(sizeof(T));
             auto obj_loc = objptr(num_entries);
-            new(obj_loc) T(move(tmp));
+            new(obj_loc) T(::pystd2025::move(tmp));
             ++num_entries;
         } else {
             backing.extend(sizeof(T));
@@ -643,19 +643,39 @@ public:
         }
     }
 
+    template<typename Iter1, typename Iter2>
+    void append(Iter1 start, Iter2 end) {
+        if(is_ptr_within(&(*start))) {
+            throw "FIXME, appending contents of vector not handled yet.";
+        }
+        while(start != end) {
+            push_back(*start);
+            ++start;
+        }
+    }
+
+    template<typename Iter1, typename Iter2>
+    void assign(Iter1 start, Iter2 end) {
+        if(is_ptr_within(&(*start))) {
+            throw "FIXME, assigning subset of vector itself is not supported.";
+        }
+        clear();
+        append(start, end);
+    }
+
     void emplace_back(T &&obj) noexcept {
         if(is_ptr_within(&obj) && needs_to_grow_for(1)) {
             // Fixme, maybe compute index to the backing store
             // and then use that, skipping the temporary.
-            T tmp{move(obj)};
+            T tmp{::pystd2025::move(obj)};
             backing.extend(sizeof(T));
             auto obj_loc = objptr(num_entries);
-            new(obj_loc) T(move(tmp));
+            new(obj_loc) T(::pystd2025::move(tmp));
             ++num_entries;
         } else {
             backing.extend(sizeof(T));
             auto obj_loc = objptr(num_entries);
-            new(obj_loc) T(move(obj));
+            new(obj_loc) T(::pystd2025::move(obj));
             ++num_entries;
         }
     }
