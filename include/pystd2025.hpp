@@ -68,44 +68,59 @@ concept WellBehaved = requires(T a, T &b, T &&c) {
     requires !is_volatile_v<T>;
 };
 
-template<typename Hasher, typename Object> struct HashFeeder {
+class SimpleHash final {
+public:
+    void feed_bytes(const char *buf, size_t bufsize) noexcept;
+
+    size_t get_hash_value() const { return value; }
+
+private:
+    size_t value{0};
 };
 
-template<typename Hasher> struct HashFeeder<Hasher, int32_t> {
-    void operator()(Hasher &h, const int32_t &num) noexcept {
-        h.feed_bytes(reinterpret_cast<const char*>(&num), sizeof(int32_t));
+template<typename Hasher, typename Object> struct HashFeeder {};
+
+template<WellBehaved HashAlgo = SimpleHash> class Hasher {
+public:
+    template<typename Object> void feed_hash(const Object &o) {
+        HashFeeder<Hasher, Object> f;
+        f(*this, o);
     }
-};
 
-template<typename Hasher> struct HashFeeder<Hasher, uint64_t> {
-    void operator()(Hasher &h, const uint64_t &num) noexcept {
-        h.feed_bytes(reinterpret_cast<const char*>(&num), sizeof(uint64_t));
+    void feed_bytes(const char *buf, size_t bufsize) { h.feed_bytes(buf, bufsize); }
+
+    void feed_hash(const int8_t o) { h.feed_bytes(reinterpret_cast<const char *>(&o), sizeof(o)); }
+
+    void feed_hash(const uint8_t o) { h.feed_bytes(reinterpret_cast<const char *>(&o), sizeof(o)); }
+
+    void feed_hash(const int16_t o) { h.feed_bytes(reinterpret_cast<const char *>(&o), sizeof(o)); }
+
+    void feed_hash(const uint16_t o) {
+        h.feed_bytes(reinterpret_cast<const char *>(&o), sizeof(o));
     }
-};
 
-struct HashTemp {
-    template<typename Hasher, typename Object>
-    void feed_hash(Hasher &h, const Object &o) {
-        HashFeeder<Hasher, Object> hf;
-        hf(h, o);
+    void feed_hash(const int32_t o) { h.feed_bytes(reinterpret_cast<const char *>(&o), sizeof(o)); }
+
+    void feed_hash(const uint32_t o) {
+        h.feed_bytes(reinterpret_cast<const char *>(&o), sizeof(o));
     }
+
+    void feed_hash(const int64_t o) { h.feed_bytes(reinterpret_cast<const char *>(&o), sizeof(o)); }
+
+    void feed_hash(const uint64_t o) {
+        h.feed_bytes(reinterpret_cast<const char *>(&o), sizeof(o));
+    }
+
+    template<typename T> void feed_hash(const T *o) {
+        h.feed_bytes(reinterpret_cast<const char *>(&o), sizeof(T *));
+    }
+
+    size_t get_hash_value() const { return h.get_hash_value(); }
+
+private:
+    HashAlgo h;
 };
 
-
-/*
-
-    void operator()(Hasher &h, const uint32_t &i) noexcept { feed_primitive(h, i); }
-
-    void operator()(Hasher &h, const int64_t &i) noexcept { feed_primitive(h, i); }
-
-    void operator()(Hasher &h, const uint64_t &i) noexcept { feed_primitive(h, i); }
-
-    void operator()(Hasher &h, const float &i) noexcept { feed_primitive(h, i); }
-
-    void operator()(Hasher &h, const double &i) noexcept { feed_primitive(h, i); }
-
-};
-*/
 template<WellBehaved V, WellBehaved E> class Expected {
 private:
     enum class UnionState : unsigned char {
@@ -502,16 +517,6 @@ enum class EncodingPolicy {
     Enforce,
     Substitute,
     Ignore,
-};
-
-class SimpleHasher final {
-public:
-    void feed_bytes(const char *buf, size_t bufsize) noexcept;
-
-    size_t get_hash() const { return value; }
-
-private:
-    size_t value{0};
 };
 
 class PyException;
@@ -1053,11 +1058,8 @@ private:
 };
 
 template<typename Hasher> struct HashFeeder<Hasher, U8String> {
-    void operator()(Hasher &h, const U8String &u8) noexcept {
-        u8.feed_hash(h);
-    }
+    void operator()(Hasher &h, const U8String &u8) noexcept { u8.feed_hash(h); }
 };
-
 
 class PyException {
 public:
@@ -1124,7 +1126,8 @@ template<typename Hasher> void feed_hash(Hasher &h, size_t i) noexcept { h.feed_
 
 template<typename Key, typename Value> class HashMapIterator;
 
-template<WellBehaved Key, WellBehaved Value, typename Hasher = SimpleHasher> class HashMap final {
+template<WellBehaved Key, WellBehaved Value, WellBehaved HashAlgo = SimpleHash>
+class HashMap final {
 public:
     friend class HashMapIterator<Key, Value>;
     HashMap() {
@@ -1334,11 +1337,10 @@ private:
     }
 
     size_t hash_for(const Key &k) const {
-        Hasher h;
-        HashTemp hf;
-        hf.feed_hash(h, salt);
-        hf.feed_hash(h, k);
-        auto raw_hash = h.get_hash();
+        Hasher<HashAlgo> h;
+        h.feed_hash(salt);
+        h.feed_hash(k);
+        auto raw_hash = h.get_hash_value();
         if(raw_hash == FREE_SLOT) {
             raw_hash = FREE_SLOT + 1;
         } else if(raw_hash == TOMBSTONE) {
@@ -1397,7 +1399,7 @@ private:
     size_t offset;
 };
 
-template<typename Key> class HashSetIterator final {
+template<WellBehaved Key> class HashSetIterator final {
 public:
     HashSetIterator(HashMapIterator<Key, int> it_) : it{it_} {}
 
@@ -1414,7 +1416,7 @@ private:
     HashMapIterator<Key, int> it;
 };
 
-template<WellBehaved Key, typename Hasher = SimpleHasher> class HashSet final {
+template<WellBehaved Key, WellBehaved HashAlgo = SimpleHash> class HashSet final {
 
 public:
     void insert(const Key &key) { map.insert(key, 1); }
@@ -1438,7 +1440,7 @@ private:
     // It is just to get the implementation going
     // and work out the API.
     // Replace with a proper implementation later.
-    HashMap<Key, int, Hasher> map;
+    HashMap<Key, int, HashAlgo> map;
 };
 
 class U8Regex {

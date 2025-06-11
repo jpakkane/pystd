@@ -159,7 +159,7 @@ void internal_failure(const char *message) noexcept {
     abort();
 }
 
-void SimpleHasher::feed_bytes(const char *buf, size_t bufsize) noexcept {
+void SimpleHash::feed_bytes(const char *buf, size_t bufsize) noexcept {
     for(size_t i = 0; i < bufsize; ++i) {
         value = 13 * value ^ (unsigned char)buf[i];
     }
