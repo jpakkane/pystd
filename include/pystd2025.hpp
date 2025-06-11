@@ -386,7 +386,7 @@ public:
         }
     }
 
-    void operator=(T &o) noexcept {
+    void operator=(const T &o) noexcept {
         if(&o == &data.value) {
             return;
         }
