@@ -1637,6 +1637,43 @@ public:
     Variant(const Variant<T...> &o) { copy_value_in(o, false); }
     Variant(Variant<T...> &&o) noexcept { move_to_uninitialized_memory(o); }
 
+#define PYSTD2015_VAR_MOVE_CONSTRUCT_SWITCH(i)                                                     \
+    {                                                                                              \
+        if constexpr(i == new_type) {                                                              \
+            new(buf) T... [i] { pystd2025::move(o) };                                              \
+        }                                                                                          \
+    }                                                                                              \
+    break;
+
+    template<typename InType> Variant(InType &&o) noexcept {
+        constexpr int new_type = get_index_for_type<InType>();
+        switch(new_type) {
+        case 0:
+            PYSTD2015_VAR_MOVE_CONSTRUCT_SWITCH(0);
+        case 1:
+            PYSTD2015_VAR_MOVE_CONSTRUCT_SWITCH(1);
+        case 2:
+            PYSTD2015_VAR_MOVE_CONSTRUCT_SWITCH(2);
+        case 3:
+            PYSTD2015_VAR_MOVE_CONSTRUCT_SWITCH(3);
+        case 4:
+            PYSTD2015_VAR_MOVE_CONSTRUCT_SWITCH(4);
+        case 5:
+            PYSTD2015_VAR_MOVE_CONSTRUCT_SWITCH(5);
+        case 6:
+            PYSTD2015_VAR_MOVE_CONSTRUCT_SWITCH(6);
+        case 7:
+            PYSTD2015_VAR_MOVE_CONSTRUCT_SWITCH(7);
+        case 8:
+            PYSTD2015_VAR_MOVE_CONSTRUCT_SWITCH(8);
+        case 9:
+            PYSTD2015_VAR_MOVE_CONSTRUCT_SWITCH(9);
+        default:
+            internal_failure("Bad variant construction.");
+        }
+
+        type_id = new_type;
+    }
     ~Variant() { destroy(); }
 
     template<WellBehaved Q> bool contains() const noexcept {
@@ -1741,11 +1778,13 @@ private:
 // value can be nothrow copied.
 #define PYSTD2015_VAR_COPY_SWITCH(i)                                                               \
     {                                                                                              \
-        T...[i] tmp(o.get<T...[i]>());                                                             \
-        if(has_existing_value) {                                                                   \
-            destroy();                                                                             \
+        if constexpr(i < sizeof...(T)) {                                                           \
+            T...[i] tmp(o.get<T...[i]>());                                                         \
+            if(has_existing_value) {                                                               \
+                destroy();                                                                         \
+            }                                                                                      \
+            new(buf) T...[i](move(tmp));                                                           \
         }                                                                                          \
-        new(buf) T...[i](move(tmp));                                                               \
     }                                                                                              \
     break;
 
