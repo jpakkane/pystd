@@ -1635,7 +1635,7 @@ public:
         new(buf) T...[0]{};
     }
     Variant(const Variant<T...> &o) { copy_value_in(o, false); }
-    Variant(Variant<T...> &&o) noexcept { move_to_uninitialized_memory(o); }
+    Variant(Variant<T...> &&o) noexcept { move_to_uninitialized_memory(pystd2025::move(o)); }
 
 #define PYSTD2015_VAR_MOVE_CONSTRUCT_SWITCH(i)                                                     \
     {                                                                                              \
