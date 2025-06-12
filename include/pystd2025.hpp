@@ -1637,7 +1637,7 @@ public:
     Variant(const Variant<T...> &o) { copy_value_in(o, false); }
     Variant(Variant<T...> &&o) noexcept { move_to_uninitialized_memory(pystd2025::move(o)); }
 
-#define PYSTD2015_VAR_MOVE_CONSTRUCT_SWITCH(i)                                                     \
+#define PYSTD2025_VAR_MOVE_CONSTRUCT_SWITCH(i)                                                     \
     {                                                                                              \
         if constexpr(i == new_type) {                                                              \
             new(buf) T... [i] { pystd2025::move(o) };                                              \
@@ -1649,25 +1649,25 @@ public:
         constexpr int new_type = get_index_for_type<InType>();
         switch(new_type) {
         case 0:
-            PYSTD2015_VAR_MOVE_CONSTRUCT_SWITCH(0);
+            PYSTD2025_VAR_MOVE_CONSTRUCT_SWITCH(0);
         case 1:
-            PYSTD2015_VAR_MOVE_CONSTRUCT_SWITCH(1);
+            PYSTD2025_VAR_MOVE_CONSTRUCT_SWITCH(1);
         case 2:
-            PYSTD2015_VAR_MOVE_CONSTRUCT_SWITCH(2);
+            PYSTD2025_VAR_MOVE_CONSTRUCT_SWITCH(2);
         case 3:
-            PYSTD2015_VAR_MOVE_CONSTRUCT_SWITCH(3);
+            PYSTD2025_VAR_MOVE_CONSTRUCT_SWITCH(3);
         case 4:
-            PYSTD2015_VAR_MOVE_CONSTRUCT_SWITCH(4);
+            PYSTD2025_VAR_MOVE_CONSTRUCT_SWITCH(4);
         case 5:
-            PYSTD2015_VAR_MOVE_CONSTRUCT_SWITCH(5);
+            PYSTD2025_VAR_MOVE_CONSTRUCT_SWITCH(5);
         case 6:
-            PYSTD2015_VAR_MOVE_CONSTRUCT_SWITCH(6);
+            PYSTD2025_VAR_MOVE_CONSTRUCT_SWITCH(6);
         case 7:
-            PYSTD2015_VAR_MOVE_CONSTRUCT_SWITCH(7);
+            PYSTD2025_VAR_MOVE_CONSTRUCT_SWITCH(7);
         case 8:
-            PYSTD2015_VAR_MOVE_CONSTRUCT_SWITCH(8);
+            PYSTD2025_VAR_MOVE_CONSTRUCT_SWITCH(8);
         case 9:
-            PYSTD2015_VAR_MOVE_CONSTRUCT_SWITCH(9);
+            PYSTD2025_VAR_MOVE_CONSTRUCT_SWITCH(9);
         default:
             internal_failure("Bad variant construction.");
         }
@@ -1738,7 +1738,7 @@ public:
     }
 
 private:
-#define PYSTD2015_VAR_MOVE_SWITCH(i)                                                               \
+#define PYSTD2025_VAR_MOVE_SWITCH(i)                                                               \
     {                                                                                              \
         if constexpr(i < sizeof...(T)) {                                                           \
             new(buf) T... [i] { move(o.get<T...[i]>()) };                                          \
@@ -1749,25 +1749,25 @@ private:
     void move_to_uninitialized_memory(Variant<T...> &&o) noexcept {
         switch(o.type_id) {
         case 0:
-            PYSTD2015_VAR_MOVE_SWITCH(0);
+            PYSTD2025_VAR_MOVE_SWITCH(0);
         case 1:
-            PYSTD2015_VAR_MOVE_SWITCH(1);
+            PYSTD2025_VAR_MOVE_SWITCH(1);
         case 2:
-            PYSTD2015_VAR_MOVE_SWITCH(2);
+            PYSTD2025_VAR_MOVE_SWITCH(2);
         case 3:
-            PYSTD2015_VAR_MOVE_SWITCH(3);
+            PYSTD2025_VAR_MOVE_SWITCH(3);
         case 4:
-            PYSTD2015_VAR_MOVE_SWITCH(4);
+            PYSTD2025_VAR_MOVE_SWITCH(4);
         case 5:
-            PYSTD2015_VAR_MOVE_SWITCH(5);
+            PYSTD2025_VAR_MOVE_SWITCH(5);
         case 6:
-            PYSTD2015_VAR_MOVE_SWITCH(6);
+            PYSTD2025_VAR_MOVE_SWITCH(6);
         case 7:
-            PYSTD2015_VAR_MOVE_SWITCH(7);
+            PYSTD2025_VAR_MOVE_SWITCH(7);
         case 8:
-            PYSTD2015_VAR_MOVE_SWITCH(8);
+            PYSTD2025_VAR_MOVE_SWITCH(8);
         case 9:
-            PYSTD2015_VAR_MOVE_SWITCH(9);
+            PYSTD2025_VAR_MOVE_SWITCH(9);
         default:
             internal_failure("Unreachable code in variant move.");
         }
@@ -1776,7 +1776,7 @@ private:
 
 // FIXME, update to do a constexpr check to see if the
 // value can be nothrow copied.
-#define PYSTD2015_VAR_COPY_SWITCH(i)                                                               \
+#define PYSTD2025_VAR_COPY_SWITCH(i)                                                               \
     {                                                                                              \
         if constexpr(i < sizeof...(T)) {                                                           \
             T...[i] tmp(o.get<T...[i]>());                                                         \
@@ -1792,25 +1792,25 @@ private:
         // If copy construction throws, keep the old value.
         switch(o.type_id) {
         case 0:
-            PYSTD2015_VAR_COPY_SWITCH(0);
+            PYSTD2025_VAR_COPY_SWITCH(0);
         case 1:
-            PYSTD2015_VAR_COPY_SWITCH(1);
+            PYSTD2025_VAR_COPY_SWITCH(1);
         case 2:
-            PYSTD2015_VAR_COPY_SWITCH(2);
+            PYSTD2025_VAR_COPY_SWITCH(2);
         case 3:
-            PYSTD2015_VAR_COPY_SWITCH(3);
+            PYSTD2025_VAR_COPY_SWITCH(3);
         case 4:
-            PYSTD2015_VAR_COPY_SWITCH(4);
+            PYSTD2025_VAR_COPY_SWITCH(4);
         case 5:
-            PYSTD2015_VAR_COPY_SWITCH(5);
+            PYSTD2025_VAR_COPY_SWITCH(5);
         case 6:
-            PYSTD2015_VAR_COPY_SWITCH(6);
+            PYSTD2025_VAR_COPY_SWITCH(6);
         case 7:
-            PYSTD2015_VAR_COPY_SWITCH(7);
+            PYSTD2025_VAR_COPY_SWITCH(7);
         case 8:
-            PYSTD2015_VAR_COPY_SWITCH(8);
+            PYSTD2025_VAR_COPY_SWITCH(8);
         case 9:
-            PYSTD2015_VAR_COPY_SWITCH(9);
+            PYSTD2025_VAR_COPY_SWITCH(9);
         default:
             internal_failure("Unreachable code in variant copy.");
         }
@@ -1818,7 +1818,7 @@ private:
         type_id = o.type_id;
     }
 
-#define PYSTD2015_VAR_COMPARE_SWITCH(i)                                                            \
+#define PYSTD2025_VAR_COMPARE_SWITCH(i)                                                            \
     {                                                                                              \
         const T...[i] &v1 = get<T...[i]>();                                                        \
         const T...[i] &v2 = o.get<T...[i]>();                                                      \
@@ -1834,25 +1834,25 @@ private:
         }
         switch(o.type_id) {
         case 0:
-            PYSTD2015_VAR_COMPARE_SWITCH(0);
+            PYSTD2025_VAR_COMPARE_SWITCH(0);
         case 1:
-            PYSTD2015_VAR_COMPARE_SWITCH(1);
+            PYSTD2025_VAR_COMPARE_SWITCH(1);
         case 2:
-            PYSTD2015_VAR_COMPARE_SWITCH(2);
+            PYSTD2025_VAR_COMPARE_SWITCH(2);
         case 3:
-            PYSTD2015_VAR_COMPARE_SWITCH(3);
+            PYSTD2025_VAR_COMPARE_SWITCH(3);
         case 4:
-            PYSTD2015_VAR_COMPARE_SWITCH(4);
+            PYSTD2025_VAR_COMPARE_SWITCH(4);
         case 5:
-            PYSTD2015_VAR_COMPARE_SWITCH(5);
+            PYSTD2025_VAR_COMPARE_SWITCH(5);
         case 6:
-            PYSTD2015_VAR_COMPARE_SWITCH(6);
+            PYSTD2025_VAR_COMPARE_SWITCH(6);
         case 7:
-            PYSTD2015_VAR_COMPARE_SWITCH(7);
+            PYSTD2025_VAR_COMPARE_SWITCH(7);
         case 8:
-            PYSTD2015_VAR_COMPARE_SWITCH(8);
+            PYSTD2025_VAR_COMPARE_SWITCH(8);
         case 9:
-            PYSTD2015_VAR_COMPARE_SWITCH(9);
+            PYSTD2025_VAR_COMPARE_SWITCH(9);
         }
         internal_failure("Unreachable code in variant compare.");
     }
