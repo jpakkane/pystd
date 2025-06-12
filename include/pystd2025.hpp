@@ -1159,6 +1159,14 @@ public:
         }
     }
 
+    Value &at(const Key &key) {
+        auto *v = lookup(key);
+        if(!v) {
+            throw PyException("Map did not contain requested element.");
+        }
+        return *v;
+    }
+
     void insert(const Key &key, const Value &v) {
         if(fill_ratio() >= MAX_LOAD) {
             grow();
@@ -1201,9 +1209,15 @@ public:
 
     size_t size() const { return num_entries; }
 
-    HashMapIterator<Key, Value> begin() { return HashMapIterator<Key, Value>(this, 0); }
+    bool is_empty() const { return size() == 0; }
 
-    HashMapIterator<Key, Value> end() { return HashMapIterator<Key, Value>(this, table_size()); }
+    HashMapIterator<Key, Value> begin() const {
+        return HashMapIterator<Key, Value>(const_cast<HashMap *>(this), 0);
+    }
+
+    HashMapIterator<Key, Value> end() const {
+        return HashMapIterator<Key, Value>(const_cast<HashMap *>(this), table_size());
+    }
 
     void clear() {
         data.clear();
@@ -1416,10 +1430,20 @@ private:
     HashMapIterator<Key, int> it;
 };
 
+struct HashInsertResult {
+    int first_; // FIXME, should be an iterator.
+    bool second;
+};
+
 template<WellBehaved Key, WellBehaved HashAlgo = SimpleHash> class HashSet final {
 
 public:
-    void insert(const Key &key) { map.insert(key, 1); }
+    HashInsertResult insert(const Key &key) {
+        // FIXME, inefficient. Does the lookup twice.
+        bool inserted = !contains(key);
+        map.insert(key, 1);
+        return HashInsertResult{42, inserted};
+    }
 
     bool contains(const Key &key) const { return map.contains(key); }
 
@@ -1431,9 +1455,9 @@ public:
 
     void clear() noexcept { map.clear(); }
 
-    HashSetIterator<Key> begin() { return HashSetIterator<Key>(map.begin()); }
+    HashSetIterator<Key> begin() const { return HashSetIterator<Key>(map.begin()); }
 
-    HashSetIterator<Key> end() { return HashSetIterator<Key>(map.end()); }
+    HashSetIterator<Key> end() const { return HashSetIterator<Key>(map.end()); }
 
 private:
     // This is inefficient.
