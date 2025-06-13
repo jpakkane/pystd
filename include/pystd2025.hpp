@@ -293,8 +293,8 @@ template<typename T, typename Deleter = DefaultDeleter<T>> class unique_ptr fina
 public:
     unique_ptr() noexcept : ptr{nullptr} {}
     explicit unique_ptr(T *t) noexcept : ptr{t} {}
-    explicit unique_ptr(const unique_ptr<T, Deleter> &o) = delete;
-    explicit unique_ptr(unique_ptr<T, Deleter> &&o) noexcept : ptr{o.ptr} { o.ptr = nullptr; }
+    unique_ptr(const unique_ptr<T, Deleter> &o) = delete;
+    unique_ptr(unique_ptr<T, Deleter> &&o) noexcept : ptr{o.ptr} { o.ptr = nullptr; }
     ~unique_ptr() { Deleter::del(ptr); }
 
     unique_ptr<T, Deleter> &operator=(const unique_ptr<T, Deleter> &o) = delete;
@@ -325,6 +325,7 @@ public:
     T *get() const noexcept { return ptr; }
     T &operator*() { return *ptr; } // FIXME, check not null maybe?
     T *operator->() noexcept { return ptr; }
+    const T *operator->() const noexcept { return ptr; }
 
 private:
     T *ptr;
