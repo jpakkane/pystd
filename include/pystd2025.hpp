@@ -72,6 +72,7 @@ template<typename T1, typename T2> constexpr int maxval(const T1 &a, const T2 &b
     return a > b ? a : b;
 }
 
+struct Monostate {};
 
 class SimpleHash final {
 public:
@@ -1189,6 +1190,41 @@ public:
 private:
     CString cstring;
     // Store length in codepoints.
+};
+
+template<typename T>
+class Span {
+public:
+    Span() noexcept : array(nullptr), arraysize(0) {};
+    Span(T *src, size_t src_size) noexcept : array(src), arraysize(src_size) {}
+    Span(Span &&o)  noexcept = default;
+    Span(const Span &o) noexcept = default;
+
+    Span& operator=(Span &&o) noexcept = default;
+    Span& operator=(const Span &o) noexcept = default;
+
+    const T& operator[](size_t i) const {
+        if(i > arraysize) {
+            throw "OOB in span.";
+        }
+        return array[i];
+    }
+
+    const T* begin() const {
+        return array;
+    }
+
+    const T* end() const {
+        return array + arraysize;
+    }
+
+    size_t size() const {
+        return arraysize;
+    }
+
+private:
+    T* array;
+    size_t arraysize;
 };
 
 template<typename Hasher> struct HashFeeder<Hasher, U8String> {
