@@ -245,8 +245,12 @@ void Bytes::grow_to(size_t new_size) {
 }
 
 void Bytes::append(const char c) {
-    if(bufsize >= buf.size()) {
-        grow_to(buf.size() * 2);
+    if((bufsize + 1) >= buf.size()) {
+        if(buf.size() < default_bufsize / 2) {
+            grow_to(default_bufsize);
+        } else {
+            grow_to(buf.size() * 2);
+        }
     }
     buf[bufsize] = c;
     ++bufsize;
@@ -352,7 +356,7 @@ size_t CStringView::find(char c) const {
 
 CStringView CStringView::substr(size_t pos, size_t count) const {
     if(pos >= bufsize) {
-        throw PyException("Index out of bounds.");
+        throw PyException("CStringView index out of bounds.");
     }
     size_t actual_count = count;
     if(count == (size_t)-1) {
@@ -373,8 +377,7 @@ CString::CString(const CStringView &view) : CString(view.data(), view.size()) {}
 
 CString::CString(const char *txt, size_t txtsize) {
     if(txtsize == (size_t)-1) {
-        bytes = Bytes(txt, strlen(txt));
-        bytes.append('\0');
+        bytes = Bytes(txt, strlen(txt) + 1);
     } else if(txtsize == 0) {
         assert(bytes.is_empty());
         bytes.append('\0');

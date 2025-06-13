@@ -366,14 +366,14 @@ public:
 
     T &operator[](size_t index) {
         if(index >= array_size) {
-            throw "Index out of bounds.";
+            throw "Unique_arr index out of bounds.";
         }
         return ptr[index];
     }
 
     const T &operator[](size_t index) const {
         if(index >= array_size) {
-            throw "Index out of bounds.";
+            throw "Unique_arr index out of bounds.";
         }
         return ptr[index];
     }
@@ -761,14 +761,14 @@ public:
 
     T &operator[](size_t i) {
         if(i >= num_entries) {
-            throw "Index out of bounds.";
+            throw "Vector index out of bounds.";
         }
         return *objptr(i);
     }
 
     const T &operator[](size_t i) const {
         if(i >= num_entries) {
-            throw "Index out of bounds.";
+            throw "Vector index out of bounds.";
         }
         return *objptr(i);
     }
