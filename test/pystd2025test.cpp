@@ -489,6 +489,34 @@ int test_format() {
     return failing_subtests;
 }
 
+enum class ErrorCode : int32_t {
+    NoError,
+    DynamicError,
+};
+
+class asciistring {
+public:
+    asciistring() noexcept {};
+    asciistring(asciistring &&o) noexcept = default;
+    asciistring(const asciistring &o) = default;
+
+    const char *c_str() const { return buf.c_str(); }
+
+    bool empty() const { return buf.is_empty(); }
+
+    asciistring &operator=(asciistring &&o) noexcept = default;
+    asciistring &operator=(const asciistring &o) = default;
+
+    template<typename G = asciistring> pystd2025::Expected<G, ErrorCode> do_something();
+
+    bool operator==(const asciistring &o) const noexcept = default;
+
+    size_t size() const { return buf.size(); }
+
+private:
+    pystd2025::CString buf;
+};
+
 int main(int argc, char **argv) {
     int total_errors = 0;
     try {

@@ -165,6 +165,8 @@ void SimpleHash::feed_bytes(const char *buf, size_t bufsize) noexcept {
     }
 }
 
+BytesView::BytesView(const Bytes &b) noexcept : BytesView(b.data(), b.size()) {}
+
 Bytes::Bytes() noexcept : buf{new char[default_bufsize], default_bufsize} { bufsize = 0; }
 
 Bytes::Bytes(size_t initial_size) noexcept : buf{new char[initial_size], initial_size} {
@@ -172,10 +174,24 @@ Bytes::Bytes(size_t initial_size) noexcept : buf{new char[initial_size], initial
 }
 
 Bytes::Bytes(const char *data, size_t datasize) noexcept : buf{datasize} {
-    for(size_t i = 0; i < datasize; ++i) {
-        buf[i] = data[i];
-    }
+    memcpy(buf.get(), data, datasize);
     bufsize = datasize;
+}
+
+Bytes::Bytes(const char *buf_start, const char *buf_end) {
+    if(buf_start > buf_end) {
+        throw PyException("Bad range to Bytes().");
+    }
+    bufsize = buf_end - buf_start;
+    buf = unique_arr<char>(bufsize);
+    memcpy(buf.get(), buf_start, bufsize);
+}
+
+Bytes::Bytes(size_t count, char fill_value) : buf{count} {
+    for(size_t i = 0; i < count; ++i) {
+        buf[i] = fill_value;
+    }
+    bufsize = count;
 }
 
 Bytes::Bytes(Bytes &&o) noexcept {
@@ -256,6 +272,13 @@ void Bytes::append(const char c) {
     ++bufsize;
 }
 
+void Bytes::append(const char *begin, const char *end) {
+    while(begin != end) {
+        append(*begin);
+        ++begin;
+    }
+}
+
 void Bytes::extend(size_t num_bytes) noexcept {
     const size_t target_size = bufsize + num_bytes;
     grow_to(target_size);
@@ -277,6 +300,15 @@ void Bytes::resize_to(size_t num_bytes) noexcept {
         grow_to(num_bytes);
         bufsize = num_bytes;
     }
+}
+
+Bytes &Bytes::operator=(const Bytes &o) noexcept {
+    if(this != &o) {
+        grow_to(o.size());
+        memcpy(buf.get(), o.buf.get(), o.size());
+        bufsize = o.bufsize;
+    }
+    return *this;
 }
 
 Bytes &Bytes::operator+=(const Bytes &o) noexcept {

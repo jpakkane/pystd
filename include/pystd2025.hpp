@@ -68,6 +68,11 @@ concept WellBehaved = requires(T a, T &b, T &&c) {
     requires !is_volatile_v<T>;
 };
 
+template<typename T1, typename T2> constexpr int maxval(const T1 &a, const T2 &b) {
+    return a > b ? a : b;
+}
+
+
 class SimpleHash final {
 public:
     void feed_bytes(const char *buf, size_t bufsize) noexcept;
@@ -121,6 +126,24 @@ private:
     HashAlgo h;
 };
 
+template<WellBehaved E>
+class Unexpected {
+public:
+    Unexpected() noexcept : e{} {}
+    Unexpected(E &&e_) noexcept : e{pystd2025::move(e_)} {}
+    Unexpected(const E &e_) noexcept : e(e_) {}
+
+    E& error() & noexcept { return e; }
+    E&& error() && noexcept { return e; }
+    const E& error() const & noexcept { return e; }
+    const E&& error() const && noexcept { return e; }
+
+    Unexpected& operator=(Unexpected &&o) = default;
+
+private:
+    E e;
+};
+
 template<WellBehaved V, WellBehaved E> class Expected {
 private:
     enum class UnionState : unsigned char {
@@ -129,12 +152,26 @@ private:
         Error,
     };
 
+    static_assert(!is_same_v<V, E>);
 public:
     Expected() noexcept : state{UnionState::Empty} {}
 
-    explicit Expected(const V &v) noexcept : state{UnionState::Value} { new(&content.value) V(v); }
+    Expected(Unexpected<E> &&e) noexcept : state{UnionState::Error} { new(content) E(pystd2025::move(e.error())); }
 
-    explicit Expected(const E &e) noexcept : state{UnionState::Error} { new(&content.error) E(e); }
+    Expected(const V &v) noexcept : state{UnionState::Value} { new(content) V(v); }
+
+    Expected(V &&v) noexcept : state{UnionState::Value} { new(content) V(pystd2025::move(v)); }
+
+    Expected(const E &e) noexcept : state{UnionState::Error} { new(content) E(e); }
+    Expected(E &&e) noexcept : state{UnionState::Error} { new(content) E(pystd2025::move(e)); }
+
+    Expected(Expected &&o) noexcept : state{o.state} {
+        if(o.has_value()) {
+            new(content) V(pystd2025::move(o.value()));
+        } else {
+            new(content) E(pystd2025::move(o.error()));
+        }
+    }
 
     ~Expected() { destroy(); }
 
@@ -148,10 +185,10 @@ public:
         if(this != &o) {
             destroy();
             if(o.has_value()) {
-                new(&content.value) V(o.content.value);
+                new(content) V(pystd2025::move(*reinterpret_cast<V*>(content)));
                 state = UnionState::Value;
             } else if(o.has_error()) {
-                new(&content.error) E(o.content.error);
+                new(content) E(pystd2025::move(*reinterpret_cast<E*>(o.content)));
                 state = UnionState::Error;
             } else {
                 state = UnionState::Empty;
@@ -164,29 +201,26 @@ public:
         if(*this) {
             abort();
         }
-        return content.value;
+        return *reinterpret_cast<V*>(content);
     }
 
     E &error() {
         if(!has_error()) {
             abort();
         }
-        return content.error;
+        return *reinterpret_cast<E*>(content);
     }
 
 private:
     void destroy() {
         if(state == UnionState::Value) {
-            content.value.~V();
+            reinterpret_cast<V*>(content)->~V();
         } else if(state == UnionState::Error) {
-            content.error.~E();
+            reinterpret_cast<E*>(content)->~E();
         }
         state = UnionState::Empty;
     }
-    union {
-        V value;
-        E error;
-    } content;
+    char content[maxval(sizeof(V), sizeof(E))] alignas(maxval(alignof(V), alignof(E)));
     UnionState state;
 };
 
@@ -540,11 +574,62 @@ enum class EncodingPolicy {
 
 class PyException;
 
+class Bytes;
+
 class BytesView {
 public:
+    BytesView() noexcept : buf{nullptr}, bufsize{0} {}
+    BytesView(const char *buf_, size_t bufsize_) noexcept : buf{buf_}, bufsize{bufsize_} {}
+    BytesView(BytesView &&o) noexcept = default;
+    BytesView(const BytesView &o) noexcept = default;
+    BytesView(const Bytes &b) noexcept;
+
+    BytesView& operator=(BytesView &&o) noexcept = default;
+    BytesView& operator=(const BytesView &o) noexcept = default;
+
+    const char *data() const noexcept { return buf; }
+    size_t size() const noexcept { return bufsize; }
+    size_t size_bytes() const noexcept { return bufsize; }
+
+    bool is_empty() const noexcept { return bufsize == 0; }
+
+    char operator[](size_t i) const {
+        if(!buf || i >= bufsize) {
+            throw "OOB access in BytesView.";
+        }
+        return buf[i];
+    }
+
+    char at(size_t i) const {
+        return (*this)[i];
+    }
+
+
+    BytesView subview(size_t loc, size_t size=-1) const {
+        if(size == (size_t)-1) {
+            if(loc > bufsize) {
+                throw "OOB error in BytesView.";
+            }
+            return BytesView(buf + loc, bufsize-loc);
+        } else {
+            if(loc + size > bufsize) {
+                throw "OOB error in BytesView.";
+            }
+            return BytesView(buf + loc, size);
+        }
+    }
+
+    const char* begin() const {
+        return buf;
+    }
+
+    const char* end() const {
+        return buf + bufsize;
+    }
+
+private:
     const char *buf;
-    size_t start_offset;
-    size_t end_offset;
+    size_t bufsize;
 };
 
 class Bytes {
@@ -552,12 +637,16 @@ public:
     Bytes() noexcept;
     explicit Bytes(size_t initial_size) noexcept;
     Bytes(const char *buf, size_t bufsize) noexcept;
+    Bytes(const char *buf_start, const char *buf_end);
+    Bytes(size_t count, char fill_value);
     Bytes(Bytes &&o) noexcept;
     Bytes(const Bytes &o) noexcept;
     const char *data() const { return buf.get(); }
     char *data() { return buf.get(); }
 
     void append(const char c);
+
+    void append(const char *begin, const char *end);
 
     bool is_empty() const { return bufsize == 0; }
     void clear() noexcept { bufsize = 0; }
@@ -566,12 +655,27 @@ public:
 
     size_t capacity() const { return buf.size_bytes(); }
 
+    void reserve(size_t new_size) {
+        grow_to(new_size);
+    }
+
     void extend(size_t num_bytes) noexcept;
     void shrink(size_t num_bytes) noexcept;
     void resize_to(size_t num_bytes) noexcept;
+    void resize(size_t num_bytes) noexcept {
+        resize_to(num_bytes);
+    }
 
     void assign(const char *buf_in, size_t in_size);
     void insert(size_t i, const char *buf_in, size_t in_size);
+
+    void push_back(const char c) {
+        append(c);
+    }
+    void emplace_back(const char c) {
+        append(c);
+    }
+
 
     void pop_back(size_t num = 1);
 
@@ -579,7 +683,7 @@ public:
 
     char operator[](size_t i) const { return buf[i]; }
 
-    void operator=(const Bytes &) noexcept;
+    Bytes& operator=(const Bytes &) noexcept;
 
     Bytes &operator+=(const Bytes &o) noexcept;
 
@@ -627,6 +731,17 @@ public:
     char front() const;
     char back() const;
 
+    BytesView view() const noexcept {
+        return BytesView(buf.get(), bufsize);
+    }
+
+    const char *begin() const noexcept {
+        return buf.get();
+    }
+
+    const char *end() const noexcept {
+        return buf.get() + bufsize;
+    }
 private:
     void grow_to(size_t new_size);
 
@@ -674,7 +789,7 @@ public:
     }
 
     template<typename Iter1, typename Iter2> void append(Iter1 start, Iter2 end) {
-        if(is_ptr_within(&(*start))) {
+        if(is_ptr_within((T*)&(*start))) {
             throw "FIXME, appending contents of vector not handled yet.";
         }
         while(start != end) {
@@ -1601,7 +1716,7 @@ public:
     }
     ~MMapping();
 
-    BytesView view() const { return BytesView{(const char *)buf, 0, bufsize}; }
+    BytesView view() const { return BytesView{(const char *)buf, bufsize}; }
 
     MMapping &operator=(MMapping &&o) noexcept {
         if(this != &o) {
@@ -1619,10 +1734,6 @@ private:
 };
 
 Optional<MMapping> mmap_file(const char *path);
-
-template<typename T1, typename T2> constexpr int maxval(const T1 &a, const T2 &b) {
-    return a > b ? a : b;
-}
 
 template<int index, typename... T> constexpr size_t compute_size() {
     if constexpr(index >= sizeof...(T)) {
