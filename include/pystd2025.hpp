@@ -1801,7 +1801,7 @@ template<int index, typename... T> constexpr size_t compute_alignment() {
 
 template<WellBehaved... T> class Variant {
 
-    static constexpr int MAX_TYPES = 10;
+    static constexpr int MAX_TYPES = 20;
     static_assert(sizeof...(T) <= MAX_TYPES);
     static_assert(sizeof...(T) > 0);
 
@@ -1844,6 +1844,26 @@ public:
             PYSTD2025_VAR_MOVE_CONSTRUCT_SWITCH(8);
         case 9:
             PYSTD2025_VAR_MOVE_CONSTRUCT_SWITCH(9);
+        case 10:
+            PYSTD2025_VAR_MOVE_CONSTRUCT_SWITCH(10);
+        case 11:
+            PYSTD2025_VAR_MOVE_CONSTRUCT_SWITCH(11);
+        case 12:
+            PYSTD2025_VAR_MOVE_CONSTRUCT_SWITCH(12);
+        case 13:
+            PYSTD2025_VAR_MOVE_CONSTRUCT_SWITCH(13);
+        case 14:
+            PYSTD2025_VAR_MOVE_CONSTRUCT_SWITCH(14);
+        case 15:
+            PYSTD2025_VAR_MOVE_CONSTRUCT_SWITCH(15);
+        case 16:
+            PYSTD2025_VAR_MOVE_CONSTRUCT_SWITCH(16);
+        case 17:
+            PYSTD2025_VAR_MOVE_CONSTRUCT_SWITCH(17);
+        case 18:
+            PYSTD2025_VAR_MOVE_CONSTRUCT_SWITCH(18);
+        case 19:
+            PYSTD2025_VAR_MOVE_CONSTRUCT_SWITCH(19);
         default:
             internal_failure("Bad variant construction.");
         }
@@ -1882,6 +1902,26 @@ public:
             PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(8);
         case 9:
             PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(9);
+        case 10:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(10);
+        case 11:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(11);
+        case 12:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(12);
+        case 13:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(13);
+        case 14:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(14);
+        case 15:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(15);
+        case 16:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(16);
+        case 17:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(17);
+        case 18:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(18);
+        case 19:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(19);
         default:
             internal_failure("Bad variant construction.");
         }
@@ -1983,6 +2023,26 @@ private:
             PYSTD2025_VAR_MOVE_SWITCH(8);
         case 9:
             PYSTD2025_VAR_MOVE_SWITCH(9);
+        case 10:
+            PYSTD2025_VAR_MOVE_SWITCH(10);
+        case 11:
+            PYSTD2025_VAR_MOVE_SWITCH(11);
+        case 12:
+            PYSTD2025_VAR_MOVE_SWITCH(12);
+        case 13:
+            PYSTD2025_VAR_MOVE_SWITCH(13);
+        case 14:
+            PYSTD2025_VAR_MOVE_SWITCH(14);
+        case 15:
+            PYSTD2025_VAR_MOVE_SWITCH(15);
+        case 16:
+            PYSTD2025_VAR_MOVE_SWITCH(16);
+        case 17:
+            PYSTD2025_VAR_MOVE_SWITCH(17);
+        case 18:
+            PYSTD2025_VAR_MOVE_SWITCH(18);
+        case 19:
+            PYSTD2025_VAR_MOVE_SWITCH(19);
         default:
             internal_failure("Unreachable code in variant move.");
         }
@@ -2026,6 +2086,26 @@ private:
             PYSTD2025_VAR_COPY_SWITCH(8);
         case 9:
             PYSTD2025_VAR_COPY_SWITCH(9);
+        case 10:
+            PYSTD2025_VAR_COPY_SWITCH(10);
+        case 11:
+            PYSTD2025_VAR_COPY_SWITCH(11);
+        case 12:
+            PYSTD2025_VAR_COPY_SWITCH(12);
+        case 13:
+            PYSTD2025_VAR_COPY_SWITCH(13);
+        case 14:
+            PYSTD2025_VAR_COPY_SWITCH(14);
+        case 15:
+            PYSTD2025_VAR_COPY_SWITCH(15);
+        case 16:
+            PYSTD2025_VAR_COPY_SWITCH(16);
+        case 17:
+            PYSTD2025_VAR_COPY_SWITCH(17);
+        case 18:
+            PYSTD2025_VAR_COPY_SWITCH(18);
+        case 19:
+            PYSTD2025_VAR_COPY_SWITCH(19);
         default:
             internal_failure("Unreachable code in variant copy.");
         }
@@ -2068,6 +2148,26 @@ private:
             PYSTD2025_VAR_COMPARE_SWITCH(8);
         case 9:
             PYSTD2025_VAR_COMPARE_SWITCH(9);
+        case 10:
+            PYSTD2025_VAR_COMPARE_SWITCH(10);
+        case 11:
+            PYSTD2025_VAR_COMPARE_SWITCH(11);
+        case 12:
+            PYSTD2025_VAR_COMPARE_SWITCH(12);
+        case 13:
+            PYSTD2025_VAR_COMPARE_SWITCH(13);
+        case 14:
+            PYSTD2025_VAR_COMPARE_SWITCH(14);
+        case 15:
+            PYSTD2025_VAR_COMPARE_SWITCH(15);
+        case 16:
+            PYSTD2025_VAR_COMPARE_SWITCH(16);
+        case 17:
+            PYSTD2025_VAR_COMPARE_SWITCH(17);
+        case 18:
+            PYSTD2025_VAR_COMPARE_SWITCH(18);
+        case 19:
+            PYSTD2025_VAR_COMPARE_SWITCH(19);
         }
         internal_failure("Unreachable code in variant compare.");
     }
@@ -2109,6 +2209,26 @@ private:
             destroy_by_index<8>();
         } else if(type_id == 9) {
             destroy_by_index<9>();
+        } else if(type_id == 10) {
+            destroy_by_index<10>();
+        } else if(type_id == 11) {
+            destroy_by_index<11>();
+        } else if(type_id == 12) {
+            destroy_by_index<12>();
+        } else if(type_id == 13) {
+            destroy_by_index<13>();
+        } else if(type_id == 14) {
+            destroy_by_index<14>();
+        } else if(type_id == 15) {
+            destroy_by_index<15>();
+        } else if(type_id == 16) {
+            destroy_by_index<16>();
+        } else if(type_id == 17) {
+            destroy_by_index<17>();
+        } else if(type_id == 18) {
+            destroy_by_index<18>();
+        } else if(type_id == 19) {
+            destroy_by_index<19>();
         } else {
             internal_failure("Unreachable code in variant destroy.");
         }
