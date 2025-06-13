@@ -488,7 +488,7 @@ public:
             return;
         }
         if(*this) {
-            data.value = o;
+            data.value = pystd2025::move(o);
         } else {
             new(&data.value) T{o};
             has_value = true;
