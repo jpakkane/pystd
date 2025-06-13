@@ -285,26 +285,44 @@ public:
     struct T_looper_sentinel {};
 };
 
-template<typename T> class unique_ptr final {
+template<typename T> struct DefaultDeleter {
+    static void del(T *t) { delete t; }
+};
+
+template<typename T, typename Deleter = DefaultDeleter<T>> class unique_ptr final {
 public:
     unique_ptr() noexcept : ptr{nullptr} {}
     explicit unique_ptr(T *t) noexcept : ptr{t} {}
-    explicit unique_ptr(const unique_ptr<T> &o) = delete;
-    explicit unique_ptr(unique_ptr<T> &&o) noexcept : ptr{o.ptr} { o.ptr = nullptr; }
-    ~unique_ptr() { delete ptr; }
+    explicit unique_ptr(const unique_ptr<T, Deleter> &o) = delete;
+    explicit unique_ptr(unique_ptr<T, Deleter> &&o) noexcept : ptr{o.ptr} { o.ptr = nullptr; }
+    ~unique_ptr() { Deleter::del(ptr); }
 
-    T &operator=(const unique_ptr<T> &o) = delete;
+    unique_ptr<T, Deleter> &operator=(const unique_ptr<T, Deleter> &o) = delete;
 
-    T &operator=(unique_ptr<T> &&o) noexcept {
+    unique_ptr<T, Deleter> &operator=(unique_ptr<T, Deleter> &&o) noexcept {
         if(this != &o) {
-            delete ptr;
+            Deleter::del(ptr);
             ptr = o.ptr;
             o.ptr = nullptr;
         }
         return *this;
     }
 
+    void reset(T *new_ptr) {
+        if(ptr) {
+            Deleter::del(ptr);
+        }
+        ptr = new_ptr;
+    }
+
+    T *release() noexcept {
+        T *r = ptr;
+        ptr = nullptr;
+        return r;
+    }
+
     T *get() noexcept { return ptr; }
+    T *get() const noexcept { return ptr; }
     T &operator*() { return *ptr; } // FIXME, check not null maybe?
     T *operator->() noexcept { return ptr; }
 
@@ -324,7 +342,7 @@ public:
     }
     ~unique_arr() { delete[] ptr; }
 
-    T &operator=(const unique_arr<T> &o) = delete;
+    unique_arr &operator=(const unique_arr<T> &o) = delete;
 
     // unique_ptr<T> &
     void operator=(unique_arr<T> &&o) noexcept {
