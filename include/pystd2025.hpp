@@ -127,19 +127,18 @@ private:
     HashAlgo h;
 };
 
-template<WellBehaved E>
-class Unexpected {
+template<WellBehaved E> class Unexpected {
 public:
     Unexpected() noexcept : e{} {}
     Unexpected(E &&e_) noexcept : e{pystd2025::move(e_)} {}
     Unexpected(const E &e_) noexcept : e(e_) {}
 
-    E& error() & noexcept { return e; }
-    E&& error() && noexcept { return e; }
-    const E& error() const & noexcept { return e; }
-    const E&& error() const && noexcept { return e; }
+    E &error() & noexcept { return e; }
+    E &&error() && noexcept { return e; }
+    const E &error() const & noexcept { return e; }
+    const E &&error() const && noexcept { return e; }
 
-    Unexpected& operator=(Unexpected &&o) = default;
+    Unexpected &operator=(Unexpected &&o) = default;
 
 private:
     E e;
@@ -154,10 +153,13 @@ private:
     };
 
     static_assert(!is_same_v<V, E>);
+
 public:
     Expected() noexcept : state{UnionState::Empty} {}
 
-    Expected(Unexpected<E> &&e) noexcept : state{UnionState::Error} { new(content) E(pystd2025::move(e.error())); }
+    Expected(Unexpected<E> &&e) noexcept : state{UnionState::Error} {
+        new(content) E(pystd2025::move(e.error()));
+    }
 
     Expected(const V &v) noexcept : state{UnionState::Value} { new(content) V(v); }
 
@@ -186,10 +188,10 @@ public:
         if(this != &o) {
             destroy();
             if(o.has_value()) {
-                new(content) V(pystd2025::move(*reinterpret_cast<V*>(content)));
+                new(content) V(pystd2025::move(*reinterpret_cast<V *>(content)));
                 state = UnionState::Value;
             } else if(o.has_error()) {
-                new(content) E(pystd2025::move(*reinterpret_cast<E*>(o.content)));
+                new(content) E(pystd2025::move(*reinterpret_cast<E *>(o.content)));
                 state = UnionState::Error;
             } else {
                 state = UnionState::Empty;
@@ -202,22 +204,22 @@ public:
         if(*this) {
             abort();
         }
-        return *reinterpret_cast<V*>(content);
+        return *reinterpret_cast<V *>(content);
     }
 
     E &error() {
         if(!has_error()) {
             abort();
         }
-        return *reinterpret_cast<E*>(content);
+        return *reinterpret_cast<E *>(content);
     }
 
 private:
     void destroy() {
         if(state == UnionState::Value) {
-            reinterpret_cast<V*>(content)->~V();
+            reinterpret_cast<V *>(content)->~V();
         } else if(state == UnionState::Error) {
-            reinterpret_cast<E*>(content)->~E();
+            reinterpret_cast<E *>(content)->~E();
         }
         state = UnionState::Empty;
     }
@@ -585,8 +587,8 @@ public:
     BytesView(const BytesView &o) noexcept = default;
     BytesView(const Bytes &b) noexcept;
 
-    BytesView& operator=(BytesView &&o) noexcept = default;
-    BytesView& operator=(const BytesView &o) noexcept = default;
+    BytesView &operator=(BytesView &&o) noexcept = default;
+    BytesView &operator=(const BytesView &o) noexcept = default;
 
     const char *data() const noexcept { return buf; }
     size_t size() const noexcept { return bufsize; }
@@ -601,17 +603,14 @@ public:
         return buf[i];
     }
 
-    char at(size_t i) const {
-        return (*this)[i];
-    }
+    char at(size_t i) const { return (*this)[i]; }
 
-
-    BytesView subview(size_t loc, size_t size=-1) const {
+    BytesView subview(size_t loc, size_t size = -1) const {
         if(size == (size_t)-1) {
             if(loc > bufsize) {
                 throw "OOB error in BytesView.";
             }
-            return BytesView(buf + loc, bufsize-loc);
+            return BytesView(buf + loc, bufsize - loc);
         } else {
             if(loc + size > bufsize) {
                 throw "OOB error in BytesView.";
@@ -620,13 +619,9 @@ public:
         }
     }
 
-    const char* begin() const {
-        return buf;
-    }
+    const char *begin() const { return buf; }
 
-    const char* end() const {
-        return buf + bufsize;
-    }
+    const char *end() const { return buf + bufsize; }
 
 private:
     const char *buf;
@@ -656,27 +651,18 @@ public:
 
     size_t capacity() const { return buf.size_bytes(); }
 
-    void reserve(size_t new_size) {
-        grow_to(new_size);
-    }
+    void reserve(size_t new_size) { grow_to(new_size); }
 
     void extend(size_t num_bytes) noexcept;
     void shrink(size_t num_bytes) noexcept;
     void resize_to(size_t num_bytes) noexcept;
-    void resize(size_t num_bytes) noexcept {
-        resize_to(num_bytes);
-    }
+    void resize(size_t num_bytes) noexcept { resize_to(num_bytes); }
 
     void assign(const char *buf_in, size_t in_size);
     void insert(size_t i, const char *buf_in, size_t in_size);
 
-    void push_back(const char c) {
-        append(c);
-    }
-    void emplace_back(const char c) {
-        append(c);
-    }
-
+    void push_back(const char c) { append(c); }
+    void emplace_back(const char c) { append(c); }
 
     void pop_back(size_t num = 1);
 
@@ -684,7 +670,7 @@ public:
 
     char operator[](size_t i) const { return buf[i]; }
 
-    Bytes& operator=(const Bytes &) noexcept;
+    Bytes &operator=(const Bytes &) noexcept;
 
     Bytes &operator+=(const Bytes &o) noexcept;
 
@@ -732,17 +718,12 @@ public:
     char front() const;
     char back() const;
 
-    BytesView view() const noexcept {
-        return BytesView(buf.get(), bufsize);
-    }
+    BytesView view() const noexcept { return BytesView(buf.get(), bufsize); }
 
-    const char *begin() const noexcept {
-        return buf.get();
-    }
+    const char *begin() const noexcept { return buf.get(); }
 
-    const char *end() const noexcept {
-        return buf.get() + bufsize;
-    }
+    const char *end() const noexcept { return buf.get() + bufsize; }
+
 private:
     void grow_to(size_t new_size);
 
@@ -790,7 +771,7 @@ public:
     }
 
     template<typename Iter1, typename Iter2> void append(Iter1 start, Iter2 end) {
-        if(is_ptr_within((T*)&(*start))) {
+        if(is_ptr_within((T *)&(*start))) {
             throw "FIXME, appending contents of vector not handled yet.";
         }
         while(start != end) {
@@ -997,24 +978,44 @@ private:
     bool has_char_info;
 };
 
+class CString;
 // No embedded null chars
 // NOT guaranteed to be null terminated.
 class CStringView {
 public:
     CStringView() noexcept : buf{nullptr}, bufsize{0} {}
-    explicit CStringView(const char *str) noexcept;
+    CStringView(const char *str) noexcept;
+    CStringView(const char *start, const char *stop);
     CStringView(const char *str, size_t length);
+    CStringView(const CString &str) noexcept;
 
     bool operator==(const char *str);
+    bool operator==(CStringView o);
     bool is_empty() const { return bufsize == 0; }
 
     char front() const;
     bool starts_with(const char *str) const;
+    bool starts_with(CStringView view) const;
 
     const char *data() const { return buf; }
     size_t size() const { return bufsize; }
     size_t find(char c) const;
     CStringView substr(size_t pos = 0, size_t count = (size_t)-1) const;
+
+    char operator[](size_t index) const {
+        if(!buf || index > bufsize) {
+            throw "OOB in CStringView.";
+        }
+        return buf[index];
+    }
+
+    char at(size_t index) const { return (*this)[index]; }
+
+    const char *begin() const { return buf; }
+
+    const char *end() const { return buf + bufsize; }
+
+    bool operator<(const CStringView &o) const;
 
 private:
     const char *buf;
@@ -1037,12 +1038,15 @@ public:
 
     const char *data() const { return bytes.data(); }
 
+    char *mutable_data() { return bytes.data(); }
+
     CStringView view() const;
 
     void strip();
     // CString stripped() const;
 
     size_t size() const;
+    size_t length() const { return size(); }
 
     void clear() noexcept { bytes.clear(); }
 
@@ -1069,7 +1073,11 @@ public:
 
     CString &operator+=(const char *str);
 
+    CString &operator=(const char *);
+
     void append(const char c);
+    void append(const char *str, size_t strsize = -1);
+    void append(const char *start, const char *stop);
 
     template<typename Hasher> void feed_hash(Hasher &h) const { bytes.feed_hash(h); }
 
@@ -1092,6 +1100,10 @@ public:
     void insert(size_t i, const CStringView &v) noexcept;
 
     size_t rfind(const char c) const noexcept;
+
+    void reserve(size_t new_size) noexcept { bytes.reserve(new_size); }
+
+    void resize(size_t new_size) noexcept { bytes.resize(new_size); }
 
 private:
     bool view_points_to_this(const CStringView &v) const;
@@ -1144,7 +1156,12 @@ public:
         return result;
     }
 
-    U8String &operator=(const U8String &) noexcept;
+    U8String &operator=(const U8String &o) {
+        U8String tmp(o);
+        (*this) = pystd2025::move(tmp);
+        return *this;
+    }
+
     void operator=(U8String &&o) noexcept {
         if(this != &o) {
             cstring = move(o.cstring);
@@ -1192,38 +1209,31 @@ private:
     // Store length in codepoints.
 };
 
-template<typename T>
-class Span {
+template<typename T> class Span {
 public:
     Span() noexcept : array(nullptr), arraysize(0) {};
     Span(T *src, size_t src_size) noexcept : array(src), arraysize(src_size) {}
-    Span(Span &&o)  noexcept = default;
+    Span(Span &&o) noexcept = default;
     Span(const Span &o) noexcept = default;
 
-    Span& operator=(Span &&o) noexcept = default;
-    Span& operator=(const Span &o) noexcept = default;
+    Span &operator=(Span &&o) noexcept = default;
+    Span &operator=(const Span &o) noexcept = default;
 
-    const T& operator[](size_t i) const {
+    const T &operator[](size_t i) const {
         if(i > arraysize) {
             throw "OOB in span.";
         }
         return array[i];
     }
 
-    const T* begin() const {
-        return array;
-    }
+    const T *begin() const { return array; }
 
-    const T* end() const {
-        return array + arraysize;
-    }
+    const T *end() const { return array + arraysize; }
 
-    size_t size() const {
-        return arraysize;
-    }
+    size_t size() const { return arraysize; }
 
 private:
-    T* array;
+    T *array;
     size_t arraysize;
 };
 

@@ -341,9 +341,25 @@ char Bytes::back() const {
 CStringView::CStringView(const char *str) noexcept : buf{str}, bufsize{strlen(str)} {}
 
 CStringView::CStringView(const char *str, size_t length) {
+    if(length == (size_t)-1) {
+        length = str ? strlen(str) : 0;
+    }
     // FIXME, check embedded nulls.
     buf = str;
     bufsize = length;
+}
+
+CStringView::CStringView(const char *start, const char *stop) {
+    if(stop < start) {
+        throw PyException("Bad range to CStringView.");
+    }
+    buf = start;
+    bufsize = stop - start;
+}
+
+CStringView::CStringView(const CString &str) noexcept {
+    buf = str.data();
+    bufsize = str.size();
 }
 
 bool CStringView::operator==(const char *str) {
@@ -356,6 +372,18 @@ bool CStringView::operator==(const char *str) {
         }
     }
     return str[bufsize] == '\0';
+}
+
+bool CStringView::operator==(CStringView o) {
+    if(bufsize != o.bufsize) {
+        return false;
+    }
+    for(size_t i = 0; i < bufsize; ++i) {
+        if(buf[i] != o.buf[i]) {
+            return false;
+        }
+    }
+    return true;
 }
 
 char CStringView::front() const {
@@ -375,6 +403,18 @@ bool CStringView::starts_with(const char *str) const {
         }
     }
     return str[bufsize] == '\0';
+}
+
+bool CStringView::starts_with(CStringView view) const {
+    if(view.size() > size()) {
+        return false;
+    }
+    for(size_t i = 0; i < bufsize; ++i) {
+        if(view[i] != buf[i]) {
+            return false;
+        }
+    }
+    return true;
 }
 
 size_t CStringView::find(char c) const {
@@ -397,6 +437,18 @@ CStringView CStringView::substr(size_t pos, size_t count) const {
         actual_count = bufsize - pos;
     }
     return CStringView(buf + pos, actual_count);
+}
+
+bool CStringView::operator<(const CStringView &o) const {
+    const size_t common_size = o.size() < size() ? o.size() : size();
+    auto rc = strncmp(data(), o.data(), common_size);
+    if(rc < 0) {
+        return true;
+    }
+    if(rc > 0) {
+        return false;
+    }
+    return size() < o.size();
 }
 
 CString::CString(Bytes incoming) {
@@ -527,14 +579,33 @@ CString &CString::operator+=(const char *str) {
     return *this;
 }
 
+CString &CString::operator=(const char *str) {
+    CStringView tmp(str);
+    clear();
+    (*this) = tmp;
+    return *this;
+}
+
 void CString::append(const char c) {
     if(c == '\0') {
-        throw PyException("Tried to add null byte to a CString.");
+        throw PyException("Tried to add a null byte to a CString.");
     }
     bytes.pop_back();
     bytes.append(c);
     bytes.append('\0');
 }
+
+void CString::append(const char *str, size_t strsize) {
+    if(strsize == (size_t)-1) {
+        strsize = strlen(str);
+    }
+    for(size_t i = 0; i < strsize; ++i) {
+        // FIXME, slow.
+        append(str[i]);
+    }
+}
+
+void CString::append(const char *start, const char *stop) { append(start, stop - start); }
 
 CStringView CString::view() const { return CStringView{bytes.data(), bytes.size() - 1}; }
 
