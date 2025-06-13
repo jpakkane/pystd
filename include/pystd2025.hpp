@@ -1874,12 +1874,62 @@ public:
 #define PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(i)                                                     \
     {                                                                                              \
         if constexpr(i == new_type) {                                                              \
-            new(buf) T... [i] { o };                                                               \
+            new(buf) T...[i](o);                                                                   \
         }                                                                                          \
     }                                                                                              \
     break;
 
     template<typename InType> Variant(InType &o) {
+        constexpr int new_type = get_index_for_type<InType>();
+        switch(new_type) {
+        case 0:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(0);
+        case 1:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(1);
+        case 2:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(2);
+        case 3:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(3);
+        case 4:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(4);
+        case 5:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(5);
+        case 6:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(6);
+        case 7:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(7);
+        case 8:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(8);
+        case 9:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(9);
+        case 10:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(10);
+        case 11:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(11);
+        case 12:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(12);
+        case 13:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(13);
+        case 14:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(14);
+        case 15:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(15);
+        case 16:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(16);
+        case 17:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(17);
+        case 18:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(18);
+        case 19:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(19);
+        default:
+            internal_failure("Bad variant construction.");
+        }
+
+        type_id = new_type;
+    }
+
+    template<typename InType> Variant(const InType &o) {
         constexpr int new_type = get_index_for_type<InType>();
         switch(new_type) {
         case 0:
