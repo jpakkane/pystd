@@ -1801,7 +1801,7 @@ template<int index, typename... T> constexpr size_t compute_alignment() {
 
 template<WellBehaved... T> class Variant {
 
-    static constexpr int MAX_TYPES = 20;
+    static constexpr int MAX_TYPES = 30;
     static_assert(sizeof...(T) <= MAX_TYPES);
     static_assert(sizeof...(T) > 0);
 
@@ -1864,6 +1864,26 @@ public:
             PYSTD2025_VAR_MOVE_CONSTRUCT_SWITCH(18);
         case 19:
             PYSTD2025_VAR_MOVE_CONSTRUCT_SWITCH(19);
+        case 20:
+            PYSTD2025_VAR_MOVE_CONSTRUCT_SWITCH(20);
+        case 21:
+            PYSTD2025_VAR_MOVE_CONSTRUCT_SWITCH(21);
+        case 22:
+            PYSTD2025_VAR_MOVE_CONSTRUCT_SWITCH(22);
+        case 23:
+            PYSTD2025_VAR_MOVE_CONSTRUCT_SWITCH(23);
+        case 24:
+            PYSTD2025_VAR_MOVE_CONSTRUCT_SWITCH(24);
+        case 25:
+            PYSTD2025_VAR_MOVE_CONSTRUCT_SWITCH(25);
+        case 26:
+            PYSTD2025_VAR_MOVE_CONSTRUCT_SWITCH(26);
+        case 27:
+            PYSTD2025_VAR_MOVE_CONSTRUCT_SWITCH(27);
+        case 28:
+            PYSTD2025_VAR_MOVE_CONSTRUCT_SWITCH(28);
+        case 29:
+            PYSTD2025_VAR_MOVE_CONSTRUCT_SWITCH(29);
         default:
             internal_failure("Bad variant construction.");
         }
@@ -1922,6 +1942,26 @@ public:
             PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(18);
         case 19:
             PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(19);
+        case 20:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(20);
+        case 21:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(21);
+        case 22:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(22);
+        case 23:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(23);
+        case 24:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(24);
+        case 25:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(25);
+        case 26:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(26);
+        case 27:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(27);
+        case 28:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(28);
+        case 29:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(29);
         default:
             internal_failure("Bad variant construction.");
         }
@@ -1972,6 +2012,26 @@ public:
             PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(18);
         case 19:
             PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(19);
+        case 20:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(20);
+        case 21:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(21);
+        case 22:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(22);
+        case 23:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(23);
+        case 24:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(24);
+        case 25:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(25);
+        case 26:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(26);
+        case 27:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(27);
+        case 28:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(28);
+        case 29:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(29);
         default:
             internal_failure("Bad variant construction.");
         }
@@ -2093,6 +2153,26 @@ private:
             PYSTD2025_VAR_MOVE_SWITCH(18);
         case 19:
             PYSTD2025_VAR_MOVE_SWITCH(19);
+        case 20:
+            PYSTD2025_VAR_MOVE_SWITCH(20);
+        case 21:
+            PYSTD2025_VAR_MOVE_SWITCH(21);
+        case 22:
+            PYSTD2025_VAR_MOVE_SWITCH(22);
+        case 23:
+            PYSTD2025_VAR_MOVE_SWITCH(23);
+        case 24:
+            PYSTD2025_VAR_MOVE_SWITCH(24);
+        case 25:
+            PYSTD2025_VAR_MOVE_SWITCH(25);
+        case 26:
+            PYSTD2025_VAR_MOVE_SWITCH(26);
+        case 27:
+            PYSTD2025_VAR_MOVE_SWITCH(27);
+        case 28:
+            PYSTD2025_VAR_MOVE_SWITCH(28);
+        case 29:
+            PYSTD2025_VAR_MOVE_SWITCH(29);
         default:
             internal_failure("Unreachable code in variant move.");
         }
@@ -2156,6 +2236,26 @@ private:
             PYSTD2025_VAR_COPY_SWITCH(18);
         case 19:
             PYSTD2025_VAR_COPY_SWITCH(19);
+        case 20:
+            PYSTD2025_VAR_COPY_SWITCH(20);
+        case 21:
+            PYSTD2025_VAR_COPY_SWITCH(21);
+        case 22:
+            PYSTD2025_VAR_COPY_SWITCH(22);
+        case 23:
+            PYSTD2025_VAR_COPY_SWITCH(23);
+        case 24:
+            PYSTD2025_VAR_COPY_SWITCH(24);
+        case 25:
+            PYSTD2025_VAR_COPY_SWITCH(25);
+        case 26:
+            PYSTD2025_VAR_COPY_SWITCH(26);
+        case 27:
+            PYSTD2025_VAR_COPY_SWITCH(27);
+        case 28:
+            PYSTD2025_VAR_COPY_SWITCH(28);
+        case 29:
+            PYSTD2025_VAR_COPY_SWITCH(29);
         default:
             internal_failure("Unreachable code in variant copy.");
         }
@@ -2218,6 +2318,26 @@ private:
             PYSTD2025_VAR_COMPARE_SWITCH(18);
         case 19:
             PYSTD2025_VAR_COMPARE_SWITCH(19);
+        case 20:
+            PYSTD2025_VAR_COMPARE_SWITCH(20);
+        case 21:
+            PYSTD2025_VAR_COMPARE_SWITCH(21);
+        case 22:
+            PYSTD2025_VAR_COMPARE_SWITCH(22);
+        case 23:
+            PYSTD2025_VAR_COMPARE_SWITCH(23);
+        case 24:
+            PYSTD2025_VAR_COMPARE_SWITCH(24);
+        case 25:
+            PYSTD2025_VAR_COMPARE_SWITCH(25);
+        case 26:
+            PYSTD2025_VAR_COMPARE_SWITCH(26);
+        case 27:
+            PYSTD2025_VAR_COMPARE_SWITCH(27);
+        case 28:
+            PYSTD2025_VAR_COMPARE_SWITCH(28);
+        case 29:
+            PYSTD2025_VAR_COMPARE_SWITCH(29);
         }
         internal_failure("Unreachable code in variant compare.");
     }
@@ -2279,6 +2399,26 @@ private:
             destroy_by_index<18>();
         } else if(type_id == 19) {
             destroy_by_index<19>();
+        } else if(type_id == 20) {
+            destroy_by_index<20>();
+        } else if(type_id == 21) {
+            destroy_by_index<21>();
+        } else if(type_id == 22) {
+            destroy_by_index<22>();
+        } else if(type_id == 23) {
+            destroy_by_index<23>();
+        } else if(type_id == 24) {
+            destroy_by_index<24>();
+        } else if(type_id == 25) {
+            destroy_by_index<25>();
+        } else if(type_id == 26) {
+            destroy_by_index<26>();
+        } else if(type_id == 27) {
+            destroy_by_index<27>();
+        } else if(type_id == 28) {
+            destroy_by_index<28>();
+        } else if(type_id == 29) {
+            destroy_by_index<29>();
         } else {
             internal_failure("Unreachable code in variant destroy.");
         }
