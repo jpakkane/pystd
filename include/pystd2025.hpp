@@ -1850,6 +1850,45 @@ public:
 
         type_id = new_type;
     }
+
+#define PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(i)                                                     \
+    {                                                                                              \
+        if constexpr(i == new_type) {                                                              \
+            new(buf) T... [i] { o };                                                               \
+        }                                                                                          \
+    }                                                                                              \
+    break;
+
+    template<typename InType> Variant(InType &o) {
+        constexpr int new_type = get_index_for_type<InType>();
+        switch(new_type) {
+        case 0:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(0);
+        case 1:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(1);
+        case 2:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(2);
+        case 3:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(3);
+        case 4:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(4);
+        case 5:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(5);
+        case 6:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(6);
+        case 7:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(7);
+        case 8:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(8);
+        case 9:
+            PYSTD2025_VAR_COPY_CONSTRUCT_SWITCH(9);
+        default:
+            internal_failure("Bad variant construction.");
+        }
+
+        type_id = new_type;
+    }
+
     ~Variant() { destroy(); }
 
     template<WellBehaved Q> bool contains() const noexcept {

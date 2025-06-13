@@ -455,6 +455,21 @@ int test_variant4() {
     return 0;
 }
 
+int test_variant5() {
+    TEST_START;
+    int32_t number = 666;
+    pystd2025::Variant<int32_t, pystd2025::U8String> v1(number);
+    pystd2025::Variant<int32_t, pystd2025::U8String> v2(pystd2025::U8String("bob"));
+
+    ASSERT(v1.contains<int32_t>());
+    ASSERT(v1.get<int32_t>() == number);
+
+    ASSERT(v2.contains<pystd2025::U8String>());
+    ASSERT(v2.get<pystd2025::U8String>() == "bob");
+
+    return 0;
+}
+
 int test_variant() {
     printf("Testing variants.\n");
     int failing_subtests = 0;
@@ -462,6 +477,7 @@ int test_variant() {
     failing_subtests += test_variant2();
     failing_subtests += test_variant3();
     failing_subtests += test_variant4();
+    failing_subtests += test_variant5();
     return failing_subtests;
 }
 
@@ -492,29 +508,6 @@ int test_format() {
 enum class ErrorCode : int32_t {
     NoError,
     DynamicError,
-};
-
-class asciistring {
-public:
-    asciistring() noexcept {};
-    asciistring(asciistring &&o) noexcept = default;
-    asciistring(const asciistring &o) = default;
-
-    const char *c_str() const { return buf.c_str(); }
-
-    bool empty() const { return buf.is_empty(); }
-
-    asciistring &operator=(asciistring &&o) noexcept = default;
-    asciistring &operator=(const asciistring &o) = default;
-
-    template<typename G = asciistring> pystd2025::Expected<G, ErrorCode> do_something();
-
-    bool operator==(const asciistring &o) const noexcept = default;
-
-    size_t size() const { return buf.size(); }
-
-private:
-    pystd2025::CString buf;
 };
 
 int main(int argc, char **argv) {
