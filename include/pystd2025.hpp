@@ -1830,6 +1830,8 @@ public:
     Variant(const Variant<T...> &o) { copy_value_in(o, false); }
     Variant(Variant<T...> &&o) noexcept { move_to_uninitialized_memory(pystd2025::move(o)); }
 
+    int8_t index() const noexcept { return type_id; }
+
 #define PYSTD2025_VAR_MOVE_CONSTRUCT_SWITCH(i)                                                     \
     {                                                                                              \
         if constexpr(i == new_type) {                                                              \
@@ -2585,5 +2587,8 @@ template<typename T> void sort_relocatable(T *data, size_t bufsize) {
     };
     qsort(data, bufsize, sizeof(T), ordering);
 }
+
+double clamp(double val, double lower, double upper);
+int64_t clamp(int64_t val, int64_t lower, int64_t upper);
 
 } // namespace pystd2025

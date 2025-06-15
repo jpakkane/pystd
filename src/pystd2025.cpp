@@ -6,6 +6,7 @@
 #include <string.h>
 #include <assert.h>
 #include <limits.h>
+#include <math.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -963,6 +964,35 @@ void format_with_cb(StringFormatCallback cb, void *ctx, const char *format, va_l
     } else {
         cb(buf, rc, ctx);
     }
+}
+
+double clamp(double val, double lower, double upper) {
+    if(isnan(val) || isnan(lower) || isnan(upper)) {
+        return NAN;
+    }
+    if(lower > upper) {
+        internal_failure("Bad range to clamp.");
+    }
+    if(val < lower) {
+        return lower;
+    }
+    if(val > upper) {
+        return upper;
+    }
+    return val;
+}
+
+int64_t clamp(int64_t val, int64_t lower, int64_t upper) {
+    if(lower > upper) {
+        internal_failure("Bad range to clamp.");
+    }
+    if(val < lower) {
+        return val;
+    }
+    if(val > upper) {
+        return upper;
+    }
+    return val;
 }
 
 } // namespace pystd2025
