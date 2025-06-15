@@ -891,6 +891,22 @@ public:
         return *this;
     }
 
+    bool operator==(const Vector<T> &o) const noexcept {
+        if(this == &o) {
+            return true;
+        }
+        if(o.size() != size()) {
+            return false;
+        }
+        for(size_t i = 0; i < size(); ++i) {
+            if(backing[i] != o.backing[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    bool operator!=(const Vector<T> &o) const noexcept { return !(*this == o); }
     const T *cbegin() const { return objptr(0); }
     const T *cend() const { return objptr(num_entries); }
 
@@ -1320,7 +1336,7 @@ template<WellBehaved Key, WellBehaved Value, WellBehaved HashAlgo = SimpleHash>
 class HashMap final {
 public:
     friend class HashMapIterator<Key, Value>;
-    HashMap() {
+    HashMap() noexcept {
         salt = (size_t)this;
         num_entries = 0;
         size_in_powers_of_two = 4;
@@ -1698,15 +1714,6 @@ private:
 };
 
 U8Match regex_search(const U8Regex &pattern, const U8String &text);
-
-template<typename T> void sort_relocatable(T *data, size_t bufsize) {
-    auto ordering = [](const void *v1, const void *v2) -> int {
-        auto d1 = (T *)v1;
-        auto d2 = (T *)v2;
-        return *d1 <=> *d2;
-    };
-    qsort(data, bufsize, sizeof(T), ordering);
-}
 
 class Range {
 public:
@@ -2515,6 +2522,68 @@ It1 find_if(It1 start, It2 end, const Callable c) {
         ++start;
     }
     return start;
+}
+
+template<WellBehaved T> void swap(T &a, T &b) noexcept {
+    if(&a != &b) {
+        T tmp{pystd2025::move(a)};
+        a = pystd2025::move(b);
+        b = pystd2025::move(tmp);
+    }
+}
+
+template<typename It1, typename It2> It1 min_element(It1 start, It2 stop) noexcept {
+    if(start == stop) {
+        return start;
+    }
+    It1 minloc = start;
+    while(start != stop) {
+        if(*start < *minloc) {
+            minloc = start;
+        }
+        ++start;
+    }
+    return minloc;
+}
+
+template<typename It1, typename It2> void insertion_sort(It1 start, It2 end) {
+    const auto array_size = end - start;
+    if(array_size < 2) {
+        return;
+    }
+    if(array_size == 2) {
+        auto first = start;
+        auto second = first;
+        ++second;
+        if(!(*first < *second)) {
+            swap(*first, *second);
+        }
+        return;
+    }
+    auto min_loc = min_element(start, end);
+    swap(*min_loc, *start);
+    ++start;
+    ++start;
+    while(start != end) {
+        It1 current = start;
+        auto previous = current;
+        --previous;
+        while(*current < *previous) {
+            swap(previous, current);
+            --previous;
+            --current;
+        }
+        ++start;
+    }
+}
+
+template<typename T> void sort_relocatable(T *data, size_t bufsize) {
+    auto ordering = [](const void *v1, const void *v2) -> int {
+        auto d1 = (T *)v1;
+        auto d2 = (T *)v2;
+        return *d1 <=> *d2;
+    };
+    qsort(data, bufsize, sizeof(T), ordering);
 }
 
 } // namespace pystd2025

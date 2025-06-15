@@ -505,6 +505,43 @@ int test_format() {
     return failing_subtests;
 }
 
+void sort_init(pystd2025::Vector<int> &buf) {
+    buf.clear();
+    buf.push_back(3);
+    buf.push_back(2);
+    buf.push_back(1);
+    buf.push_back(0);
+}
+
+int test_sort1() {
+    TEST_START;
+    pystd2025::Vector<int> buf;
+    pystd2025::Vector<int> result;
+
+    result.push_back(0);
+    result.push_back(2);
+    result.push_back(2);
+    result.push_back(3);
+
+    sort_init(buf);
+    ASSERT(buf != result);
+
+    pystd2025::insertion_sort(buf.begin(), buf.end());
+    ASSERT(buf == result);
+
+    pystd2025::insertion_sort(buf.begin(), buf.end());
+    ASSERT(buf == result);
+
+    return 0;
+}
+
+int test_sort() {
+    printf("Testing sort.\n");
+    int failing_subtests = 0;
+    failing_subtests += test_sort1();
+    return failing_subtests;
+}
+
 enum class ErrorCode : int32_t {
     NoError,
     DynamicError,
@@ -523,6 +560,7 @@ int main(int argc, char **argv) {
         total_errors += test_hashset();
         total_errors += test_variant();
         total_errors += test_format();
+        total_errors += test_sort();
     } catch(const pystd2025::PyException &e) {
         printf("Testing failed: %s\n", e.what().c_str());
     }
