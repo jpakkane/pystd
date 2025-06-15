@@ -69,7 +69,11 @@ concept WellBehaved = requires(T a, T &b, T &&c) {
 };
 
 template<typename T1, typename T2> constexpr int maxval(const T1 &a, const T2 &b) {
-    return a > b ? a : b;
+    return a < b ? b : a;
+}
+
+template<typename T1, typename T2> constexpr int minval(const T1 &a, const T2 &b) {
+    return a < b ? a : b;
 }
 
 struct Monostate {};
@@ -168,7 +172,7 @@ public:
     Expected(const E &e) noexcept : state{UnionState::Error} { new(content) E(e); }
     Expected(E &&e) noexcept : state{UnionState::Error} { new(content) E(pystd2025::move(e)); }
 
-    Expected(Expected &&o) noexcept : state{o.state} {
+    Expected(Expected<V, E> &&o) noexcept : state{o.state} {
         if(o.has_value()) {
             new(content) V(pystd2025::move(o.value()));
         } else {
