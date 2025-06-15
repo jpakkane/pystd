@@ -1349,13 +1349,13 @@ public:
         return *v;
     }
 
-    void insert(const Key &key, const Value &v) {
+    void insert(const Key &key, Value v) {
         if(fill_ratio() >= MAX_LOAD) {
             grow();
         }
 
         const auto hashval = hash_for(key);
-        insert_internal(hashval, key, v);
+        insert_internal(hashval, key, pystd2025::move(v));
     }
 
     void remove(const Key &key) {
@@ -1484,14 +1484,14 @@ private:
         return slot;
     }
 
-    void insert_internal(size_t hashval, const Key &key, const Value &v) {
+    void insert_internal(size_t hashval, const Key &key, Value &&v) {
         auto slot = hash_to_slot(hashval);
         while(true) {
             if(data.hashes[slot] == FREE_SLOT) {
                 auto *key_loc = data.keyptr(slot);
                 auto *value_loc = data.valueptr(slot);
                 new(key_loc) Key(key);
-                new(value_loc) Value{v};
+                new(value_loc) Value{pystd2025::move(v)};
                 data.hashes[slot] = hashval;
                 ++num_entries;
                 return;
@@ -1500,7 +1500,7 @@ private:
                 auto *potential_key = data.keyptr(slot);
                 if(*potential_key == key) {
                     auto *value_loc = data.valueptr(slot);
-                    *value_loc = v;
+                    *value_loc = pystd2025::move(v);
                     return;
                 }
             }
@@ -1528,7 +1528,7 @@ private:
             if(old.hashes[i] == FREE_SLOT || old.hashes[i] == TOMBSTONE) {
                 continue;
             }
-            insert_internal(old.hashes[i], *old.keyptr(i), *old.valueptr(i));
+            insert_internal(old.hashes[i], *old.keyptr(i), pystd2025::move(*old.valueptr(i)));
         }
     }
 
@@ -2483,6 +2483,30 @@ template<typename T> void format_append(T &oobj, const char *format, ...) {
     };
     format_with_cb(converter, &oobj, format, args);
     va_end(args);
+}
+
+// Algorithms here
+
+template<WellBehaved It1, WellBehaved It2, typename Value>
+It1 find(It1 start, It2 end, const Value v) {
+    while(start != end) {
+        if(*start == v) {
+            return start;
+        }
+        ++start;
+    }
+    return start;
+}
+
+template<WellBehaved It1, WellBehaved It2, typename Callable>
+It1 find_if(It1 start, It2 end, const Callable c) {
+    while(start != end) {
+        if(c(*start)) {
+            return start;
+        }
+        ++start;
+    }
+    return start;
 }
 
 } // namespace pystd2025
