@@ -743,6 +743,14 @@ public:
         }
     }
 
+    template<typename Iter1, typename Iter2> Vector(Iter1 start, Iter2 end) {
+        reserve(end - start);
+        while(start != end) {
+            push_back(*start);
+            ++start;
+        }
+    }
+
     Vector(Vector<T> &&o) noexcept : backing(move(o.backing)), num_entries{o.num_entries} {
         o.num_entries = 0;
     }
