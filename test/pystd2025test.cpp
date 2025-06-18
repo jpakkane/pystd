@@ -566,6 +566,16 @@ int test_rb1() {
     ++it;
     ASSERT(it == endpoint);
 
+    rbtree.insert(5);
+    ASSERT(rbtree.size() == 2);
+    it = rbtree.begin();
+    ASSERT(*it == 5);
+    ++it;
+    ASSERT(*it == 10)
+
+    rbtree.insert(7);
+    rbtree.insert(6);
+
     return 0;
 }
 

@@ -36,7 +36,7 @@ public:
         } else if(direction == CameFrom::Left) {
             if(tree->has_right(i)) {
                 i = tree->right_of(i);
-                while(!tree->has_left(i)) {
+                while(tree->has_left(i)) {
                     i = tree->left_of(i);
                 }
                 direction = CameFrom::Top;
@@ -86,8 +86,10 @@ public:
             root = 1;
             return;
         }
-        tree_insert(key);
-        insert_rebalance();
+        const bool need_rebalance = tree_insert(key);
+        if(need_rebalance) {
+            insert_rebalance();
+        }
     }
 
     RBIterator<Key> begin() {
@@ -108,7 +110,7 @@ private:
 
     uint32_t right_of(uint32_t i) const { return nodes[i].right; }
 
-    uint32_t parent_of(uint32_t i) const { return nodes[i].right; }
+    uint32_t parent_of(uint32_t i) const { return nodes[i].parent; }
 
     void insert_rebalance() {
         uint32_t x = nodes.size() - 1;
@@ -131,30 +133,44 @@ private:
                     right_rotate(parent_of(parent_of(x)));
                 }
             } else {
-                abort();
+                auto y = left_of(parent_of(parent_of(x)));
+                if(nodes[y].is_black()) {
+                    nodes[parent_of(x)].set_black();
+                    nodes[y].set_black();
+                    nodes[parent_of(parent_of(x))].set_red();
+                    x = parent_of(parent_of(x));
+                } else if(x == left_of(parent_of(x))) {
+                    x = parent_of(x);
+                    right_rotate(x);
+                    nodes[parent_of(x)].set_black();
+                    nodes[parent_of(parent_of(x))].set_red();
+                    left_rotate(parent_of(parent_of(x)));
+                }
             }
         }
         nodes[root].set_black();
     }
 
-    void tree_insert(Key &key) {
+    bool tree_insert(Key &key) {
         auto current_node = root;
         while(true) {
             if(key < nodes[current_node].key) {
-                if(left_of(current_node) == SENTINEL_ID) {
+                if(!has_left(current_node)) {
                     nodes[current_node].left = nodes.size();
                     nodes.emplace_back(RBNode{
                         SENTINEL_ID, SENTINEL_ID, current_node, Color::Red, pystd2025::move(key)});
-                    return;
+                    return true;
                 } else {
                     current_node = nodes[current_node].left;
                 }
+            } else if(key == nodes[current_node].key) {
+                return false;
             } else {
-                if(right_of(current_node) == SENTINEL_ID) {
+                if(!has_right(current_node)) {
                     nodes[current_node].right = nodes.size();
                     nodes.emplace_back(RBNode{
                         SENTINEL_ID, SENTINEL_ID, current_node, Color::Red, pystd2025::move(key)});
-                    return;
+                    return true;
                 } else {
                     current_node = nodes[current_node].right;
                 }
@@ -166,21 +182,21 @@ private:
         assert(right_of(x) != SENTINEL_ID);
         auto grandparent = parent_of(x);
         auto y = right_of(x);
-        auto alpha = left_of(x);
+        // auto alpha = left_of(x);
         auto beta = left_of(y);
-        auto gamma = right_of(y);
+        // auto gamma = right_of(y);
 
-        nodes[x].left = alpha;
-        if(alpha != SENTINEL_ID) {
-            nodes[alpha].parent = x;
-        }
+        // nodes[x].left = alpha;
+        // if(alpha != SENTINEL_ID) {
+        //     nodes[alpha].parent = x;
+        // }
         nodes[x].right = beta;
         if(beta != SENTINEL_ID) {
             nodes[beta].parent = x;
         }
         nodes[x].parent = y;
         nodes[y].left = x;
-        assert(right_of(y) == gamma);
+        //      assert(right_of(y) == gamma);
 
         if(grandparent == SENTINEL_ID) {
             root = y;
@@ -193,7 +209,36 @@ private:
         }
     }
 
-    void right_rotate(uint32_t x) { assert(false); }
+    void right_rotate(uint32_t y) {
+        assert(left_of(y) != SENTINEL_ID);
+        auto grandparent = parent_of(y);
+        auto x = left_of(y);
+        // auto alpha = left_of(x);
+        auto beta = right_of(x);
+        // auto gamma = right_of(y);
+
+        // nodes[x].left = alpha;
+        // if(alpha != SENTINEL_ID) {
+        //     nodes[alpha].parent = x;
+        // }
+        nodes[y].left = y;
+        if(beta != SENTINEL_ID) {
+            nodes[beta].parent = y;
+        }
+        nodes[y].parent = x;
+        nodes[x].right = y;
+        //      assert(right_of(y) == gamma);
+
+        if(grandparent == SENTINEL_ID) {
+            root = x;
+        } else {
+            if(left_of(grandparent) == y) {
+                nodes[grandparent].left = x;
+            } else {
+                nodes[grandparent].right = x;
+            }
+        }
+    }
 
     static constexpr uint32_t SENTINEL_ID = 0;
 
