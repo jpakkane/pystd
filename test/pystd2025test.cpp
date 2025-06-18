@@ -547,6 +547,35 @@ enum class ErrorCode : int32_t {
     DynamicError,
 };
 
+#include <pystd2025_map.hpp>
+
+int test_rb1() {
+    TEST_START;
+    pystd2025::RBTree<int> rbtree;
+
+    ASSERT(rbtree.is_empty());
+    ASSERT(rbtree.size() == 0);
+    rbtree.insert(10);
+    ASSERT(!rbtree.is_empty());
+    ASSERT(rbtree.size() == 1);
+
+    auto it = rbtree.begin();
+    auto endpoint = rbtree.end();
+    ASSERT(it != endpoint);
+    ASSERT(*it == 10);
+    ++it;
+    ASSERT(it == endpoint);
+
+    return 0;
+}
+
+int test_rb() {
+    printf("Testing RBtree.\n");
+    int failing_subtests = 0;
+    failing_subtests += test_rb1();
+    return failing_subtests;
+}
+
 int main(int argc, char **argv) {
     int total_errors = 0;
     try {
@@ -561,6 +590,7 @@ int main(int argc, char **argv) {
         total_errors += test_variant();
         total_errors += test_format();
         total_errors += test_sort();
+        total_errors += test_rb();
     } catch(const pystd2025::PyException &e) {
         printf("Testing failed: %s\n", e.what().c_str());
     }
