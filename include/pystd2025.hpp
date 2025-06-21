@@ -51,6 +51,21 @@ template<class T> struct is_volatile : pystd2025::false_type {};
 template<class T> struct is_volatile<volatile T> : pystd2025::true_type {};
 template<class T> constexpr bool is_volatile_v = is_volatile<T>::value;
 
+template<class T> struct is_lvalue_reference : pystd2025::false_type {};
+template<class T> struct is_lvalue_reference<T &> : pystd2025::true_type {};
+
+template<typename T>
+constexpr T &&forward(typename pystd2025::remove_reference<T>::type &t) noexcept {
+    return static_cast<T &&>(t);
+}
+
+template<typename T>
+constexpr T &&forward(typename pystd2025::remove_reference<T>::type &&t) noexcept {
+    static_assert(!pystd2025::is_lvalue_reference<T>::value,
+                  "Forward may not be used to convert an rvalue to an lvalue");
+    return static_cast<T &&>(t);
+}
+
 [[noreturn]] void internal_failure(const char *message) noexcept;
 
 // This is still WIP. But basically require that objects of the
@@ -666,7 +681,6 @@ public:
     void insert(size_t i, const char *buf_in, size_t in_size);
 
     void push_back(const char c) { append(c); }
-    void emplace_back(const char c) { append(c); }
 
     void pop_back(size_t num = 1);
 
@@ -782,6 +796,34 @@ public:
         }
     }
 
+    void push_back(T &&obj) noexcept {
+        if(is_ptr_within(&obj) && needs_to_grow_for(1)) {
+            // Fixme, maybe compute index to the backing store
+            // and then use that, skipping the temporary.
+            T tmp{::pystd2025::move(obj)};
+            backing.extend(sizeof(T));
+            auto obj_loc = objptr(num_entries);
+            new(obj_loc) T(::pystd2025::move(tmp));
+            ++num_entries;
+        } else {
+            backing.extend(sizeof(T));
+            auto obj_loc = objptr(num_entries);
+            new(obj_loc) T(::pystd2025::move(obj));
+            ++num_entries;
+        }
+    }
+
+    void emplace_back(auto &&...args) noexcept {
+        if constexpr(sizeof...(args) == 1 && pystd2025::is_same_v<decltype(args...[0]), T>) {
+            this->push_back(pystd2025::forward(args...[0]));
+        } else {
+            backing.extend(sizeof(T));
+            auto obj_loc = objptr(num_entries);
+            new(obj_loc) T(pystd2025::forward<decltype(args)>(args)...);
+            ++num_entries;
+        }
+    }
+
     template<typename Iter1, typename Iter2> void append(Iter1 start, Iter2 end) {
         if(is_ptr_within((T *)&(*start))) {
             throw "FIXME, appending contents of vector not handled yet.";
@@ -798,23 +840,6 @@ public:
         }
         clear();
         append(start, end);
-    }
-
-    void emplace_back(T &&obj) noexcept {
-        if(is_ptr_within(&obj) && needs_to_grow_for(1)) {
-            // Fixme, maybe compute index to the backing store
-            // and then use that, skipping the temporary.
-            T tmp{::pystd2025::move(obj)};
-            backing.extend(sizeof(T));
-            auto obj_loc = objptr(num_entries);
-            new(obj_loc) T(::pystd2025::move(tmp));
-            ++num_entries;
-        } else {
-            backing.extend(sizeof(T));
-            auto obj_loc = objptr(num_entries);
-            new(obj_loc) T(::pystd2025::move(obj));
-            ++num_entries;
-        }
     }
 
     void pop_back() noexcept {

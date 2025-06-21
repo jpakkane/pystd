@@ -71,7 +71,7 @@ template<WellBehaved Key> class RBTree {
 public:
     friend class RBIterator<Key>;
     RBTree() {
-        nodes.emplace_back(RBNode{(uint32_t)-1, (uint32_t)-1, (uint32_t)-1, Color::Black, Key{}});
+        nodes.emplace_back((uint32_t)-1, (uint32_t)-1, (uint32_t)-1, Color::Black, Key{});
         root = (uint32_t)-1;
     }
 
@@ -82,7 +82,7 @@ public:
     void insert(Key key) {
         if(is_empty()) {
             nodes.emplace_back(
-                RBNode{SENTINEL_ID, SENTINEL_ID, SENTINEL_ID, Color::Black, pystd2025::move(key)});
+                SENTINEL_ID, SENTINEL_ID, SENTINEL_ID, Color::Black, pystd2025::move(key));
             root = 1;
             return;
         }
@@ -157,8 +157,8 @@ private:
             if(key < nodes[current_node].key) {
                 if(!has_left(current_node)) {
                     nodes[current_node].left = nodes.size();
-                    nodes.emplace_back(RBNode{
-                        SENTINEL_ID, SENTINEL_ID, current_node, Color::Red, pystd2025::move(key)});
+                    nodes.emplace_back(
+                        SENTINEL_ID, SENTINEL_ID, current_node, Color::Red, pystd2025::move(key));
                     return true;
                 } else {
                     current_node = nodes[current_node].left;
@@ -168,8 +168,8 @@ private:
             } else {
                 if(!has_right(current_node)) {
                     nodes[current_node].right = nodes.size();
-                    nodes.emplace_back(RBNode{
-                        SENTINEL_ID, SENTINEL_ID, current_node, Color::Red, pystd2025::move(key)});
+                    nodes.emplace_back(
+                        SENTINEL_ID, SENTINEL_ID, current_node, Color::Red, pystd2025::move(key));
                     return true;
                 } else {
                     current_node = nodes[current_node].right;

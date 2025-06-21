@@ -54,7 +54,7 @@ private:
 
 void ArgParse::add_argument(Argument a) {
     // FIXME, check for dupes.
-    arguments.emplace_back(move(a));
+    arguments.push_back(move(a));
 }
 
 Optional<ParseResult> ArgParse::parse_args(int argc, const char **argv) {
