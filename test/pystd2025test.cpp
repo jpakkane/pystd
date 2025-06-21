@@ -595,6 +595,15 @@ int test_rb1() {
         ++expected;
     }
 
+    // Now remove nodes one by one.
+    rbtree.remove(8);
+    ASSERT(rbtree.size() == 9);
+    rbtree.remove(1);
+    ASSERT(rbtree.size() == 8);
+    rbtree.remove(2);
+    ASSERT(rbtree.size() == 7);
+    rbtree.remove(5);
+    ASSERT(rbtree.size() == 6);
     return 0;
 }
 

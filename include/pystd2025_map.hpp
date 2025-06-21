@@ -90,15 +90,15 @@ public:
             nodes.emplace_back(
                 SENTINEL_ID, SENTINEL_ID, SENTINEL_ID, Color::Black, pystd2025::move(key));
             root = 1;
-            debug_print();
+            //debug_print();
             return;
         }
         const bool need_rebalance = tree_insert(key);
-        debug_print();
+        //debug_print();
         if(need_rebalance) {
             insert_rebalance();
         }
-        debug_print();
+        //debug_print();
     }
 
     void remove(const Key &key) {
@@ -107,11 +107,23 @@ public:
             return;
         }
 
+        printf("Starting delete of %u.\n", key);
+        debug_print();
         auto deleted_node = RB_delete(z);
+        printf("Deleted but not popped.\n");
+        debug_print();
         if(deleted_node != nodes.size() - 1) {
+            auto &delnode = nodes[deleted_node];
+            delnode.parent = SENTINEL_ID;
+            delnode.left = SENTINEL_ID;
+            delnode.right = SENTINEL_ID;
             swap_nodes(deleted_node, nodes.size() - 1);
         }
         nodes.pop_back();
+        printf("Delete finished.\n");
+        debug_print();
+        validate_sentinel();
+        validate_nodes();
     }
 
     RBIterator<Key> begin() {
@@ -137,6 +149,7 @@ private:
     uint32_t RB_delete(uint32_t z) {
         assert(z != SENTINEL_ID);
         assert(!is_empty());
+        const auto &sent = nodes[0];
         uint32_t y = SENTINEL_ID;
         if(nodes[z].left == SENTINEL_ID || nodes[z].right == SENTINEL_ID) {
             y = z;
@@ -149,7 +162,9 @@ private:
         } else {
             x = nodes[y].right;
         }
-        nodes[x].parent = nodes[y].parent;
+        if(has_parent(x)) {
+            nodes[x].parent = nodes[y].parent;
+        }
         if(parent_of(y) == SENTINEL_ID) {
             root = x;
         } else {
@@ -165,24 +180,26 @@ private:
         if(nodes[y].is_black()) {
             RB_delete_fixup(x);
         }
+        validate_sentinel();
         return y;
     }
 
     void RB_delete_fixup(uint32_t x) {
+        const auto &sent = nodes[0];
         while(x != root && nodes[x].is_black()) {
             if(left_of(parent_of(x)) == x) {
                 auto w = right_of(parent_of(x));
                 if(nodes[w].is_red()) {
-                    nodes[w].color.set_black();
-                    nodes[parent_of(x)].color.set_red();
+                    nodes[w].set_black();
+                    nodes[parent_of(x)].set_red();
                     left_rotate(parent_of(x));
                     w = right_of(parent_of(x));
                 }
-                if(left_of(w).is_black() && right_of(w).is_black()) {
+                if(nodes[left_of(w)].is_black() && nodes[right_of(w)].is_black()) {
                     nodes[w].set_red();
                     x = parent_of(x);
                 } else {
-                    if(right_of(w).is_black()) {
+                    if(nodes[right_of(w)].is_black()) {
                         nodes[left_of(w)].set_black();
                         nodes[w].set_red();
                         right_rotate(w);
@@ -234,15 +251,15 @@ private:
                     if(x == right_of(parent_of(x))) {
                         x = parent_of(x);
                         left_rotate(x);
-                        printf("Left rotate done");
-                        debug_print();
+                        //printf("Left rotate done");
+                        //debug_print();
                     }
                     nodes[parent_of(x)].set_black();
                     auto gp = parent_of(parent_of(x));
                     nodes[gp].set_red();
                     right_rotate(gp);
-                    printf("Right rotate done");
-                    debug_print();
+                    //printf("Right rotate done");
+                    //debug_print();
                 }
             } else {
                 auto y = left_of(parent_of(parent_of(x)));
@@ -393,13 +410,13 @@ private:
         assert(a < nodes.size());
         assert(b < nodes.size());
 
-        auto a_p = nodes[a].p;
-        auto a_l = nodes[a].l;
-        auto a_r = nodes[a].r;
+        auto a_p = nodes[a].parent;
+        auto a_l = nodes[a].left;
+        auto a_r = nodes[a].right;
 
-        auto b_p = nodes[b].p;
-        auto b_l = nodes[b].l;
-        auto b_r = nodes[b].r;
+        auto b_p = nodes[b].parent;
+        auto b_l = nodes[b].left;
+        auto b_r = nodes[b].right;
 
         // Parents
         if(a_p != SENTINEL_ID) {
@@ -412,11 +429,23 @@ private:
         // Node pointers.
         nodes[a].parent = b_p;
         nodes[a].left = b_l;
+        if(b_l != SENTINEL_ID) {
+            nodes[b_l].parent = a;
+        }
         nodes[a].right = b_r;
+        if(b_r != SENTINEL_ID) {
+            nodes[b_r].parent = a;
+        }
 
         nodes[b].parent = a_p;
         nodes[b].left = a_l;
+        if(a_l != SENTINEL_ID) {
+            nodes[a_l].parent = b;
+        }
         nodes[b].right = a_r;
+        if(a_l != SENTINEL_ID) {
+            nodes[a_l].parent = b;
+        }
 
         // And finally the value.
         pystd2025::swap(nodes[a].key, nodes[b].key);
@@ -434,6 +463,28 @@ private:
 
     void debug_print() const {
         printf("\n---\nRoot: %d\n", root);
+        for(uint32_t i = 1; i < nodes.size(); ++i) {
+            const auto &n = nodes[i];
+            printf("  %u [label=\"id: %u value: %u\" %s %s]\n",
+                   i,
+                   i,
+                   nodes[i].key,
+                   n.is_black() ? "" : "color=red",
+                   i == root ? "color=green" : "");
+        }
+        for(uint32_t i = 1; i < nodes.size(); ++i) {
+            const auto &n = nodes[i];
+            if(n.left != SENTINEL_ID) {
+                printf(" %u -> %u \n", i, n.left);
+            }
+            if(n.right != SENTINEL_ID) {
+                printf(" %u -> %u \n", i, n.right);
+            }
+            if(n.parent != SENTINEL_ID) {
+                printf(" %u -> %u \n", i, n.parent);
+            }
+        }
+
         for(uint32_t i = 0; i < nodes.size(); ++i) {
             const auto &n = nodes[i];
             printf("%u %c l: %u r: %u p: %u, value: %d\n",
@@ -450,6 +501,9 @@ private:
     void validate_nodes() const {
         for(size_t i = 1; i < nodes.size(); ++i) {
             const auto &node = nodes[i];
+            assert(node.parent < nodes.size());
+            assert(node.left < nodes.size());
+            assert(node.right < nodes.size());
             if(node.left != SENTINEL_ID) {
                 const auto &left = nodes[node.right];
                 assert(left.parent == i);
