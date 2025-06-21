@@ -178,6 +178,30 @@ private:
         }
     }
 
+    uint32_t lookup(const Key &key) const {
+        if(is_empty()) {
+            return SENTINEL_ID;
+        }
+        uint32_t current_node = root;
+        while(true) {
+            if(key < nodes[current_node].key) {
+                if(!has_left(current_node)) {
+                    return SENTINEL_ID;
+                } else {
+                    current_node = nodes[current_node].left;
+                }
+            } else if(key == nodes[current_node].key) {
+                return current_node;
+            } else {
+                if(!has_right(current_node)) {
+                    return SENTINEL_ID;
+                } else {
+                    current_node = nodes[current_node].right;
+                }
+            }
+        }
+    }
+
     void left_rotate(uint32_t x) {
         assert(right_of(x) != SENTINEL_ID);
         auto grandparent = parent_of(x);
@@ -237,6 +261,51 @@ private:
             } else {
                 nodes[grandparent].right = x;
             }
+        }
+    }
+
+    void swap(uint32_t a, uint32_t b) {
+        assert(a != SENTINEL_ID);
+        assert(b != SENTINEL_ID);
+        assert(a < nodes.size());
+        assert(b < nodes.size());
+
+        auto a_p = nodes[a].p;
+        auto a_l = nodes[a].l;
+        auto a_r = nodes[a].r;
+
+        auto b_p = nodes[b].p;
+        auto b_l = nodes[b].l;
+        auto b_r = nodes[b].r;
+
+        // Parents
+        if(a_p != SENTINEL_ID) {
+            swap_child_for(a_p, a, b);
+        }
+        if(b_p != SENTINEL_ID) {
+            swap_child_for(b_p, b, a);
+        }
+
+        // Node pointers.
+        nodes[a].parent = b_p;
+        nodes[a].left = b_l;
+        nodes[a].right = b_r;
+
+        nodes[b].parent = a_p;
+        nodes[b].left = a_l;
+        nodes[b].right = a_r;
+
+        // And finally the value.
+        pystd2025::swap(nodes[a].key, nodes[b].key);
+        // pystd2025::swap(nodes[a].value, nodes[b].value);
+    }
+
+    void swap_child_for(uint32_t parent, uint32_t old_child, uint32_t new_child) {
+        if(nodes[parent].left == old_child) {
+            nodes[parent].left = new_child;
+        } else {
+            assert(nodes[parent].right == old_child);
+            nodes[parent].right = new_child;
         }
     }
 
