@@ -90,15 +90,15 @@ public:
             nodes.emplace_back(
                 SENTINEL_ID, SENTINEL_ID, SENTINEL_ID, Color::Black, pystd2025::move(key));
             root = 1;
-            //debug_print();
+            // debug_print();
             return;
         }
         const bool need_rebalance = tree_insert(key);
-        //debug_print();
+        // debug_print();
         if(need_rebalance) {
             insert_rebalance();
         }
-        //debug_print();
+        // debug_print();
     }
 
     void remove(const Key &key) {
@@ -227,10 +227,19 @@ private:
         assert(sentinel.right == SENTINEL_ID);
     }
 
-    uint32_t tree_successor(uint32_t node) {
-        RBIterator<Key> it(this, node);
-        ++it;
-        return it.node_id();
+    uint32_t tree_successor(uint32_t node_id) const {
+        if(nodes[node_id].right != SENTINEL_ID) {
+            node_id = nodes[node_id].right;
+            while(nodes[node_id].left != SENTINEL_ID) {
+                node_id = nodes[node_id].left;
+            }
+            return node_id;
+        }
+        auto par_id = parent_of(node_id);
+        while(par_id != SENTINEL_ID && nodes[par_id].right == node_id) {
+            node_id = par_id;
+            par_id = parent_of(node_id);
+        }
     }
 
     void insert_rebalance() {
@@ -251,15 +260,15 @@ private:
                     if(x == right_of(parent_of(x))) {
                         x = parent_of(x);
                         left_rotate(x);
-                        //printf("Left rotate done");
-                        //debug_print();
+                        // printf("Left rotate done");
+                        // debug_print();
                     }
                     nodes[parent_of(x)].set_black();
                     auto gp = parent_of(parent_of(x));
                     nodes[gp].set_red();
                     right_rotate(gp);
-                    //printf("Right rotate done");
-                    //debug_print();
+                    // printf("Right rotate done");
+                    // debug_print();
                 }
             } else {
                 auto y = left_of(parent_of(parent_of(x)));
