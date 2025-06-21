@@ -576,6 +576,16 @@ int test_rb1() {
     rbtree.insert(7);
     rbtree.insert(6);
 
+    rbtree.insert(3);
+    rbtree.insert(4);
+
+    rbtree.insert(1);
+    rbtree.insert(2);
+
+    rbtree.insert(9);
+    rbtree.insert(8);
+
+    ASSERT(rbtree.size() == 10);
     return 0;
 }
 

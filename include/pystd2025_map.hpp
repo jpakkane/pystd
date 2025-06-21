@@ -52,6 +52,8 @@ public:
         return *this;
     }
 
+    uint32_t node_id() const { return i; }
+
 private:
     void go_up() {
         auto p = tree->parent_of(i);
@@ -71,7 +73,7 @@ template<WellBehaved Key> class RBTree {
 public:
     friend class RBIterator<Key>;
     RBTree() {
-        nodes.emplace_back((uint32_t)-1, (uint32_t)-1, (uint32_t)-1, Color::Black, Key{});
+        nodes.emplace_back(SENTINEL_ID, SENTINEL_ID, SENTINEL_ID, Color::Black, Key{});
         root = (uint32_t)-1;
     }
 
@@ -84,12 +86,28 @@ public:
             nodes.emplace_back(
                 SENTINEL_ID, SENTINEL_ID, SENTINEL_ID, Color::Black, pystd2025::move(key));
             root = 1;
+            debug_print();
             return;
         }
         const bool need_rebalance = tree_insert(key);
+        debug_print();
         if(need_rebalance) {
             insert_rebalance();
         }
+        debug_print();
+    }
+
+    void remove(const Key &key) {
+        auto z = lookup(key);
+        if(z == SENTINEL_ID) {
+            return;
+        }
+
+        auto deleted_node = RB_delete(z);
+        if(deleted_node != nodes.size() - 1) {
+            swap_nodes(deleted_node, nodes.size() - 1);
+        }
+        nodes.pop_back();
     }
 
     RBIterator<Key> begin() {
@@ -112,41 +130,136 @@ private:
 
     uint32_t parent_of(uint32_t i) const { return nodes[i].parent; }
 
+    uint32_t RB_delete(uint32_t z) {
+        assert(z != SENTINEL_ID);
+        assert(!is_empty());
+        uint32_t y = SENTINEL_ID;
+        if(nodes[z].left == SENTINEL_ID || nodes[z].right == SENTINEL_ID) {
+            y = z;
+        } else {
+            y = tree_successor(z);
+        }
+        uint32_t x = SENTINEL_ID;
+        if(left_of(y) != SENTINEL_ID) {
+            x = nodes[y].left;
+        } else {
+            x = nodes[y].right;
+        }
+        nodes[x].parent = nodes[y].parent;
+        if(parent_of(y) == SENTINEL_ID) {
+            root = x;
+        } else {
+            if(y == nodes[parent_of(y)].left) {
+                nodes[parent_of(y)].left = x;
+            } else {
+                nodes[parent_of(y)].right = x;
+            }
+        }
+        if(y != z) {
+            nodes[z].key = pystd2025::move(nodes[y].key);
+        }
+        if(nodes[y].is_black()) {
+            RB_delete_fixup(x);
+        }
+        return y;
+    }
+
+    void RB_delete_fixup(uint32_t x) {
+        while(x != root && nodes[x].is_black()) {
+            if(left_of(parent_of(x)) == x) {
+                auto w = right_of(parent_of(x));
+                if(nodes[w].is_red()) {
+                    nodes[w].color.set_black();
+                    nodes[parent_of(x)].color.set_red();
+                    left_rotate(parent_of(x));
+                    w = right_of(parent_of(x));
+                }
+                if(left_of(w).is_black() && right_of(w).is_black()) {
+                    nodes[w].set_red();
+                    x = parent_of(x);
+                } else {
+                    if(right_of(w).is_black()) {
+                        nodes[left_of(w)].set_black();
+                        nodes[w].set_red();
+                        right_rotate(w);
+                        w = right_of(parent_of(x));
+                    }
+                    nodes[w].set_color(nodes[parent_of(x)].get_color());
+                    nodes[parent_of(x)].set_black();
+                    nodes[right_of(x)].set_black();
+                    left_rotate(parent_of(x));
+                    x = root;
+                }
+            } else {
+                // FIXME, add later.
+                abort();
+            }
+            validate_sentinel();
+        }
+    }
+
+    void validate_sentinel() const {
+        const auto &sentinel = nodes[SENTINEL_ID];
+
+        assert(sentinel.parent == SENTINEL_ID);
+        assert(sentinel.left == SENTINEL_ID);
+        assert(sentinel.right == SENTINEL_ID);
+    }
+
+    uint32_t tree_successor(uint32_t node) {
+        RBIterator<Key> it(this, node);
+        ++it;
+        return it.node_id();
+    }
+
     void insert_rebalance() {
         uint32_t x = nodes.size() - 1;
         assert(!nodes[x].is_black());
-        while(x != root && !nodes[parent_of(x)].is_black()) {
+        const auto &sen = nodes[SENTINEL_ID];
+        while(x != root && nodes[parent_of(x)].is_red()) {
             assert(parent_of(x) != SENTINEL_ID);
             assert(parent_of(parent_of(x)) != SENTINEL_ID);
             if(parent_of(x) == left_of(parent_of(parent_of(x)))) {
                 auto y = right_of(parent_of(parent_of(x)));
-                if(nodes[y].is_black()) {
+                if(nodes[y].is_red()) {
                     nodes[parent_of(x)].set_black();
                     nodes[y].set_black();
                     nodes[parent_of(parent_of(x))].set_red();
                     x = parent_of(parent_of(x));
-                } else if(x == right_of(parent_of(x))) {
-                    x = parent_of(x);
-                    left_rotate(x);
+                } else {
+                    if(x == right_of(parent_of(x))) {
+                        x = parent_of(x);
+                        left_rotate(x);
+                        printf("Left rotate done");
+                        debug_print();
+                    }
                     nodes[parent_of(x)].set_black();
-                    nodes[parent_of(parent_of(x))].set_red();
-                    right_rotate(parent_of(parent_of(x)));
+                    auto gp = parent_of(parent_of(x));
+                    nodes[gp].set_red();
+                    right_rotate(gp);
+                    printf("Right rotate done");
+                    debug_print();
                 }
             } else {
                 auto y = left_of(parent_of(parent_of(x)));
-                if(nodes[y].is_black()) {
+                if(nodes[y].is_red()) {
                     nodes[parent_of(x)].set_black();
                     nodes[y].set_black();
                     nodes[parent_of(parent_of(x))].set_red();
                     x = parent_of(parent_of(x));
-                } else if(x == left_of(parent_of(x))) {
-                    x = parent_of(x);
-                    right_rotate(x);
+                } else {
+                    if(x == left_of(parent_of(x))) {
+                        x = parent_of(x);
+                        right_rotate(x);
+                    }
                     nodes[parent_of(x)].set_black();
-                    nodes[parent_of(parent_of(x))].set_red();
-                    left_rotate(parent_of(parent_of(x)));
+                    auto gp = parent_of(parent_of(x));
+                    nodes[gp].set_red();
+                    left_rotate(gp);
                 }
             }
+            validate_sentinel();
+            validate_nodes();
         }
         nodes[root].set_black();
     }
@@ -204,8 +317,10 @@ private:
 
     void left_rotate(uint32_t x) {
         assert(right_of(x) != SENTINEL_ID);
+        const auto &xnode = nodes[x];
         auto grandparent = parent_of(x);
         auto y = right_of(x);
+        const auto &ynode = nodes[y];
         // auto alpha = left_of(x);
         auto beta = left_of(y);
         // auto gamma = right_of(y);
@@ -221,6 +336,7 @@ private:
         nodes[x].parent = y;
         nodes[y].left = x;
         //      assert(right_of(y) == gamma);
+        nodes[y].parent = grandparent;
 
         if(grandparent == SENTINEL_ID) {
             root = y;
@@ -235,8 +351,10 @@ private:
 
     void right_rotate(uint32_t y) {
         assert(left_of(y) != SENTINEL_ID);
+        const auto &ynode = nodes[y];
         auto grandparent = parent_of(y);
         auto x = left_of(y);
+        const auto &xnode = nodes[x];
         // auto alpha = left_of(x);
         auto beta = right_of(x);
         // auto gamma = right_of(y);
@@ -245,13 +363,14 @@ private:
         // if(alpha != SENTINEL_ID) {
         //     nodes[alpha].parent = x;
         // }
-        nodes[y].left = y;
+        nodes[y].left = beta;
         if(beta != SENTINEL_ID) {
             nodes[beta].parent = y;
         }
         nodes[y].parent = x;
         nodes[x].right = y;
         //      assert(right_of(y) == gamma);
+        nodes[x].parent = grandparent;
 
         if(grandparent == SENTINEL_ID) {
             root = x;
@@ -264,7 +383,7 @@ private:
         }
     }
 
-    void swap(uint32_t a, uint32_t b) {
+    void swap_nodes(uint32_t a, uint32_t b) {
         assert(a != SENTINEL_ID);
         assert(b != SENTINEL_ID);
         assert(a < nodes.size());
@@ -309,6 +428,40 @@ private:
         }
     }
 
+    void debug_print() const {
+        printf("\n---\nRoot: %d\n", root);
+        for(uint32_t i = 0; i < nodes.size(); ++i) {
+            const auto &n = nodes[i];
+            printf("%u %c l: %u r: %u p: %u, value: %d\n",
+                   i,
+                   n.is_black() ? 'B' : 'R',
+                   n.left,
+                   n.right,
+                   n.parent,
+                   n.key);
+        }
+        printf("\n---\n");
+    }
+
+    void validate_nodes() const {
+        for(size_t i = 1; i < nodes.size(); ++i) {
+            const auto &node = nodes[i];
+            if(node.left != SENTINEL_ID) {
+                const auto &left = nodes[node.right];
+                assert(left.parent == i);
+                if(node.is_red()) {
+                    assert(left.is_black());
+                }
+            }
+            if(node.right != SENTINEL_ID) {
+                const auto &right = nodes[node.right];
+                assert(right.parent == i);
+                if(node.is_red()) {
+                    assert(right.is_black());
+                }
+            }
+        }
+    }
     static constexpr uint32_t SENTINEL_ID = 0;
 
     enum class Color : uint8_t {
@@ -334,6 +487,16 @@ private:
         void set_black() { color = Color::Black; }
 
         void set_red() { color = Color::Red; }
+
+        Color get_color() const { return color; }
+
+        void set_color(Color c) {
+            if(c == Color::Black) {
+                set_black();
+            } else {
+                set_red();
+            }
+        }
     };
 
     bool has_parent(uint32_t i) const { return nodes[i].parent != SENTINEL_ID; }
