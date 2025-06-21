@@ -25,13 +25,20 @@ public:
 
     Key &operator*() { return tree->nodes[i].key; }
 
+    void backtrack_to_next() {
+        go_up();
+        while(i != tree->SENTINEL_ID && direction == CameFrom::Right) {
+            go_up();
+        }
+    }
+
     RBIterator &operator++() {
         if(direction == CameFrom::Top) {
             if(tree->has_right(i)) {
                 i = tree->right_of(i);
                 direction = CameFrom::Top;
             } else {
-                go_up();
+                backtrack_to_next();
             }
         } else if(direction == CameFrom::Left) {
             if(tree->has_right(i)) {
@@ -41,13 +48,10 @@ public:
                 }
                 direction = CameFrom::Top;
             } else {
-                go_up();
+                backtrack_to_next();
             }
         } else {
-            go_up();
-            while(i != tree->SENTINEL_ID && direction == CameFrom::Right) {
-                go_up();
-            }
+            backtrack_to_next();
         }
         return *this;
     }

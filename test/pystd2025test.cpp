@@ -586,6 +586,15 @@ int test_rb1() {
     rbtree.insert(8);
 
     ASSERT(rbtree.size() == 10);
+
+    it = rbtree.begin();
+    int expected = 1;
+    while(it != rbtree.end()) {
+        ASSERT(*it == expected);
+        ++it;
+        ++expected;
+    }
+
     return 0;
 }
 
