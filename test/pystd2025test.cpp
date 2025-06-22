@@ -519,7 +519,7 @@ int test_sort1() {
     pystd2025::Vector<int> result;
 
     result.push_back(0);
-    result.push_back(2);
+    result.push_back(1);
     result.push_back(2);
     result.push_back(3);
 

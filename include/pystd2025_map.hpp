@@ -104,11 +104,11 @@ public:
             return;
         }
 
-        //printf("Starting delete of %u.\n", key);
-        //debug_print();
+        // printf("Starting delete of %u.\n", key);
+        // debug_print();
         auto deleted_node = RB_delete(z);
-        //printf("Deleted but not popped.\n");
-        //debug_print();
+        // printf("Deleted but not popped.\n");
+        // debug_print();
         if(deleted_node != nodes.size() - 1) {
             auto &delnode = nodes[deleted_node];
             delnode.parent = SENTINEL_ID;
@@ -117,8 +117,8 @@ public:
             swap_nodes(deleted_node, nodes.size() - 1);
         }
         nodes.pop_back();
-        //printf("Delete finished.\n");
-        //debug_print();
+        // printf("Delete finished.\n");
+        // debug_print();
         validate_sentinel();
         validate_nodes();
         validate_rbprop();

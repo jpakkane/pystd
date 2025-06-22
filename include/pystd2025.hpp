@@ -2600,7 +2600,7 @@ template<typename It1, typename It2> void insertion_sort(It1 start, It2 end) {
         auto previous = current;
         --previous;
         while(*current < *previous) {
-            swap(previous, current);
+            swap(*previous, *current);
             --previous;
             --current;
         }
