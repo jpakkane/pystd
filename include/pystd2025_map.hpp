@@ -150,7 +150,6 @@ private:
     uint32_t RB_delete(const uint32_t z_id) {
         assert(z_id != SENTINEL_ID);
         assert(!is_empty());
-        const auto &sent = nodes[0];
         auto &z = nodes[z_id];
         uint32_t y = (uint32_t)-1;
         if(z.left == SENTINEL_ID || z.right == SENTINEL_ID) {
@@ -189,12 +188,9 @@ private:
     void RB_delete_fixup(uint32_t x) {
         // This part of the algorithm has a hidden requirement
         // that the sentinel's parent points to the "currently active" node.
-        const auto &sent = nodes[0];
-        const auto &xnode = nodes[x];
         while(x != root && nodes[x].is_black()) {
             if(left_of(parent_of(x)) == x) {
                 auto w = right_of(parent_of(x));
-                const auto &wnode = nodes[w];
                 if(nodes[w].is_red()) {
                     nodes[w].set_black();
                     nodes[parent_of(x)].set_red();
@@ -205,8 +201,6 @@ private:
                     nodes[w].set_red();
                     x = parent_of(x);
                 } else {
-                    auto zzz = right_of(w);
-                    const auto &blub = nodes[zzz];
                     if(nodes[right_of(w)].is_black()) {
                         nodes[left_of(w)].set_black();
                         nodes[w].set_red();
@@ -222,7 +216,6 @@ private:
             } else {
                 if(right_of(parent_of(x)) == x) {
                     auto w = left_of(parent_of(x));
-                    const auto &wnode = nodes[w];
                     if(nodes[w].is_red()) {
                         nodes[w].set_black();
                         nodes[parent_of(x)].set_red();
@@ -233,8 +226,6 @@ private:
                         nodes[w].set_red();
                         x = parent_of(x);
                     } else {
-                        auto zzz = left_of(w);
-                        const auto &blub = nodes[zzz];
                         if(nodes[left_of(w)].is_black()) {
                             nodes[right_of(w)].set_black();
                             nodes[w].set_red();
@@ -305,12 +296,12 @@ private:
             node_id = par_id;
             par_id = parent_of(node_id);
         }
+        return node_id;
     }
 
     void insert_rebalance() {
         uint32_t x = nodes.size() - 1;
         assert(!nodes[x].is_black());
-        const auto &sen = nodes[SENTINEL_ID];
         while(x != root && nodes[parent_of(x)].is_red()) {
             assert(parent_of(x) != SENTINEL_ID);
             assert(parent_of(parent_of(x)) != SENTINEL_ID);
@@ -413,11 +404,11 @@ private:
 
     void left_rotate(uint32_t x) {
         assert(right_of(x) != SENTINEL_ID);
-        const auto &xnode = nodes[x];
+        // const auto &xnode = nodes[x];
         auto grandparent = parent_of(x);
         auto y = right_of(x);
-        const auto &ynode = nodes[y];
-        // auto alpha = left_of(x);
+        // const auto &ynode = nodes[y];
+        //  auto alpha = left_of(x);
         auto beta = left_of(y);
         // auto gamma = right_of(y);
 
@@ -447,11 +438,11 @@ private:
 
     void right_rotate(uint32_t y) {
         assert(left_of(y) != SENTINEL_ID);
-        const auto &ynode = nodes[y];
+        // const auto &ynode = nodes[y];
         auto grandparent = parent_of(y);
         auto x = left_of(y);
-        const auto &xnode = nodes[x];
-        // auto alpha = left_of(x);
+        // const auto &xnode = nodes[x];
+        //  auto alpha = left_of(x);
         auto beta = right_of(x);
         // auto gamma = right_of(y);
 
@@ -525,6 +516,11 @@ private:
         // Color
         pystd2025::swap(nodes[a].color, nodes[b].color);
 
+        if(root == a) {
+            root = b;
+        } else if(root == b) {
+            root = a;
+        }
         // And finally the value.
         pystd2025::swap(nodes[a].key, nodes[b].key);
         // pystd2025::swap(nodes[a].value, nodes[b].value);
