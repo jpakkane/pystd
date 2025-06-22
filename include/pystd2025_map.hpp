@@ -164,9 +164,7 @@ private:
         } else {
             x = right_of(y);
         }
-        if(has_parent(x)) {
-            nodes[x].parent = nodes[y].parent;
-        }
+        nodes[x].parent = nodes[y].parent;
         if(parent_of(y) == SENTINEL_ID) {
             root = x;
         } else {
@@ -180,11 +178,10 @@ private:
             z.key = pystd2025::move(nodes[y].key);
         }
         if(nodes[y].is_black()) {
-            if(x == SENTINEL_ID) {
-                nodes[SENTINEL_ID].parent = parent_of(z_id);
-            }
             RB_delete_fixup(x);
             validate_sentinel();
+        } else {
+            nodes[SENTINEL_ID].parent = SENTINEL_ID;
         }
         return y;
     }
@@ -193,10 +190,11 @@ private:
         // This part of the algorithm has a hidden requirement
         // that the sentinel's parent points to the "currently active" node.
         const auto &sent = nodes[0];
-        const auto &xnode= nodes[x];
+        const auto &xnode = nodes[x];
         while(x != root && nodes[x].is_black()) {
             if(left_of(parent_of(x)) == x) {
                 auto w = right_of(parent_of(x));
+                const auto &wnode = nodes[w];
                 if(nodes[w].is_red()) {
                     nodes[w].set_black();
                     nodes[parent_of(x)].set_red();
@@ -207,6 +205,8 @@ private:
                     nodes[w].set_red();
                     x = parent_of(x);
                 } else {
+                    auto zzz = right_of(w);
+                    const auto &blub = nodes[zzz];
                     if(nodes[right_of(w)].is_black()) {
                         nodes[left_of(w)].set_black();
                         nodes[w].set_red();
@@ -215,33 +215,38 @@ private:
                     }
                     nodes[w].set_color(nodes[parent_of(x)].get_color());
                     nodes[parent_of(x)].set_black();
-                    nodes[right_of(x)].set_black();
+                    nodes[right_of(w)].set_black();
                     left_rotate(parent_of(x));
                     x = root;
                 }
             } else {
-                auto w = left_of(parent_of(x));
-                if(nodes[w].is_red()) {
-                    nodes[w].set_black();
-                    nodes[parent_of(x)].set_red();
-                    right_rotate(parent_of(x));
-                    w = left_of(parent_of(x));
-                }
-                if(nodes[right_of(w)].is_black() && nodes[left_of(w)].is_black()) {
-                    nodes[w].set_red();
-                    x = parent_of(x);
-                } else {
-                    if(nodes[left_of(w)].is_black()) {
-                        nodes[right_of(w)].set_black();
-                        nodes[w].set_red();
-                        left_rotate(w);
+                if(right_of(parent_of(x)) == x) {
+                    auto w = left_of(parent_of(x));
+                    const auto &wnode = nodes[w];
+                    if(nodes[w].is_red()) {
+                        nodes[w].set_black();
+                        nodes[parent_of(x)].set_red();
+                        right_rotate(parent_of(x));
                         w = left_of(parent_of(x));
                     }
-                    nodes[w].set_color(nodes[parent_of(x)].get_color());
-                    nodes[parent_of(x)].set_black();
-                    nodes[left_of(x)].set_black();
-                    right_rotate(parent_of(x));
-                    x = root;
+                    if(nodes[right_of(w)].is_black() && nodes[left_of(w)].is_black()) {
+                        nodes[w].set_red();
+                        x = parent_of(x);
+                    } else {
+                        auto zzz = left_of(w);
+                        const auto &blub = nodes[zzz];
+                        if(nodes[left_of(w)].is_black()) {
+                            nodes[right_of(w)].set_black();
+                            nodes[w].set_red();
+                            left_rotate(w);
+                            w = left_of(parent_of(x));
+                        }
+                        nodes[w].set_color(nodes[parent_of(x)].get_color());
+                        nodes[parent_of(x)].set_black();
+                        nodes[left_of(w)].set_black();
+                        right_rotate(parent_of(x));
+                        x = root;
+                    }
                 }
             }
             assert(nodes[SENTINEL_ID].left == SENTINEL_ID);
@@ -267,7 +272,9 @@ private:
         validate_rbprop_recursive(root, 0, expected_black_count);
     }
 
-    void validate_rbprop_recursive(uint32_t current_node, int current_black_count, int &expected_black_count) const {
+    void validate_rbprop_recursive(uint32_t current_node,
+                                   int current_black_count,
+                                   int &expected_black_count) const {
         auto const &n = nodes[current_node];
         if(n.is_black()) {
             // Empty leaf nodes count as black.
@@ -514,6 +521,9 @@ private:
         if(a_l != SENTINEL_ID) {
             nodes[a_l].parent = b;
         }
+
+        // Color
+        pystd2025::swap(nodes[a].color, nodes[b].color);
 
         // And finally the value.
         pystd2025::swap(nodes[a].key, nodes[b].key);
