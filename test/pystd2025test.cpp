@@ -608,6 +608,8 @@ int test_rb1() {
     ASSERT(rbtree.size() == 5);
     rbtree.remove(3);
     ASSERT(rbtree.size() == 4);
+    rbtree.remove(10);
+    ASSERT(rbtree.size() == 3);
 
     return 0;
 }

@@ -124,6 +124,7 @@ public:
         debug_print();
         validate_sentinel();
         validate_nodes();
+        validate_rbprop();
     }
 
     RBIterator<Key> begin() {
@@ -146,21 +147,22 @@ private:
 
     uint32_t parent_of(uint32_t i) const { return nodes[i].parent; }
 
-    uint32_t RB_delete(uint32_t z) {
-        assert(z != SENTINEL_ID);
+    uint32_t RB_delete(const uint32_t z_id) {
+        assert(z_id != SENTINEL_ID);
         assert(!is_empty());
         const auto &sent = nodes[0];
-        uint32_t y = SENTINEL_ID;
-        if(nodes[z].left == SENTINEL_ID || nodes[z].right == SENTINEL_ID) {
-            y = z;
+        auto &z = nodes[z_id];
+        uint32_t y = (uint32_t)-1;
+        if(z.left == SENTINEL_ID || z.right == SENTINEL_ID) {
+            y = z_id;
         } else {
-            y = tree_successor(z);
+            y = tree_successor(z_id);
         }
-        uint32_t x = SENTINEL_ID;
+        uint32_t x = (uint32_t)-1;
         if(left_of(y) != SENTINEL_ID) {
-            x = nodes[y].left;
+            x = left_of(y);
         } else {
-            x = nodes[y].right;
+            x = right_of(y);
         }
         if(has_parent(x)) {
             nodes[x].parent = nodes[y].parent;
@@ -168,24 +170,30 @@ private:
         if(parent_of(y) == SENTINEL_ID) {
             root = x;
         } else {
-            if(y == nodes[parent_of(y)].left) {
+            if(y == left_of(parent_of(y))) {
                 nodes[parent_of(y)].left = x;
             } else {
                 nodes[parent_of(y)].right = x;
             }
         }
-        if(y != z) {
-            nodes[z].key = pystd2025::move(nodes[y].key);
+        if(y != z_id) {
+            z.key = pystd2025::move(nodes[y].key);
         }
         if(nodes[y].is_black()) {
+            if(x == SENTINEL_ID) {
+                nodes[SENTINEL_ID].parent = parent_of(z_id);
+            }
             RB_delete_fixup(x);
+            validate_sentinel();
         }
-        validate_sentinel();
         return y;
     }
 
     void RB_delete_fixup(uint32_t x) {
+        // This part of the algorithm has a hidden requirement
+        // that the sentinel's parent points to the "currently active" node.
         const auto &sent = nodes[0];
+        const auto &xnode= nodes[x];
         while(x != root && nodes[x].is_black()) {
             if(left_of(parent_of(x)) == x) {
                 auto w = right_of(parent_of(x));
@@ -212,11 +220,35 @@ private:
                     x = root;
                 }
             } else {
-                // FIXME, add later.
-                abort();
+                auto w = left_of(parent_of(x));
+                if(nodes[w].is_red()) {
+                    nodes[w].set_black();
+                    nodes[parent_of(x)].set_red();
+                    right_rotate(parent_of(x));
+                    w = left_of(parent_of(x));
+                }
+                if(nodes[right_of(w)].is_black() && nodes[left_of(w)].is_black()) {
+                    nodes[w].set_red();
+                    x = parent_of(x);
+                } else {
+                    if(nodes[left_of(w)].is_black()) {
+                        nodes[right_of(w)].set_black();
+                        nodes[w].set_red();
+                        left_rotate(w);
+                        w = left_of(parent_of(x));
+                    }
+                    nodes[w].set_color(nodes[parent_of(x)].get_color());
+                    nodes[parent_of(x)].set_black();
+                    nodes[left_of(x)].set_black();
+                    right_rotate(parent_of(x));
+                    x = root;
+                }
             }
-            validate_sentinel();
+            assert(nodes[SENTINEL_ID].left == SENTINEL_ID);
+            assert(nodes[SENTINEL_ID].right == SENTINEL_ID);
         }
+        nodes[x].set_black();
+        nodes[SENTINEL_ID].parent = SENTINEL_ID;
     }
 
     void validate_sentinel() const {
@@ -225,6 +257,32 @@ private:
         assert(sentinel.parent == SENTINEL_ID);
         assert(sentinel.left == SENTINEL_ID);
         assert(sentinel.right == SENTINEL_ID);
+    }
+
+    void validate_rbprop() const {
+        if(is_empty()) {
+            return;
+        }
+        int expected_black_count = (int)-1;
+        validate_rbprop_recursive(root, 0, expected_black_count);
+    }
+
+    void validate_rbprop_recursive(uint32_t current_node, int current_black_count, int &expected_black_count) const {
+        auto const &n = nodes[current_node];
+        if(n.is_black()) {
+            // Empty leaf nodes count as black.
+            ++current_black_count;
+        }
+        if(current_node == SENTINEL_ID) {
+            if(expected_black_count == (int)-1) {
+                expected_black_count = current_black_count;
+            } else {
+                assert(current_black_count == expected_black_count);
+            }
+        } else {
+            validate_rbprop_recursive(n.left, current_black_count, expected_black_count);
+            validate_rbprop_recursive(n.right, current_black_count, expected_black_count);
+        }
     }
 
     uint32_t tree_successor(uint32_t node_id) const {
@@ -292,6 +350,7 @@ private:
             validate_nodes();
         }
         nodes[root].set_black();
+        validate_rbprop();
     }
 
     bool tree_insert(Key &key) {
@@ -484,13 +543,13 @@ private:
         for(uint32_t i = 1; i < nodes.size(); ++i) {
             const auto &n = nodes[i];
             if(n.left != SENTINEL_ID) {
-                printf(" %u -> %u \n", i, n.left);
+                printf(" %u -> %u [color=blue]\n", i, n.left);
             }
             if(n.right != SENTINEL_ID) {
-                printf(" %u -> %u \n", i, n.right);
+                printf(" %u -> %u [color=orange]\n", i, n.right);
             }
             if(n.parent != SENTINEL_ID) {
-                printf(" %u -> %u \n", i, n.parent);
+                printf(" %u -> %u [color=green]\n", i, n.parent);
             }
         }
 
