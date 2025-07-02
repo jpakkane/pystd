@@ -10,5 +10,8 @@ subdir('src')
 executable('pystd', 'main.cpp',
   dependencies: stdlib_dep)
 
+executable('maptime', 'maptime.cpp',
+  dependencies: stdlib_dep)
+
 subdir('test')
 subdir('tools')
