@@ -77,7 +77,7 @@ template<WellBehaved Key> class RBTree {
 public:
     friend class RBIterator<Key>;
     RBTree() {
-        nodes.emplace_back(SENTINEL_ID, SENTINEL_ID, SENTINEL_ID, Color::Black, Key{});
+        nodes.emplace_back(SENTINEL_ID, SENTINEL_ID, StashedRef{SENTINEL_ID, Color::Black}, Key{});
         root = (uint32_t)-1;
     }
 
@@ -87,18 +87,18 @@ public:
 
     void insert(Key key) {
         if(is_empty()) {
-            nodes.emplace_back(
-                SENTINEL_ID, SENTINEL_ID, SENTINEL_ID, Color::Black, pystd2025::move(key));
+            nodes.emplace_back(SENTINEL_ID,
+                               SENTINEL_ID,
+                               StashedRef{SENTINEL_ID, Color::Black},
+                               pystd2025::move(key));
             root = 1;
             return;
         }
         const bool need_rebalance = tree_insert(key);
-        // printf("Added, needs rebalance: %s\n", need_rebalance ? "true" : "false");
-        // debug_print();
+        debug_print("Added node, rebalancing if needed.");
         if(need_rebalance) {
             insert_rebalance();
-            // printf("After rebalance.\n");
-            // debug_print();
+            debug_print("After rebalance.\n");
         }
     }
 
@@ -115,18 +115,16 @@ public:
         // printf("Starting delete of %u.\n", key);
         // debug_print();
         auto deleted_node = RB_delete(z);
-        // printf("Deleted but not popped.\n");
-        // debug_print();
+        // debug_print("Deleted but not popped.\n");
         if(deleted_node != nodes.size() - 1) {
             auto &delnode = nodes[deleted_node];
-            delnode.parent = SENTINEL_ID;
+            delnode.parent.id = SENTINEL_ID;
             delnode.left = SENTINEL_ID;
             delnode.right = SENTINEL_ID;
             swap_nodes(deleted_node, nodes.size() - 1);
         }
         nodes.pop_back();
-        // printf("Delete finished.\n");
-        // debug_print();
+        debug_print("Delete finished.\n");
         validate_sentinel();
         validate_nodes();
         validate_rbprop();
@@ -168,7 +166,7 @@ public:
         // Renumber.
         for(size_t i = 0; i < nodes.size(); ++i) {
             auto node = move(nodes[new2old[i]]);
-            node.parent = old2new[node.parent];
+            node.parent.id = old2new[node.parent.id];
             node.left = old2new[node.left];
             node.right = old2new[node.right];
             new_nodes.push_back(move(node));
@@ -181,12 +179,13 @@ public:
 
 private:
     static constexpr bool validate_self = false;
+    static constexpr bool do_debug_prints = false;
 
     uint32_t left_of(uint32_t i) const { return nodes[i].left; }
 
     uint32_t right_of(uint32_t i) const { return nodes[i].right; }
 
-    uint32_t parent_of(uint32_t i) const { return nodes[i].parent; }
+    uint32_t parent_of(uint32_t i) const { return nodes[i].parent.id; }
 
     uint32_t RB_delete(const uint32_t z_id) {
         if(validate_self) {
@@ -206,7 +205,7 @@ private:
         } else {
             x = right_of(y);
         }
-        nodes[x].parent = nodes[y].parent;
+        nodes[x].parent.id = nodes[y].parent.id;
         if(parent_of(y) == SENTINEL_ID) {
             root = x;
         } else {
@@ -223,7 +222,7 @@ private:
             RB_delete_fixup(x);
             validate_sentinel();
         } else {
-            nodes[SENTINEL_ID].parent = SENTINEL_ID;
+            nodes[SENTINEL_ID].parent.id = SENTINEL_ID;
         }
         return y;
     }
@@ -289,7 +288,7 @@ private:
             }
         }
         nodes[x].set_black();
-        nodes[SENTINEL_ID].parent = SENTINEL_ID;
+        nodes[SENTINEL_ID].parent.id = SENTINEL_ID;
     }
 
     void validate_sentinel() const {
@@ -298,7 +297,7 @@ private:
         }
         const auto &sentinel = nodes[SENTINEL_ID];
 
-        assert(sentinel.parent == SENTINEL_ID);
+        assert(sentinel.parent.id == SENTINEL_ID);
         assert(sentinel.left == SENTINEL_ID);
         assert(sentinel.right == SENTINEL_ID);
     }
@@ -372,15 +371,13 @@ private:
                     if(x == right_of(parent_of(x))) {
                         x = parent_of(x);
                         left_rotate(x);
-                        // printf("Left rotate done");
-                        // debug_print();
+                        // debug_print("Left rotate done");
                     }
                     nodes[parent_of(x)].set_black();
                     auto gp = parent_of(parent_of(x));
                     nodes[gp].set_red();
                     right_rotate(gp);
-                    // printf("Right rotate done");
-                    // debug_print();
+                    // debug_print("Right rotate done");
                 }
             } else {
                 auto y = left_of(parent_of(parent_of(x)));
@@ -400,8 +397,7 @@ private:
                     left_rotate(gp);
                 }
             }
-            // printf("Before validation\n");
-            // debug_print();
+            // debug_print("Before validation\n");
             validate_sentinel();
         }
         validate_nodes();
@@ -415,8 +411,10 @@ private:
             if(key < nodes[current_node].key) {
                 if(!has_left(current_node)) {
                     nodes[current_node].left = nodes.size();
-                    nodes.emplace_back(
-                        SENTINEL_ID, SENTINEL_ID, current_node, Color::Red, pystd2025::move(key));
+                    nodes.emplace_back(SENTINEL_ID,
+                                       SENTINEL_ID,
+                                       StashedRef{current_node, Color::Red},
+                                       pystd2025::move(key));
                     return true;
                 } else {
                     current_node = nodes[current_node].left;
@@ -426,8 +424,10 @@ private:
             } else {
                 if(!has_right(current_node)) {
                     nodes[current_node].right = nodes.size();
-                    nodes.emplace_back(
-                        SENTINEL_ID, SENTINEL_ID, current_node, Color::Red, pystd2025::move(key));
+                    nodes.emplace_back(SENTINEL_ID,
+                                       SENTINEL_ID,
+                                       StashedRef{current_node, Color::Red},
+                                       pystd2025::move(key));
                     return true;
                 } else {
                     current_node = nodes[current_node].right;
@@ -478,12 +478,12 @@ private:
         // }
         nodes[x].right = beta;
         if(beta != SENTINEL_ID) {
-            nodes[beta].parent = x;
+            nodes[beta].parent.id = x;
         }
-        nodes[x].parent = y;
+        nodes[x].parent.id = y;
         nodes[y].left = x;
         //      assert(right_of(y) == gamma);
-        nodes[y].parent = grandparent;
+        nodes[y].parent.id = grandparent;
 
         if(grandparent == SENTINEL_ID) {
             root = y;
@@ -514,12 +514,12 @@ private:
         // }
         nodes[y].left = beta;
         if(beta != SENTINEL_ID) {
-            nodes[beta].parent = y;
+            nodes[beta].parent.id = y;
         }
-        nodes[y].parent = x;
+        nodes[y].parent.id = x;
         nodes[x].right = y;
         //      assert(right_of(y) == gamma);
-        nodes[x].parent = grandparent;
+        nodes[x].parent.id = grandparent;
 
         if(grandparent == SENTINEL_ID) {
             root = x;
@@ -539,11 +539,11 @@ private:
             assert(a < nodes.size());
             assert(b < nodes.size());
         }
-        auto a_p = nodes[a].parent;
+        auto a_p = nodes[a].parent.id;
         auto a_l = nodes[a].left;
         auto a_r = nodes[a].right;
 
-        auto b_p = nodes[b].parent;
+        auto b_p = nodes[b].parent.id;
         auto b_l = nodes[b].left;
         auto b_r = nodes[b].right;
 
@@ -556,28 +556,31 @@ private:
         }
 
         // Node pointers.
-        nodes[a].parent = b_p;
+        nodes[a].parent.id = b_p;
         nodes[a].left = b_l;
         if(b_l != SENTINEL_ID) {
-            nodes[b_l].parent = a;
+            nodes[b_l].parent.id = a;
         }
         nodes[a].right = b_r;
         if(b_r != SENTINEL_ID) {
-            nodes[b_r].parent = a;
+            nodes[b_r].parent.id = a;
         }
 
-        nodes[b].parent = a_p;
+        nodes[b].parent.id = a_p;
         nodes[b].left = a_l;
         if(a_l != SENTINEL_ID) {
-            nodes[a_l].parent = b;
+            nodes[a_l].parent.id = b;
         }
         nodes[b].right = a_r;
         if(a_l != SENTINEL_ID) {
-            nodes[a_l].parent = b;
+            nodes[a_l].parent.id = b;
         }
 
         // Color
-        pystd2025::swap(nodes[a].color, nodes[b].color);
+        // Can't use swap because color is a bitfield.
+        Color tmp = nodes[a].parent.color;
+        nodes[a].parent.color = nodes[b].parent.color;
+        nodes[b].parent.color = tmp;
 
         if(root == a) {
             root = b;
@@ -600,8 +603,11 @@ private:
         }
     }
 
-    void debug_print() const {
-        printf("\n---\nRoot: %d\n", root);
+    void debug_print(const char *msg) const {
+        if(!do_debug_prints) {
+            return;
+        }
+        printf("\n--- %s\nRoot: %d\n", msg, root);
         for(uint32_t i = 1; i < nodes.size(); ++i) {
             const auto &n = nodes[i];
             printf("  %u [label=\"id: %u value: %u\" %s %s]\n",
@@ -619,8 +625,8 @@ private:
             if(n.right != SENTINEL_ID) {
                 printf(" %u -> %u [color=orange]\n", i, n.right);
             }
-            if(n.parent != SENTINEL_ID) {
-                printf(" %u -> %u [color=green]\n", i, n.parent);
+            if(n.parent.id != SENTINEL_ID) {
+                printf(" %u -> %u [color=green]\n", i, n.parent.id);
             }
         }
 
@@ -631,7 +637,7 @@ private:
                    n.is_black() ? 'B' : 'R',
                    n.left,
                    n.right,
-                   n.parent,
+                   n.parent.id,
                    n.key);
         }
         printf("\n---\n");
@@ -644,19 +650,19 @@ private:
 
         for(size_t i = 1; i < nodes.size(); ++i) {
             const auto &node = nodes[i];
-            assert(node.parent < nodes.size());
+            assert(node.parent.id < nodes.size());
             assert(node.left < nodes.size());
             assert(node.right < nodes.size());
             if(node.left != SENTINEL_ID) {
                 const auto &left = nodes[node.left];
-                assert(left.parent == i);
+                assert(left.parent.id == i);
                 if(node.is_red()) {
                     assert(left.is_black());
                 }
             }
             if(node.right != SENTINEL_ID) {
                 const auto &right = nodes[node.right];
-                assert(right.parent == i);
+                assert(right.parent.id == i);
                 if(node.is_red()) {
                     assert(right.is_black());
                 }
@@ -670,26 +676,27 @@ private:
         Black,
     };
 
+    struct StashedRef {
+        uint32_t id : 31;
+        Color color : 1;
+    };
+
     struct RBNode {
         uint32_t left;
         uint32_t right;
-        uint32_t parent;
-        Color color;
+        StashedRef parent;
         Key key;
         // Value value;
 
-        // In the future the color will be stashed inside
-        // some other field. Thus use these helpers
-        // consistently
-        bool is_black() const { return color == Color::Black; }
+        bool is_black() const { return parent.color == Color::Black; }
 
-        bool is_red() const { return color == Color::Red; }
+        bool is_red() const { return parent.color == Color::Red; }
 
-        void set_black() { color = Color::Black; }
+        void set_black() { parent.color = Color::Black; }
 
-        void set_red() { color = Color::Red; }
+        void set_red() { parent.color = Color::Red; }
 
-        Color get_color() const { return color; }
+        Color get_color() const { return parent.color; }
 
         void set_color(Color c) {
             if(c == Color::Black) {
