@@ -148,8 +148,6 @@ public:
     void optimize_layout() {
         Vector<RBNode> new_nodes;
         new_nodes.reserve(nodes.size());
-        size_t new_root = 1;
-        Vector<size_t> nodelist;
         Vector<size_t> new2old;
         Vector<size_t> old2new;
         old2new.reserve(nodes.size());
@@ -158,21 +156,14 @@ public:
             new2old.push_back(SENTINEL_ID);
             old2new.push_back(SENTINEL_ID);
         }
-        nodelist.push_back(SENTINEL_ID);
-        nodelist.push_back(root);
-        size_t index = 1;
-        // Determine renumbering
-        while(index < nodelist.size()) {
-            const size_t current_node_id = nodelist[index];
-            if(has_left(current_node_id)) {
-                nodelist.push_back(left_of(current_node_id));
-            }
-            if(has_right(current_node_id)) {
-                nodelist.push_back(right_of(current_node_id));
-            }
-            old2new[current_node_id] = index;
-            new2old[index] = current_node_id;
+        auto index = begin();
+        size_t processed_nodes = 1;
+        while(index != end()) {
+            const size_t current_node_id = index.node_id();
+            old2new[current_node_id] = processed_nodes;
+            new2old[processed_nodes] = current_node_id;
             ++index;
+            ++processed_nodes;
         }
         // Renumber.
         for(size_t i = 0; i < nodes.size(); ++i) {
@@ -183,7 +174,7 @@ public:
             new_nodes.push_back(move(node));
         }
         nodes = move(new_nodes);
-        root = new_root;
+        root = old2new[root];
         validate_nodes();
         validate_rbprop();
     }

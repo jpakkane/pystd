@@ -587,6 +587,8 @@ int test_rb1() {
 
     ASSERT(rbtree.size() == 10);
 
+    rbtree.optimize_layout();
+
     it = rbtree.begin();
     int expected = 1;
     while(it != rbtree.end()) {
