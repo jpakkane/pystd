@@ -93,10 +93,18 @@ public:
             return;
         }
         const bool need_rebalance = tree_insert(key);
+        // printf("Added, needs rebalance: %s\n", need_rebalance ? "true" : "false");
+        // debug_print();
         if(need_rebalance) {
             insert_rebalance();
+            // printf("After rebalance.\n");
+            // debug_print();
         }
     }
+
+    bool contains(const Key &key) const { return lookup(key) != SENTINEL_ID; }
+
+    void reserve(size_t new_size) { nodes.reserve(new_size + 1); }
 
     void remove(const Key &key) {
         auto z = lookup(key);
@@ -138,6 +146,8 @@ public:
     RBIterator<Key> end() { return RBIterator{this, SENTINEL_ID}; }
 
 private:
+    static constexpr bool validate_self = false;
+
     uint32_t left_of(uint32_t i) const { return nodes[i].left; }
 
     uint32_t right_of(uint32_t i) const { return nodes[i].right; }
@@ -145,8 +155,10 @@ private:
     uint32_t parent_of(uint32_t i) const { return nodes[i].parent; }
 
     uint32_t RB_delete(const uint32_t z_id) {
-        assert(z_id != SENTINEL_ID);
-        assert(!is_empty());
+        if(validate_self) {
+            assert(z_id != SENTINEL_ID);
+            assert(!is_empty());
+        }
         auto &z = nodes[z_id];
         uint32_t y = (uint32_t)-1;
         if(z.left == SENTINEL_ID || z.right == SENTINEL_ID) {
@@ -237,14 +249,19 @@ private:
                     }
                 }
             }
-            assert(nodes[SENTINEL_ID].left == SENTINEL_ID);
-            assert(nodes[SENTINEL_ID].right == SENTINEL_ID);
+            if(validate_self) {
+                assert(nodes[SENTINEL_ID].left == SENTINEL_ID);
+                assert(nodes[SENTINEL_ID].right == SENTINEL_ID);
+            }
         }
         nodes[x].set_black();
         nodes[SENTINEL_ID].parent = SENTINEL_ID;
     }
 
     void validate_sentinel() const {
+        if(!validate_self) {
+            return;
+        }
         const auto &sentinel = nodes[SENTINEL_ID];
 
         assert(sentinel.parent == SENTINEL_ID);
@@ -253,6 +270,9 @@ private:
     }
 
     void validate_rbprop() const {
+        if(!validate_self) {
+            return;
+        }
         if(is_empty()) {
             return;
         }
@@ -298,10 +318,15 @@ private:
 
     void insert_rebalance() {
         uint32_t x = nodes.size() - 1;
-        assert(!nodes[x].is_black());
+        if(validate_self) {
+            assert(nodes[root].is_black());
+            assert(!nodes[x].is_black());
+        }
         while(x != root && nodes[parent_of(x)].is_red()) {
-            assert(parent_of(x) != SENTINEL_ID);
-            assert(parent_of(parent_of(x)) != SENTINEL_ID);
+            if(validate_self) {
+                assert(parent_of(x) != SENTINEL_ID);
+                assert(parent_of(parent_of(x)) != SENTINEL_ID);
+            }
             if(parent_of(x) == left_of(parent_of(parent_of(x)))) {
                 auto y = right_of(parent_of(parent_of(x)));
                 if(nodes[y].is_red()) {
@@ -341,9 +366,11 @@ private:
                     left_rotate(gp);
                 }
             }
+            // printf("Before validation\n");
+            // debug_print();
             validate_sentinel();
-            validate_nodes();
         }
+        validate_nodes();
         nodes[root].set_black();
         validate_rbprop();
     }
@@ -400,7 +427,9 @@ private:
     }
 
     void left_rotate(uint32_t x) {
-        assert(right_of(x) != SENTINEL_ID);
+        if(validate_self) {
+            assert(right_of(x) != SENTINEL_ID);
+        }
         // const auto &xnode = nodes[x];
         auto grandparent = parent_of(x);
         auto y = right_of(x);
@@ -434,7 +463,9 @@ private:
     }
 
     void right_rotate(uint32_t y) {
-        assert(left_of(y) != SENTINEL_ID);
+        if(validate_self) {
+            assert(left_of(y) != SENTINEL_ID);
+        }
         // const auto &ynode = nodes[y];
         auto grandparent = parent_of(y);
         auto x = left_of(y);
@@ -468,11 +499,12 @@ private:
     }
 
     void swap_nodes(uint32_t a, uint32_t b) {
-        assert(a != SENTINEL_ID);
-        assert(b != SENTINEL_ID);
-        assert(a < nodes.size());
-        assert(b < nodes.size());
-
+        if(validate_self) {
+            assert(a != SENTINEL_ID);
+            assert(b != SENTINEL_ID);
+            assert(a < nodes.size());
+            assert(b < nodes.size());
+        }
         auto a_p = nodes[a].parent;
         auto a_l = nodes[a].left;
         auto a_r = nodes[a].right;
@@ -527,7 +559,9 @@ private:
         if(nodes[parent].left == old_child) {
             nodes[parent].left = new_child;
         } else {
-            assert(nodes[parent].right == old_child);
+            if(validate_self) {
+                assert(nodes[parent].right == old_child);
+            }
             nodes[parent].right = new_child;
         }
     }
@@ -570,13 +604,17 @@ private:
     }
 
     void validate_nodes() const {
+        if(!validate_self) {
+            return;
+        }
+
         for(size_t i = 1; i < nodes.size(); ++i) {
             const auto &node = nodes[i];
             assert(node.parent < nodes.size());
             assert(node.left < nodes.size());
             assert(node.right < nodes.size());
             if(node.left != SENTINEL_ID) {
-                const auto &left = nodes[node.right];
+                const auto &left = nodes[node.left];
                 assert(left.parent == i);
                 if(node.is_red()) {
                     assert(left.is_black());
