@@ -145,6 +145,49 @@ public:
 
     RBIterator<Key> end() { return RBIterator{this, SENTINEL_ID}; }
 
+    void optimize_layout() {
+        Vector<RBNode> new_nodes;
+        new_nodes.reserve(nodes.size());
+        size_t new_root = 1;
+        Vector<size_t> nodelist;
+        Vector<size_t> new2old;
+        Vector<size_t> old2new;
+        old2new.reserve(nodes.size());
+        new2old.reserve(nodes.size());
+        for(size_t i = 0; i < nodes.size(); ++i) {
+            new2old.push_back(SENTINEL_ID);
+            old2new.push_back(SENTINEL_ID);
+        }
+        nodelist.push_back(SENTINEL_ID);
+        nodelist.push_back(root);
+        size_t index = 1;
+        // Determine renumbering
+        while(index < nodelist.size()) {
+            const size_t current_node_id = nodelist[index];
+            if(has_left(current_node_id)) {
+                nodelist.push_back(left_of(current_node_id));
+            }
+            if(has_right(current_node_id)) {
+                nodelist.push_back(right_of(current_node_id));
+            }
+            old2new[current_node_id] = index;
+            new2old[index] = current_node_id;
+            ++index;
+        }
+        // Renumber.
+        for(size_t i = 0; i < nodes.size(); ++i) {
+            auto node = move(nodes[new2old[i]]);
+            node.parent = old2new[node.parent];
+            node.left = old2new[node.left];
+            node.right = old2new[node.right];
+            new_nodes.push_back(move(node));
+        }
+        nodes = move(new_nodes);
+        root = new_root;
+        validate_nodes();
+        validate_rbprop();
+    }
+
 private:
     static constexpr bool validate_self = false;
 
