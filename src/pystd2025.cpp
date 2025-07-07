@@ -931,7 +931,7 @@ Optional<MMapping> mmap_file(const char *path) {
     return Optional<MMapping>(MMapping(buf, bufsize));
 }
 
-CString format(const char *format, ...) {
+CString cformat(const char *format, ...) {
     CString result;
     va_list args;
     va_start(args, format);
@@ -939,14 +939,14 @@ CString format(const char *format, ...) {
         auto *s = reinterpret_cast<CString *>(ctx);
         *s = CString(buf, bufsize);
     };
-    format_with_cb(converter, &result, format, args);
+    cformat_with_cb(converter, &result, format, args);
     va_end(args);
     return result;
 }
 
 #include <errno.h>
 
-void format_with_cb(StringFormatCallback cb, void *ctx, const char *format, va_list ap) {
+void cformat_with_cb(StringCFormatCallback cb, void *ctx, const char *format, va_list ap) {
     const int bufsize = 1024;
     char buf[bufsize];
     auto rc = vsnprintf(buf, bufsize, format, ap);

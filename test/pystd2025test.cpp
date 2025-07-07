@@ -483,7 +483,7 @@ int test_variant() {
 
 int test_format1() {
     TEST_START;
-    auto str = pystd2025::format("Number is %d.", 86);
+    auto str = pystd2025::cformat("Number is %d.", 86);
     ASSERT(str == "Number is 86.");
     return 0;
 }

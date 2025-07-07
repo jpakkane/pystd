@@ -2509,10 +2509,9 @@ private:
     Vector<T> backing;
 };
 
-// Note: uses C format specifiers currently.
-typedef void (*StringFormatCallback)(const char *buf, size_t bufsize, void *ctx);
-CString format(const char *format, ...);
-void format_with_cb(StringFormatCallback cb, void *ctx, const char *format, va_list ap);
+typedef void (*StringCFormatCallback)(const char *buf, size_t bufsize, void *ctx);
+CString cformat(const char *format, ...);
+void cformat_with_cb(StringCFormatCallback cb, void *ctx, const char *format, va_list ap);
 
 template<typename T> void format_append(T &oobj, const char *format, ...) {
     va_list args;
@@ -2527,7 +2526,7 @@ template<typename T> void format_append(T &oobj, const char *format, ...) {
             }
         }
     };
-    format_with_cb(converter, &oobj, format, args);
+    cformat_with_cb(converter, &oobj, format, args);
     va_end(args);
 }
 
