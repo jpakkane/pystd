@@ -629,6 +629,25 @@ int test_rb() {
     return failing_subtests;
 }
 
+#include <pystd2025_btree.hpp>
+
+int test_btree1() {
+    TEST_START;
+    pystd2025::BTree<int, 5> btree;
+    for(int i = 0; i < 26; ++i) {
+        btree.insert(i);
+    }
+    ASSERT(btree.size() == 26);
+    return 0;
+}
+
+int test_btree() {
+    printf("Testing Btree.\n");
+    int failing_subtests = 0;
+    failing_subtests += test_btree1();
+    return failing_subtests;
+}
+
 int main(int argc, char **argv) {
     int total_errors = 0;
     try {
@@ -644,6 +663,7 @@ int main(int argc, char **argv) {
         total_errors += test_format();
         total_errors += test_sort();
         total_errors += test_rb();
+        total_errors += test_btree();
     } catch(const pystd2025::PyException &e) {
         printf("Testing failed: %s\n", e.what().c_str());
     }
