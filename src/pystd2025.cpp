@@ -31,6 +31,8 @@ void *operator new(size_t, void *ptr) noexcept { return ptr; }
 
 namespace pystd2025 {
 
+void bootstrap_throw(const char *msg) { throw PyException(msg); }
+
 namespace {
 
 bool is_ascii_whitespace(uint32_t c) {

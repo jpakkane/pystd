@@ -14,6 +14,15 @@ void *operator new(size_t, void *ptr) noexcept;
 
 namespace pystd2025 {
 
+// PyException stores its message as
+// UTF-8. Thus no code that is needed
+// to implement U8String can throw
+// PyExceptions. This function is used
+// to break the dependency loop,
+// nobody else should use it.
+[[noreturn]]
+void bootstrap_throw(const char *msg);
+
 template<class T> struct remove_reference {
     typedef T type;
 };
@@ -422,14 +431,14 @@ public:
 
     T &operator[](size_t index) {
         if(index >= array_size) {
-            throw "Unique_arr index out of bounds.";
+            bootstrap_throw("Unique_arr index out of bounds.");
         }
         return ptr[index];
     }
 
     const T &operator[](size_t index) const {
         if(index >= array_size) {
-            throw "Unique_arr index out of bounds.";
+            bootstrap_throw("Unique_arr index out of bounds.");
         }
         return ptr[index];
     }
@@ -528,42 +537,42 @@ public:
 
     T &operator*() {
         if(!*this) {
-            throw "Empty optional.";
+            bootstrap_throw("Empty optional.");
         }
         return data.value;
     }
 
     T *operator->() {
         if(!*this) {
-            throw "Empty optional.";
+            bootstrap_throw("Empty optional.");
         }
         return &data.value;
     }
 
     const T *operator->() const {
         if(!*this) {
-            throw "Empty optional.";
+            bootstrap_throw("Empty optional.");
         }
         return &data.value;
     }
 
     T &value() {
         if(!*this) {
-            throw "Empty optional.";
+            bootstrap_throw("Empty optional.");
         }
         return data.value;
     }
 
     const T &value() const {
         if(!*this) {
-            throw "Empty optional.";
+            bootstrap_throw("Empty optional.");
         }
         return data.value;
     }
 
     const T &operator*() const {
         if(!*this) {
-            throw "Empty optional.";
+            bootstrap_throw("Empty optional.");
         }
         return data.value;
     }
@@ -617,7 +626,7 @@ public:
 
     char operator[](size_t i) const {
         if(!buf || i >= bufsize) {
-            throw "OOB access in BytesView.";
+            bootstrap_throw("OOB access in BytesView.");
         }
         return buf[i];
     }
@@ -627,12 +636,12 @@ public:
     BytesView subview(size_t loc, size_t size = -1) const {
         if(size == (size_t)-1) {
             if(loc > bufsize) {
-                throw "OOB error in BytesView.";
+                bootstrap_throw("OOB error in BytesView.");
             }
             return BytesView(buf + loc, bufsize - loc);
         } else {
             if(loc + size > bufsize) {
-                throw "OOB error in BytesView.";
+                bootstrap_throw("OOB error in BytesView.");
             }
             return BytesView(buf + loc, size);
         }
@@ -826,7 +835,7 @@ public:
 
     template<typename Iter1, typename Iter2> void append(Iter1 start, Iter2 end) {
         if(is_ptr_within((T *)&(*start))) {
-            throw "FIXME, appending contents of vector not handled yet.";
+            bootstrap_throw("FIXME, appending contents of vector not handled yet.");
         }
         while(start != end) {
             push_back(*start);
@@ -836,7 +845,7 @@ public:
 
     template<typename Iter1, typename Iter2> void assign(Iter1 start, Iter2 end) {
         if(is_ptr_within(&(*start))) {
-            throw "FIXME, assigning subset of vector itself is not supported.";
+            bootstrap_throw("FIXME, assigning subset of vector itself is not supported.");
         }
         clear();
         append(start, end);
@@ -1057,7 +1066,7 @@ public:
 
     char operator[](size_t index) const {
         if(!buf || index > bufsize) {
-            throw "OOB in CStringView.";
+            bootstrap_throw("OOB in CStringView.");
         }
         return buf[index];
     }
@@ -1262,6 +1271,17 @@ private:
     // Store length in codepoints.
 };
 
+class PyException {
+public:
+    explicit PyException(const char *msg);
+    explicit PyException(U8String msg) : message{msg} {}
+
+    const U8String &what() const { return message; }
+
+private:
+    U8String message;
+};
+
 template<typename T> class Span {
 public:
     Span() noexcept : array(nullptr), arraysize(0) {};
@@ -1274,7 +1294,7 @@ public:
 
     const T &operator[](size_t i) const {
         if(i > arraysize) {
-            throw "OOB in span.";
+            throw PyException("OOB in span.");
         }
         return array[i];
     }
@@ -1294,17 +1314,6 @@ private:
 
 template<typename Hasher> struct HashFeeder<Hasher, U8String> {
     void operator()(Hasher &h, const U8String &u8) noexcept { u8.feed_hash(h); }
-};
-
-class PyException {
-public:
-    explicit PyException(const char *msg);
-    explicit PyException(U8String msg) : message{msg} {}
-
-    const U8String &what() const { return message; }
-
-private:
-    U8String message;
 };
 
 class File;
