@@ -8,9 +8,20 @@
 
 namespace pystd2025 {
 
-template<typename T, size_t MAX_SIZE> class FixedVector {
+template<WellBehaved T, size_t MAX_SIZE> class FixedVector {
 public:
+    FixedVector() noexcept = default;
+    FixedVector(FixedVector &&o) noexcept { swipe_from(o); }
+
     ~FixedVector() { destroy_contents(); }
+
+    FixedVector &operator=(FixedVector &&o) noexcept {
+        if(this != &o) {
+            destroy_contents();
+            swipe_from(o);
+        }
+        return *this;
+    }
 
     bool try_push_back(const T &obj) noexcept {
         if(num_entries >= MAX_SIZE) {
@@ -113,6 +124,16 @@ private:
         num_entries = 0;
     }
 
+    void swipe_from(FixedVector &o) noexcept {
+        assert(this != &o);
+        for(size_t i = 0; i < o.num_entries; ++i) {
+            auto obj_loc = objptr(i);
+            new(obj_loc) T(::pystd2025::move(*o.objptr(i)));
+        }
+        num_entries = o.num_entries;
+        o.destroy_contents();
+    }
+
     char backing[MAX_SIZE * sizeof(T)] alignas(alignof(T));
     size_t num_entries = 0;
 };
@@ -191,8 +212,10 @@ private:
         n.children.try_push_back(NULL_REF);
         nodes.push_back(::pystd2025::move(n));
     }
+
     static_assert(EntryCount % 2 == 1);
     static_assert(EntryCount > 3);
+
     uint32_t root = NULL_REF;
     size_t num_entries = 0;
     Vector<Node> nodes;
