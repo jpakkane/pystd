@@ -633,11 +633,23 @@ int test_rb() {
 
 int test_btree1() {
     TEST_START;
+    const int shuffled[] = {7,  17, 19, 24, 2, 20, 14, 1,  6, 23, 8, 12, 25,
+                            21, 15, 22, 5,  0, 18, 4,  16, 3, 11, 9, 13, 10};
+    const int arr_size = 26;
     pystd2025::BTree<int, 5> btree;
-    for(int i = 0; i < 26; ++i) {
-        btree.insert(i);
+    ASSERT(btree.is_empty());
+    for(int i = 0; i < arr_size; ++i) {
+        btree.insert(shuffled[i]);
     }
     ASSERT(btree.size() == 26);
+    /*
+        for(int i = 0; i < arr_size; ++i) {
+            auto *valptr = btree.lookup(shuffled[i]);
+            ASSERT(valptr);
+            ASSERT(*valptr == shuffled[i]);
+        }
+        ASSERT(!btree.lookup(100));
+        */
     return 0;
 }
 

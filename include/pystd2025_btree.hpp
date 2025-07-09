@@ -24,7 +24,7 @@ public:
     }
 
     bool try_push_back(const T &obj) noexcept {
-        if(num_entries >= MAX_SIZE) {
+        if(is_full()) {
             return false;
         }
         auto obj_loc = objptr(num_entries);
@@ -34,7 +34,7 @@ public:
     }
 
     bool try_push_back(T &&obj) noexcept {
-        if(num_entries >= MAX_SIZE) {
+        if(is_full()) {
             return false;
         }
         auto obj_loc = objptr(num_entries);
@@ -55,7 +55,28 @@ public:
         }
     }
 
-    void insert(size_t loc, T &&obj) { abort(); }
+    void insert(size_t loc, T &&obj) {
+        if(is_full()) {
+            throw PyException("Insert to a full vector.");
+        }
+        if(loc > size()) {
+            throw PyException("Insertion past the end of Fixed vector.");
+        }
+        if(loc == size()) {
+            ++num_entries;
+            new(objptr(loc)) T(::pystd2025::move(obj));
+            return;
+        }
+        auto *last = objptr(size() - 1);
+        ++num_entries;
+        new(objptr(size() - 1)) T(::pystd2025::move(*last));
+        for(size_t i = num_entries - 2; i > loc; ++i) {
+            auto *dst = objptr(i);
+            auto *src = objptr(i - 1);
+            *dst = ::pystd2025::move(*src);
+        }
+        *objptr(loc) = ::pystd2025::move(obj);
+    }
 
     size_t capacity() const noexcept { return MAX_SIZE; }
 
@@ -63,8 +84,10 @@ public:
 
     bool is_empty() const noexcept { return size() == 0; }
 
+    bool is_full() const noexcept { return size() >= MAX_SIZE; }
+
     void pop_back() noexcept {
-        if(num_entries == 0) {
+        if(is_empty()) {
             return;
         }
         T *obj = objptr(num_entries - 1);
@@ -73,7 +96,7 @@ public:
     }
 
     void pop_front() noexcept {
-        if(num_entries == 0) {
+        if(is_empty()) {
             return;
         }
         delete_at(0);
@@ -88,6 +111,34 @@ public:
             *objptr(i - 1) = ::pystd2025::move(*objptr(i));
         }
         pop_back();
+    }
+
+    T &front() {
+        if(is_empty()) {
+            throw PyException("Tried to access empty array.");
+        }
+        return (*this)[0];
+    }
+
+    const T &front() const {
+        if(is_empty()) {
+            throw PyException("Tried to access empty array.");
+        }
+        return (*this)[0];
+    }
+
+    T &back() {
+        if(is_empty()) {
+            throw PyException("Tried to access empty array.");
+        }
+        return (*this)[size() - 1];
+    }
+
+    const T &back() const {
+        if(is_empty()) {
+            throw PyException("Tried to access empty array.");
+        }
+        return (*this)[size() - 1];
     }
 
     T *data() noexcept { return reinterpret_cast<T *>(backing); }
@@ -162,6 +213,7 @@ public:
 
 private:
     static constexpr uint32_t NULL_REF = (uint32_t)-1;
+    static constexpr bool self_validate = true;
 
     struct Node {
         uint32_t parent;
@@ -176,26 +228,90 @@ private:
             }
             return true;
         }
+
+        void validate_node() {
+            if constexpr(self_validate) {
+                for(size_t i = 0; i < values.size() - 1; ++i) {
+                    assert(values[i] < values[i + 1]);
+                }
+            }
+        }
     };
 
-    void insert_recursive(Payload &value, uint32_t current_node) {
-        if(needs_to_split(current_node)) {
-            current_node = split_node(current_node);
+    void insert_recursive(Payload &value, uint32_t current_node_id) {
+        if(needs_to_split(current_node_id)) {
+            current_node_id = split_node(current_node_id);
         }
-        if(nodes[current_node].is_leaf()) {
-            size_t insert_loc = find_insertion_point(nodes[current_node], value);
-            nodes[current_node].values.insert(insert_loc, ::pystd2025::move(value));
-            nodes[current_node].children.push_back(NULL_REF);
+        auto &current_node = nodes[current_node_id];
+        if(current_node.is_leaf()) {
+            size_t insert_loc = find_insertion_point(current_node, value);
+            if(current_node.values[insert_loc] == value) {
+                current_node.values[insert_loc] = ::pystd2025::move(value);
+            } else {
+                current_node.values.insert(insert_loc, ::pystd2025::move(value));
+                current_node.children.push_back(NULL_REF);
+                current_node.validate_node();
+            }
         } else {
             abort();
         }
     }
 
-    bool needs_to_split(size_t node) const { return nodes[node].values.size() >= EntryCount - 1; }
+    bool needs_to_split(size_t node) const { return nodes[node].values.is_full(); }
 
-    size_t split_node(size_t node) const { assert(false); }
+    size_t split_node(size_t node_id) {
+        Node &to_split = nodes[node_id];
+        assert(to_split.values.is_full());
+        const size_t to_right = EntryCount / 2 + 1;
 
-    size_t find_insertion_point(const Node &node, const Payload &value) const {
+        Node new_node;
+        new_node.parent = to_split.parent;
+        for(size_t i = to_right; i < EntryCount; ++i) {
+            new_node.values.push_back(pystd2025::move(to_split.values[i]));
+            new_node.children.push_back(pystd2025::move(to_split.children[i]));
+        }
+        // Pop moved ones.
+        while(to_split.children.size() > EntryCount / 2 + 1) {
+            to_split.children.pop_back();
+            to_split.values.pop_back();
+        }
+        new_node.children.push_back(pystd2025::move(to_split.children.back()));
+        new_node.validate_node();
+        to_split.validate_node();
+        nodes.push_back(::pystd2025::move(new_node));
+        uint32_t right_node_id = nodes.size() - 1;
+        if(node_id == root) {
+            Node new_root;
+            new_root.parent = NULL_REF;
+            new_root.values.push_back(::pystd2025::move(to_split.values.back()));
+            to_split.values.pop_back();
+            to_split.children.pop_back();
+            new_root.children.push_back(node_id);
+            new_root.children.push_back(right_node_id);
+            new_root.validate_node();
+            nodes.push_back(::pystd2025::move(new_root));
+            nodes[node_id].parent = nodes.size() - 1;
+            nodes[right_node_id].parent = nodes.size() - 1;
+            root = nodes.size() - 1;
+            return root;
+        } else {
+            insert_nonfull(::pystd2025::move(to_split.values.back()), node_id, right_node_id);
+            to_split.values.pop_back();
+            to_split.children.pop_back();
+            return nodes[node_id].parent;
+        }
+    }
+
+    void insert_nonfull(Payload &&value, uint32_t node_id, uint32_t right_id) {
+        auto &node = nodes[node_id];
+        assert(!node.values.is_full());
+        auto insert_loc = find_insertion_point(node, value);
+        assert(value < node.values[insert_loc]);
+        node.values.insert(insert_loc, ::pystd2025::move(value));
+        node.children.insert(insert_loc + 1, ::pystd2025::move(right_id));
+    }
+
+    uint32_t find_insertion_point(const Node &node, const Payload &value) const {
         for(size_t i = 0; i < node.values.size(); ++i) {
             if(!(node.values[i] < value)) {
                 return i;
