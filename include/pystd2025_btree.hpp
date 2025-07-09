@@ -70,7 +70,7 @@ public:
         auto *last = objptr(size() - 1);
         ++num_entries;
         new(objptr(size() - 1)) T(::pystd2025::move(*last));
-        for(size_t i = num_entries - 2; i > loc; ++i) {
+        for(size_t i = num_entries - 2; i > loc; --i) {
             auto *dst = objptr(i);
             auto *src = objptr(i - 1);
             *dst = ::pystd2025::move(*src);
@@ -109,6 +109,7 @@ public:
         ++i;
         while(i < size()) {
             *objptr(i - 1) = ::pystd2025::move(*objptr(i));
+            ++i;
         }
         pop_back();
     }
@@ -143,30 +144,28 @@ public:
 
     T *data() noexcept { return reinterpret_cast<T *>(backing); }
 
-    T &operator[](size_t i) { return *objptr(i); }
+    T &operator[](size_t i) {
+        if(i >= num_entries) {
+            throw PyException("FixedVector index out of bounds.");
+        }
+        return *objptr(i);
+    }
 
-    const T &operator[](size_t i) const { return *objptr(i); }
+    const T &operator[](size_t i) const {
+        if(i >= num_entries) {
+            throw PyException("Fixed Vector index out of bounds.");
+        }
+        return *objptr(i);
+    }
 
     T *begin() const { return const_cast<T *>(objptr(0)); }
     T *end() const { return const_cast<T *>(objptr(num_entries)); }
 
 private:
-    T *objptr(size_t i) { return reinterpret_cast<T *>(rawptr(i)); }
-
-    const T *objptr(size_t i) const { return reinterpret_cast<const T *>(rawptr(i)); }
-
-    char *rawptr(size_t i) {
-        if(i >= MAX_SIZE) {
-            throw PyException("OOB in FixedVector.");
-        }
-        return backing + i * sizeof(T);
-    }
-    const char *rawptr(size_t i) const {
-        if(i >= MAX_SIZE) {
-            throw PyException("OOB in FixedVector.");
-        }
-        return backing + i * sizeof(T);
-    }
+    T *objptr(size_t i) noexcept { return reinterpret_cast<T *>(rawptr(i)); }
+    const T *objptr(size_t i) const noexcept { return reinterpret_cast<const T *>(rawptr(i)); }
+    char *rawptr(size_t i) noexcept { return backing + i * sizeof(T); }
+    const char *rawptr(size_t i) const noexcept { return backing + i * sizeof(T); }
 
     void destroy_contents() noexcept {
         for(size_t i = 0; i < num_entries; ++i) {
@@ -201,15 +200,63 @@ public:
         if(is_empty()) {
             create_node(::pystd2025::move(value), NULL_REF);
             root = 0;
-            num_entries = 1;
+            num_values = 1;
             return;
         }
         insert_recursive(value, root);
     }
 
-    size_t size() const { return num_entries; }
+    const Payload *lookup(const Payload &value) const {
+        if(is_empty()) {
+            return nullptr;
+        }
+        auto current_id = root;
+        while(true) {
+            if(current_id == NULL_REF) {
+                return nullptr;
+            }
+            const auto &current_node = nodes[current_id];
+            auto node_loc = find_insertion_point(current_node, value);
+            if(node_loc >= current_node.values.size()) {
+                current_id = current_node.children.back();
+            } else {
+                const auto &prospective_value = current_node.values[node_loc];
+                if(value < prospective_value) {
+                    current_id = current_node.children[node_loc];
+                } else if(prospective_value < value) {
+                    current_id = current_node.children[node_loc + 1];
+                } else {
+                    return &prospective_value;
+                }
+            }
+        }
+        return nullptr;
+    }
+
+    size_t size() const { return num_values; }
 
     size_t is_empty() const { return size() == 0; }
+
+    void debug_print() const {
+        printf("----\nB-tree with %d as root, %d nodes and %d elements.\n\n",
+               root,
+               (int)nodes.size(),
+               (int)size());
+        int32_t node_id = -1;
+        for(const auto &node : nodes) {
+            ++node_id;
+            printf("Node %d, parent %d size %d:\n", node_id, node.parent, (int)node.values.size());
+            for(const auto &v : node.values) {
+                printf(" %d", v);
+            }
+            printf("\n");
+            for(const auto &v : node.children) {
+                printf(" %d", v);
+            }
+            printf("\n");
+        }
+        printf("\n");
+    }
 
 private:
     static constexpr uint32_t NULL_REF = (uint32_t)-1;
@@ -241,44 +288,58 @@ private:
     void insert_recursive(Payload &value, uint32_t current_node_id) {
         if(needs_to_split(current_node_id)) {
             current_node_id = split_node(current_node_id);
+            printf("After split\n");
+            debug_print();
         }
         auto &current_node = nodes[current_node_id];
+        size_t insert_loc = find_insertion_point(current_node, value);
+        if(insert_loc < current_node.values.size() && current_node.values[insert_loc] == value) {
+            current_node.values[insert_loc] = ::pystd2025::move(value);
+            return;
+        }
         if(current_node.is_leaf()) {
-            size_t insert_loc = find_insertion_point(current_node, value);
-            if(current_node.values[insert_loc] == value) {
-                current_node.values[insert_loc] = ::pystd2025::move(value);
-            } else {
-                current_node.values.insert(insert_loc, ::pystd2025::move(value));
-                current_node.children.push_back(NULL_REF);
-                current_node.validate_node();
-            }
+            current_node.values.insert(insert_loc, ::pystd2025::move(value));
+            current_node.children.push_back(NULL_REF);
+            current_node.validate_node();
+            ++num_values;
         } else {
-            abort();
+            if(insert_loc < current_node.values.size()) {
+                if(value < current_node.values[insert_loc]) {
+                    insert_recursive(value, current_node.children[insert_loc]);
+                } else {
+                    insert_recursive(value, current_node.children.back());
+                }
+            } else {
+                insert_recursive(value, current_node.children[insert_loc]);
+            }
         }
     }
 
     bool needs_to_split(size_t node) const { return nodes[node].values.is_full(); }
 
     size_t split_node(size_t node_id) {
-        Node &to_split = nodes[node_id];
-        assert(to_split.values.is_full());
-        const size_t to_right = EntryCount / 2 + 1;
+        {
+            Node &to_split = nodes[node_id];
+            assert(to_split.values.is_full());
+            const size_t to_right = EntryCount / 2 + 1;
 
-        Node new_node;
-        new_node.parent = to_split.parent;
-        for(size_t i = to_right; i < EntryCount; ++i) {
-            new_node.values.push_back(pystd2025::move(to_split.values[i]));
-            new_node.children.push_back(pystd2025::move(to_split.children[i]));
+            Node new_node;
+            new_node.parent = to_split.parent;
+            for(size_t i = to_right; i < EntryCount; ++i) {
+                new_node.values.push_back(pystd2025::move(to_split.values[i]));
+                new_node.children.push_back(pystd2025::move(to_split.children[i]));
+            }
+            // Pop moved ones.
+            while(to_split.values.size() > EntryCount / 2 + 1) {
+                to_split.children.pop_back();
+                to_split.values.pop_back();
+            }
+            new_node.children.push_back(pystd2025::move(to_split.children.back()));
+            new_node.validate_node();
+            to_split.validate_node();
+            nodes.push_back(::pystd2025::move(new_node)); // Invalidates to_split.
         }
-        // Pop moved ones.
-        while(to_split.children.size() > EntryCount / 2 + 1) {
-            to_split.children.pop_back();
-            to_split.values.pop_back();
-        }
-        new_node.children.push_back(pystd2025::move(to_split.children.back()));
-        new_node.validate_node();
-        to_split.validate_node();
-        nodes.push_back(::pystd2025::move(new_node));
+        Node &to_split = nodes[node_id];
         uint32_t right_node_id = nodes.size() - 1;
         if(node_id == root) {
             Node new_root;
@@ -295,7 +356,8 @@ private:
             root = nodes.size() - 1;
             return root;
         } else {
-            insert_nonfull(::pystd2025::move(to_split.values.back()), node_id, right_node_id);
+            insert_nonfull(
+                ::pystd2025::move(to_split.values.back()), to_split.parent, right_node_id);
             to_split.values.pop_back();
             to_split.children.pop_back();
             return nodes[node_id].parent;
@@ -306,9 +368,16 @@ private:
         auto &node = nodes[node_id];
         assert(!node.values.is_full());
         auto insert_loc = find_insertion_point(node, value);
-        assert(value < node.values[insert_loc]);
-        node.values.insert(insert_loc, ::pystd2025::move(value));
-        node.children.insert(insert_loc + 1, ::pystd2025::move(right_id));
+        if(insert_loc == node.values.size()) {
+            node.values.push_back(::pystd2025::move(value));
+            node.children.push_back(::pystd2025::move(right_id));
+
+        } else {
+            auto &tmp = node.values[insert_loc];
+            assert(value < node.values[insert_loc]);
+            node.values.insert(insert_loc, ::pystd2025::move(value));
+            node.children.insert(insert_loc + 1, ::pystd2025::move(right_id));
+        }
     }
 
     uint32_t find_insertion_point(const Node &node, const Payload &value) const {
@@ -333,7 +402,7 @@ private:
     static_assert(EntryCount > 3);
 
     uint32_t root = NULL_REF;
-    size_t num_entries = 0;
+    size_t num_values = 0;
     Vector<Node> nodes;
 };
 

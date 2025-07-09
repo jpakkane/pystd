@@ -904,14 +904,14 @@ public:
 
     T &operator[](size_t i) {
         if(i >= num_entries) {
-            throw "Vector index out of bounds.";
+            throw PyException("Vector index out of bounds.");
         }
         return *objptr(i);
     }
 
     const T &operator[](size_t i) const {
         if(i >= num_entries) {
-            throw "Vector index out of bounds.";
+            throw PyException("Vector index out of bounds.");
         }
         return *objptr(i);
     }

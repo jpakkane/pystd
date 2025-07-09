@@ -631,6 +631,48 @@ int test_rb() {
 
 #include <pystd2025_btree.hpp>
 
+int test_fixedvector1() {
+    TEST_START;
+    pystd2025::FixedVector<int, 5> fv;
+    fv.push_back(1);
+    ASSERT(fv.size() == 1);
+    ASSERT(!fv.is_full());
+    fv.insert(0, 0);
+    fv.push_back(3);
+    fv.insert(3, 4);
+    fv.insert(2, 2);
+    ASSERT(fv.is_full());
+    int i = 0;
+    for(const auto &value : fv) {
+        ASSERT(value == i);
+        ++i;
+    }
+
+    ASSERT(!fv.try_push_back(42));
+    ASSERT(fv.size() == 5);
+    fv.pop_back();
+    ASSERT(fv.size() == 4);
+    fv.delete_at(0);
+    ASSERT(fv.size() == 3);
+    ASSERT(fv[0] == 1);
+    ASSERT(fv[1] == 2);
+    ASSERT(fv[2] == 3);
+
+    fv.delete_at(1);
+    ASSERT(fv.size() == 2);
+    ASSERT(fv[0] == 1);
+    ASSERT(fv[1] == 3);
+
+    return 0;
+}
+
+int test_fixedvector() {
+    printf("Testing FixedVector.\n");
+    int failing_subtests = 0;
+    failing_subtests += test_fixedvector1();
+    return failing_subtests;
+}
+
 int test_btree1() {
     TEST_START;
     const int shuffled[] = {7,  17, 19, 24, 2, 20, 14, 1,  6, 23, 8, 12, 25,
@@ -640,16 +682,19 @@ int test_btree1() {
     ASSERT(btree.is_empty());
     for(int i = 0; i < arr_size; ++i) {
         btree.insert(shuffled[i]);
+        btree.debug_print();
     }
     ASSERT(btree.size() == 26);
-    /*
-        for(int i = 0; i < arr_size; ++i) {
-            auto *valptr = btree.lookup(shuffled[i]);
-            ASSERT(valptr);
-            ASSERT(*valptr == shuffled[i]);
-        }
-        ASSERT(!btree.lookup(100));
-        */
+    btree.insert(7);
+    ASSERT(btree.size() == 26);
+
+    for(int i = 0; i < arr_size; ++i) {
+        auto *valptr = btree.lookup(shuffled[i]);
+        ASSERT(valptr);
+        ASSERT(*valptr == shuffled[i]);
+    }
+    ASSERT(!btree.lookup(100));
+
     return 0;
 }
 
@@ -675,9 +720,11 @@ int main(int argc, char **argv) {
         total_errors += test_format();
         total_errors += test_sort();
         total_errors += test_rb();
+        total_errors += test_fixedvector();
         total_errors += test_btree();
     } catch(const pystd2025::PyException &e) {
         printf("Testing failed: %s\n", e.what().c_str());
+        return 42;
     }
 
     if(total_errors) {
