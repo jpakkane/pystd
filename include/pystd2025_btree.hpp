@@ -204,6 +204,7 @@ public:
             return;
         }
         insert_recursive(value, root);
+        validate_links();
     }
 
     const Payload *lookup(const Payload &value) const {
@@ -298,11 +299,25 @@ private:
         }
     };
 
+    void validate_links() const {
+        for(size_t i = 0; i < nodes.size(); ++i) {
+            for(const auto &child : nodes[i].children) {
+                if(child != NULL_REF) {
+                    assert(nodes[child].parent == i);
+                }
+            }
+        }
+        if(!is_empty()) {
+            assert(nodes[root].parent == NULL_REF);
+        }
+    }
+
     void insert_recursive(Payload &value, uint32_t current_node_id) {
         if(needs_to_split(current_node_id)) {
             current_node_id = split_node(current_node_id);
             printf("After split\n");
             debug_print();
+            validate_links();
         }
         auto &current_node = nodes[current_node_id];
         size_t insert_loc = find_insertion_point(current_node, value);
@@ -339,6 +354,7 @@ private:
         const size_t to_right = EntryCount / 2 + 1;
 
         Node new_node;
+        uint32_t new_node_id = nodes.size();
         new_node.parent = to_split_before_push.parent;
         for(size_t i = to_right; i < EntryCount; ++i) {
             new_node.values.push_back(pystd2025::move(to_split_before_push.values[i]));
@@ -349,6 +365,14 @@ private:
         while(to_split_before_push.values.size() > EntryCount / 2 + 1) {
             to_split_before_push.children.pop_back();
             to_split_before_push.values.pop_back();
+        }
+        // Fix parent pointers of children.
+        for(const auto child_id : new_node.children) {
+            if(child_id != NULL_REF) {
+                auto &child = nodes[child_id];
+                assert(child.parent == node_id);
+                child.parent = new_node_id;
+            }
         }
         Payload value_to_move{to_split_before_push.values.back()};
         to_split_before_push.values.pop_back();
