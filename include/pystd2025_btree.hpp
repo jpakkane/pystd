@@ -278,8 +278,21 @@ private:
 
         void validate_node() {
             if constexpr(self_validate) {
+                if(values.is_empty()) {
+                    assert(children.is_empty());
+                } else {
+                    assert(children.size() == values.size() + 1);
+                }
+
                 for(size_t i = 0; i < values.size() - 1; ++i) {
                     assert(values[i] < values[i + 1]);
+                }
+                for(size_t i = 0; i < children.size() - 1; ++i) {
+                    for(size_t j = i + 1; j < children.size(); ++j) {
+                        if(children[i] != NULL_REF) {
+                            assert(children[i] != children[j]);
+                        }
+                    }
                 }
             }
         }
@@ -315,51 +328,53 @@ private:
         }
     }
 
-    bool needs_to_split(size_t node) const { return nodes[node].values.is_full(); }
+    bool needs_to_split(size_t node) const {
+        assert(node != NULL_REF);
+        return nodes[node].values.is_full();
+    }
 
     size_t split_node(size_t node_id) {
-        {
-            Node &to_split = nodes[node_id];
-            assert(to_split.values.is_full());
-            const size_t to_right = EntryCount / 2 + 1;
+        Node &to_split_before_push = nodes[node_id];
+        assert(to_split_before_push.values.is_full());
+        const size_t to_right = EntryCount / 2 + 1;
 
-            Node new_node;
-            new_node.parent = to_split.parent;
-            for(size_t i = to_right; i < EntryCount; ++i) {
-                new_node.values.push_back(pystd2025::move(to_split.values[i]));
-                new_node.children.push_back(pystd2025::move(to_split.children[i]));
-            }
-            // Pop moved ones.
-            while(to_split.values.size() > EntryCount / 2 + 1) {
-                to_split.children.pop_back();
-                to_split.values.pop_back();
-            }
-            new_node.children.push_back(pystd2025::move(to_split.children.back()));
-            new_node.validate_node();
-            to_split.validate_node();
-            nodes.push_back(::pystd2025::move(new_node)); // Invalidates to_split.
+        Node new_node;
+        new_node.parent = to_split_before_push.parent;
+        for(size_t i = to_right; i < EntryCount; ++i) {
+            new_node.values.push_back(pystd2025::move(to_split_before_push.values[i]));
+            new_node.children.push_back(pystd2025::move(to_split_before_push.children[i]));
         }
+        new_node.children.push_back(to_split_before_push.children.back());
+        // Pop moved ones.
+        while(to_split_before_push.values.size() > EntryCount / 2 + 1) {
+            to_split_before_push.children.pop_back();
+            to_split_before_push.values.pop_back();
+        }
+        Payload value_to_move{to_split_before_push.values.back()};
+        to_split_before_push.values.pop_back();
+        to_split_before_push.children.pop_back();
+        assert(new_node.children.size() == EntryCount / 2 + 1);
+        assert(to_split_before_push.children.size() == EntryCount / 2 + 1);
+        new_node.validate_node();
+        to_split_before_push.validate_node();
+        nodes.push_back(::pystd2025::move(new_node)); // Invalidates to_split.
         Node &to_split = nodes[node_id];
         uint32_t right_node_id = nodes.size() - 1;
         if(node_id == root) {
             Node new_root;
             new_root.parent = NULL_REF;
-            new_root.values.push_back(::pystd2025::move(to_split.values.back()));
-            to_split.values.pop_back();
-            to_split.children.pop_back();
+            new_root.values.push_back(::pystd2025::move(value_to_move));
             new_root.children.push_back(node_id);
             new_root.children.push_back(right_node_id);
             new_root.validate_node();
             nodes.push_back(::pystd2025::move(new_root));
-            nodes[node_id].parent = nodes.size() - 1;
-            nodes[right_node_id].parent = nodes.size() - 1;
-            root = nodes.size() - 1;
+            uint32_t new_root_id = nodes.size() - 1;
+            nodes[node_id].parent = new_root_id;
+            nodes[right_node_id].parent = new_root_id;
+            root = new_root_id;
             return root;
         } else {
-            insert_nonfull(
-                ::pystd2025::move(to_split.values.back()), to_split.parent, right_node_id);
-            to_split.values.pop_back();
-            to_split.children.pop_back();
+            insert_nonfull(::pystd2025::move(value_to_move), to_split.parent, right_node_id);
             return nodes[node_id].parent;
         }
     }
@@ -371,9 +386,7 @@ private:
         if(insert_loc == node.values.size()) {
             node.values.push_back(::pystd2025::move(value));
             node.children.push_back(::pystd2025::move(right_id));
-
         } else {
-            auto &tmp = node.values[insert_loc];
             assert(value < node.values[insert_loc]);
             node.values.insert(insert_loc, ::pystd2025::move(value));
             node.children.insert(insert_loc + 1, ::pystd2025::move(right_id));
@@ -399,7 +412,7 @@ private:
     }
 
     static_assert(EntryCount % 2 == 1);
-    static_assert(EntryCount > 3);
+    static_assert(EntryCount >= 3);
 
     uint32_t root = NULL_REF;
     size_t num_values = 0;
