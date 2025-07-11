@@ -211,7 +211,8 @@ public:
         if(is_empty()) {
             return;
         }
-        remove_value(value, root);
+        auto v = extract_value(value, root);
+        (void)v;
         root_fixup();
     }
 
@@ -287,6 +288,11 @@ private:
                 }
             }
             return true;
+        }
+
+        void delete_at(uint32_t slot) {
+            values.delete_at(slot);
+            children.delete_at(slot);
         }
 
         void validate_node() {
@@ -520,30 +526,86 @@ private:
         nodes.pop_back();
     }
 
-    void remove_value(const Payload &value, uint32_t node_id) {
-        auto tree_loc = find_location(value, node_id);
-        if(tree_loc.node_id == NULL_REF) {
-            return;
-        }
-        if(nodes[tree_loc.node_id].is_leaf()) {
-            nodes[tree_loc.node_id].values.remove(tree_loc.offset);
-            nodes[tree_loc.node_id].children.remove(tree_loc.offset);
-            --num_values;
-            return;
+    Optional<Payload>
+    extract_value_from_leaf(const Payload &value, uint32_t node_id, uint32_t node_loc) {
+        auto &current_node = nodes[node_id];
+        assert(current_node.is_leaf());
+        assert(node_loc < current_node.values.size());
+        assert(current_node.values.size() > MIN_VALUE_COUNT);
+        if(current_node.values[node_loc] == value) {
+            Optional<Payload> value = ::pystd2025::move(current_node.values[current_node]);
+            current_node.delete_at(node_loc);
+            return value;
         } else {
-            if(nodes[tree_loc.node_id].children[tree_loc.offset].size() > MIN_VALUE_COUNT) {
-                abort();
-            } else if(nodes[tree_loc.node_id].children[tree_loc.offset + 1].size() >
-                      MIN_VALUE_COUNT) {
-                abort();
+            // Value was not in tree.
+            return Optional<Payload>{};
+        }
+    }
+
+    Payload extract_value_from_internal(const Payload &value, uint32_t node_id, uint32_t node_loc) {
+        auto &current_node = nodes[node_id];
+        assert(!current_node.is_leaf());
+        assert(current_node.values[node_loc] == value);
+    }
+
+    Optional<Payload> extract_value(const Payload &value, uint32_t node_id) {
+        auto &current_node = nodes[node_id];
+        auto node_loc = find_insertion_point(current_node, value);
+        if(current_node.is_leaf()) {
+            return extract_value_from_leaf(value, node_id, node_loc);
+        } else {
+            bool go_right;
+            if(node_loc >= current_node.values.size()) {
+                go_right = true;
+            } else if(value < current_node.values[node_loc]) {
+                go_right = false;
+            } else if(current_node.values[node_loc] < value) {
+                go_right = true;
             } else {
-                // merge.
-                abort();
+                return extract_value_from_internal(value, node_id, node_loc);
+            }
+            if(go_right) {
+                // recurse right
+            } else {
+                const auto child_count = current_node.children.size();
+                const uint32_t child_to_process = current_node.children[node_loc];
+                const uint32_t left_sibling = node_loc > 0 ? node_loc - 1 : NULL_REF;
+                const uint32_t right_sibling = node_loc < child_count - 1 ? node_loc + 1 : NULL_REF;
+
+                if(nodes[child_to_process].size() <= MIN_VALUE_COUNT) {
+                    if(left_sibling != NULL_REF &&
+                       nodes[current_node.children[left_sibling]].size() > MIN_VALUE_COUNT) {
+                        shift_from_left_sibling(node_id, node_loc, left_sibling, child_to_process);
+                    } else if(right_sibling != NULL_REF &&
+                              nodes[current_node.children[right_sibling]].size() >
+                                  MIN_VALUE_COUNT) {
+                        shift_from_right_sibling(
+                            node_id, node_loc, child_to_process, right_sibling);
+                    } else {
+                        merge_siblings(
+                            node_id, node_loc, child_to_process, left_sibling, right_sibling);
+                    }
+                }
+                if(value < current_node.children[node_loc]) {
+                    return extract_value(value, current_node.children[node_loc]);
+                } else {
+                    return extract_value(value, current_node.children[node_loc + 1]);
+                }
             }
         }
     }
 
-    void root_fixup() {}
+    void root_fixup() {
+        if(is_empty()) {
+            return;
+        }
+        if(nodes[root].values.is_empty()) {
+            assert(nodes[root].children.size() == 1);
+            auto new_root = nodes[root].children[0];
+            swap_to_end_and_pop(root);
+            root = new_root;
+        }
+    }
 
     void swap_nodes(uint32_t node_one, uint32_t node_two) {}
 
