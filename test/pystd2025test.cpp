@@ -682,7 +682,6 @@ int test_btree1() {
     ASSERT(btree.is_empty());
     for(int i = 0; i < arr_size; ++i) {
         btree.insert(shuffled[i]);
-        btree.debug_print();
     }
     ASSERT(btree.size() == 26);
     btree.insert(7);

@@ -207,6 +207,14 @@ public:
         validate_links();
     }
 
+    void remove(const Payload &value) {
+        if(is_empty()) {
+            return;
+        }
+        remove_value(value, root);
+        root_fixup();
+    }
+
     const Payload *lookup(const Payload &value) const {
         if(is_empty()) {
             return nullptr;
@@ -238,7 +246,10 @@ public:
 
     size_t is_empty() const { return size() == 0; }
 
-    void debug_print() const {
+    void debug_print(const char *msg) const {
+        if(msg) {
+            printf("%s\n", msg);
+        }
         printf("----\nB-tree with %d as root, %d nodes and %d elements.\n\n",
                root,
                (int)nodes.size(),
@@ -299,6 +310,11 @@ private:
         }
     };
 
+    struct EntryLocation {
+        uint32_t node_id;
+        uint32_t offset;
+    };
+
     void validate_links() const {
         for(size_t i = 0; i < nodes.size(); ++i) {
             for(const auto &child : nodes[i].children) {
@@ -315,8 +331,7 @@ private:
     void insert_recursive(Payload &value, uint32_t current_node_id) {
         if(needs_to_split(current_node_id)) {
             current_node_id = split_node(current_node_id);
-            printf("After split\n");
-            debug_print();
+            debug_print("After split");
             validate_links();
         }
         auto &current_node = nodes[current_node_id];
@@ -434,6 +449,91 @@ private:
         n.children.try_push_back(NULL_REF);
         nodes.push_back(::pystd2025::move(n));
     }
+
+    EntryLocation find_location(const Payload &value, uint32_t node_id) {
+        while(true) {
+            auto &node = nodes[node_id];
+            auto loc = find_insertion_point(value, node_id);
+            if(loc >= node.values.size()) {
+                return EntryLocation{NULL_REF, NULL_REF};
+            }
+            if(node.values[loc] < value) {
+                node_id = node.children[loc];
+            } else if(!(value < node.values[loc])) {
+                node_id = node.children[loc + 1];
+            } else {
+                return EntryLocation{node_id, loc};
+            }
+        }
+    }
+
+    void pop_empty_leaf(uint32_t node_id) {
+        auto parent_id = nodes[node_id].parent;
+        assert(parent_id != NULL_REF);
+        auto &parent = nodes[parent_id];
+        for(auto &c : parent.children) {
+            if(c == node_id) {
+                c = NULL_REF;
+            }
+        }
+        swap_to_end_and_pop(node_id);
+    }
+
+    void swap_to_end_and_pop(uint32_t node_id) {
+        assert(node_id != NULL_REF);
+
+        // You can only pop a node if nothing points to it any
+        // more. Thus we only need to repoint references to the
+        // last node.
+        uint32_t back_id = nodes.size() - 1;
+        if(node_id != back_id) {
+            const auto &to_reparent = nodes[back_id];
+            if(to_reparent.parent != NULL_REF) {
+                auto &grandparent = nodes[to_reparent.parent];
+                for(auto &c : grandparent.children) {
+                    if(c == back_id) {
+                        c = node_id;
+                    }
+                }
+            }
+            for(auto c : to_reparent.children) {
+                if(c != NULL_REF) {
+                    nodes[c].parent = node_id;
+                }
+            }
+            swap(nodes[node_id], nodes[back_id]);
+        }
+        nodes.pop_back();
+    }
+
+    void remove_value(const Payload &value, uint32_t node_id) {
+        auto tree_loc = find_location(value, node_id);
+        if(tree_loc.node_id == NULL_REF) {
+            return;
+        }
+        if(nodes[tree_loc.node_id].is_leaf()) {
+            nodes[tree_loc.node_id].values.remove(tree_loc.offset);
+            nodes[tree_loc.node_id].children.remove(tree_loc.offset);
+            if(nodes[tree_loc.node_id].values.is_empty()) {
+                pop_empty_leaf(tree_loc.node_id);
+            }
+            --num_values;
+            return;
+        } else {
+            if(nodes[tree_loc.node_id].children[tree_loc.offset].size() > EntryCount / 2) {
+
+            } else if(nodes[tree_loc.node_id].children[tree_loc.offset + 1].size() >
+                      EntryCount / 2) {
+
+            } else {
+                // merge.
+            }
+        }
+    }
+
+    void root_fixup() {}
+
+    void swap_nodes(uint32_t node_one, uint32_t node_two) {}
 
     static_assert(EntryCount % 2 == 1);
     static_assert(EntryCount >= 3);
