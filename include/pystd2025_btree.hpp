@@ -204,7 +204,7 @@ public:
             return;
         }
         insert_recursive(value, root);
-        validate_links();
+        validate_tree();
     }
 
     void remove(const Payload &value) {
@@ -272,6 +272,7 @@ public:
 
 private:
     static constexpr uint32_t NULL_REF = (uint32_t)-1;
+    static constexpr uint32_t MIN_VALUE_COUNT = EntryCount / 2;
     static constexpr bool self_validate = true;
 
     struct Node {
@@ -315,6 +316,19 @@ private:
         uint32_t offset;
     };
 
+    void validate_tree() const {
+        validate_links();
+        validate_btree_props();
+    }
+
+    void validate_btree_props() const {
+        for(uint32_t node_id = 0; node_id < nodes.size(); ++node_id) {
+            if(node_id != root) {
+                assert(nodes[node_id].values.size() >= MIN_VALUE_COUNT);
+            }
+        }
+    }
+
     void validate_links() const {
         for(size_t i = 0; i < nodes.size(); ++i) {
             for(const auto &child : nodes[i].children) {
@@ -332,7 +346,7 @@ private:
         if(needs_to_split(current_node_id)) {
             current_node_id = split_node(current_node_id);
             debug_print("After split");
-            validate_links();
+            validate_tree();
         }
         auto &current_node = nodes[current_node_id];
         size_t insert_loc = find_insertion_point(current_node, value);
@@ -377,7 +391,7 @@ private:
         }
         new_node.children.push_back(to_split_before_push.children.back());
         // Pop moved ones.
-        while(to_split_before_push.values.size() > EntryCount / 2 + 1) {
+        while(to_split_before_push.values.size() > to_right) {
             to_split_before_push.children.pop_back();
             to_split_before_push.values.pop_back();
         }
@@ -514,19 +528,17 @@ private:
         if(nodes[tree_loc.node_id].is_leaf()) {
             nodes[tree_loc.node_id].values.remove(tree_loc.offset);
             nodes[tree_loc.node_id].children.remove(tree_loc.offset);
-            if(nodes[tree_loc.node_id].values.is_empty()) {
-                pop_empty_leaf(tree_loc.node_id);
-            }
             --num_values;
             return;
         } else {
-            if(nodes[tree_loc.node_id].children[tree_loc.offset].size() > EntryCount / 2) {
-
+            if(nodes[tree_loc.node_id].children[tree_loc.offset].size() > MIN_VALUE_COUNT) {
+                abort();
             } else if(nodes[tree_loc.node_id].children[tree_loc.offset + 1].size() >
-                      EntryCount / 2) {
-
+                      MIN_VALUE_COUNT) {
+                abort();
             } else {
                 // merge.
+                abort();
             }
         }
     }
