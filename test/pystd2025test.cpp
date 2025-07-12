@@ -694,6 +694,9 @@ int test_btree1() {
     }
     ASSERT(!btree.lookup(100));
 
+    btree.remove(7);
+    ASSERT(btree.size() == 25);
+
     return 0;
 }
 

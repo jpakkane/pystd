@@ -114,6 +114,19 @@ public:
         pop_back();
     }
 
+    void move_append(FixedVector &o) {
+        if(this != &o) {
+            throw PyException("Can not move append self.");
+        }
+        if(size() + o.size() > MAX_SIZE) {
+            throw PyException("Appending would exceed max size.");
+        }
+        for(auto &i : o) {
+            push_back(::pystd2025::move(i));
+        }
+        o.destroy_contents();
+    }
+
     T &front() {
         if(is_empty()) {
             throw PyException("Tried to access empty array.");
@@ -212,7 +225,9 @@ public:
             return;
         }
         auto v = extract_value(value, root);
-        (void)v;
+        if(v) {
+            --num_values;
+        }
         root_fixup();
     }
 
@@ -280,6 +295,18 @@ private:
         uint32_t parent;
         FixedVector<Payload, EntryCount> values;
         FixedVector<uint32_t, EntryCount + 1> children;
+
+        void pop_back() {
+            values.pop_back();
+            children.pop_back();
+        }
+
+        void pop_front() {
+            values.pop_front();
+            children.pop_front();
+        }
+
+        uint32_t size() const { return values.size(); }
 
         bool is_leaf() const {
             for(const auto &i : children) {
@@ -533,7 +560,7 @@ private:
         assert(node_loc < current_node.values.size());
         assert(current_node.values.size() > MIN_VALUE_COUNT);
         if(current_node.values[node_loc] == value) {
-            Optional<Payload> value = ::pystd2025::move(current_node.values[current_node]);
+            Optional<Payload> value = ::pystd2025::move(current_node.values[node_loc]);
             current_node.delete_at(node_loc);
             return value;
         } else {
@@ -546,12 +573,54 @@ private:
         auto &current_node = nodes[node_id];
         assert(!current_node.is_leaf());
         assert(current_node.values[node_loc] == value);
+        auto &p = nodes[node_id];
+        auto lc_id = p.children[node_loc];
+        auto &lc = nodes[lc_id];
+        auto rc_id = p.children[node_loc + 1];
+        auto &rc = nodes[rc_id];
+
+        if(lc.size() > MIN_VALUE_COUNT) {
+            auto predecessor_id = find_predecessor(lc_id);
+            auto &predecessor = nodes[predecessor_id];
+            Payload return_value = ::pystd2025::move(p.values[node_loc]);
+            p.values[node_loc] = ::pystd2025::move(predecessor.values.back());
+            predecessor.pop_back();
+            return return_value;
+        } else if(rc.size() > MIN_VALUE_COUNT) {
+            auto successor_id = find_successor(rc_id);
+            auto &successor = nodes[successor_id];
+            Payload return_value = ::pystd2025::move(p.values[node_loc]);
+            p.values[node_loc] = ::pystd2025::move(successor.values.front());
+            successor.pop_front();
+            return return_value;
+        } else {
+            merge_siblings(node_id, node_loc, lc_id, rc_id);
+            auto sub_value = extract_value(value, lc_id);
+            assert(sub_value);
+            return ::pystd2025::move(sub_value.value());
+        }
+        abort();
+    }
+
+    uint32_t find_predecessor(uint32_t node_id) const {
+        while(!nodes[node_id].is_leaf()) {
+            node_id = nodes[node_id].children.back();
+        }
+        return node_id;
+    }
+
+    uint32_t find_successor(uint32_t node_id) const {
+        while(!nodes[node_id].is_leaf()) {
+            node_id = nodes[node_id].children.front();
+        }
+        return node_id;
     }
 
     Optional<Payload> extract_value(const Payload &value, uint32_t node_id) {
         auto &current_node = nodes[node_id];
         auto node_loc = find_insertion_point(current_node, value);
         if(current_node.is_leaf()) {
+            // Case 1 in Cormen-Leiserson-Rivest
             return extract_value_from_leaf(value, node_id, node_loc);
         } else {
             bool go_right;
@@ -562,11 +631,14 @@ private:
             } else if(current_node.values[node_loc] < value) {
                 go_right = true;
             } else {
+                // Case 2 in Cormen-Leiserson-Rivest.
                 return extract_value_from_internal(value, node_id, node_loc);
             }
             if(go_right) {
                 // recurse right
+                abort();
             } else {
+                // Case 3 in Cormen-Leiserson-Rivest
                 const auto child_count = current_node.children.size();
                 const uint32_t child_to_process = current_node.children[node_loc];
                 const uint32_t left_sibling = node_loc > 0 ? node_loc - 1 : NULL_REF;
@@ -580,17 +652,68 @@ private:
                               nodes[current_node.children[right_sibling]].size() >
                                   MIN_VALUE_COUNT) {
                         shift_from_right_sibling(
-                            node_id, node_loc, child_to_process, right_sibling);
+                            node_id, node_loc, right_sibling, child_to_process);
                     } else {
-                        merge_siblings(
-                            node_id, node_loc, child_to_process, left_sibling, right_sibling);
+                        merge_siblings(node_id, node_loc, left_sibling, right_sibling);
                     }
                 }
-                if(value < current_node.children[node_loc]) {
+                if(value < current_node.values[node_loc]) {
                     return extract_value(value, current_node.children[node_loc]);
                 } else {
                     return extract_value(value, current_node.children[node_loc + 1]);
                 }
+            }
+        }
+    }
+
+    void shift_from_left_sibling(uint32_t node_id,
+                                 uint32_t node_loc,
+                                 uint32_t left_sibling_id,
+                                 uint32_t child_id) {
+        auto &l = nodes[left_sibling_id];
+        auto &p = nodes[node_id];
+        auto &c = nodes[child_id];
+        c.values.insert(0, pystd2025::move(p.values[node_loc]));
+        p.values[node_loc] = pystd2025::move(l.values.back());
+        c.children.insert(0, pystd2025::move(l.children.back()));
+        l.values.pop_back();
+        l.children.pop_back();
+    }
+
+    void shift_from_right_sibling(uint32_t node_id,
+                                  uint32_t node_loc,
+                                  uint32_t right_sibling_id,
+                                  uint32_t child_id) {
+        auto &r = nodes[right_sibling_id];
+        auto &p = nodes[node_id];
+        auto &c = nodes[child_id];
+        c.values.push_back(pystd2025::move(p.values[node_loc]));
+        p.values[node_loc] = pystd2025::move(r.values.front());
+        c.children.push_back(pystd2025::move(r.children.front()));
+        r.values.pop_front();
+        r.children.pop_front();
+    }
+
+    void merge_siblings(uint32_t node_id,
+                        uint32_t node_loc,
+                        uint32_t left_sibling_id,
+                        uint32_t right_sibling_id) {
+        auto &p = nodes[node_id];
+        if(left_sibling_id == NULL_REF) {
+            // Add later
+            abort();
+        } else {
+            auto &l = nodes[left_sibling_id];
+            l.values.push_back(p.values[node_loc]);
+            p.values.delete_at(node_loc);
+            p.children.delete_at(node_loc + 1);
+            if(right_sibling_id != NULL_REF) {
+                auto &r = nodes[right_sibling_id];
+                l.values.move_append(r.values);
+                l.children.move_append(r.children);
+                swap_to_end_and_pop(right_sibling_id);
+            } else {
+                abort();
             }
         }
     }
