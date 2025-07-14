@@ -115,7 +115,7 @@ public:
     }
 
     void move_append(FixedVector &o) {
-        if(this != &o) {
+        if(this == &o) {
             throw PyException("Can not move append self.");
         }
         if(size() + o.size() > MAX_SIZE) {
@@ -124,7 +124,6 @@ public:
         for(auto &i : o) {
             push_back(::pystd2025::move(i));
         }
-        o.destroy_contents();
     }
 
     T &front() {
@@ -224,7 +223,14 @@ public:
         if(is_empty()) {
             return;
         }
+        const uint32_t poi = 13;
+        if(value == poi) {
+            debug_print("At point of interest.");
+        }
         auto v = extract_value(value, root);
+        if(value == poi) {
+            debug_print("After point of interest.");
+        }
         if(v) {
             --num_values;
         }
@@ -325,14 +331,12 @@ private:
 
         void validate_node() const {
             if constexpr(self_validate) {
-                if(values.is_empty()) {
-                    assert(children.is_empty());
-                } else {
-                    assert(children.size() == values.size() + 1);
-                }
+                assert(children.size() == values.size() + 1);
 
-                for(size_t i = 0; i < values.size() - 1; ++i) {
-                    assert(values[i] < values[i + 1]);
+                if(!values.is_empty()) {
+                    for(size_t i = 0; i < values.size() - 1; ++i) {
+                        assert(values[i] < values[i + 1]);
+                    }
                 }
                 for(size_t i = 0; i < children.size() - 1; ++i) {
                     for(size_t j = i + 1; j < children.size(); ++j) {
@@ -542,6 +546,9 @@ private:
         // more. Thus we only need to repoint references to the
         // last node.
         uint32_t back_id = nodes.size() - 1;
+        if(root == back_id) {
+            root = node_id;
+        }
         if(node_id != back_id) {
             const auto &to_reparent = nodes[back_id];
             if(to_reparent.parent != NULL_REF) {
@@ -567,7 +574,7 @@ private:
         auto &current_node = nodes[node_id];
         assert(current_node.is_leaf());
         assert(node_loc < current_node.values.size());
-        assert(current_node.values.size() > MIN_VALUE_COUNT);
+        assert(node_id == root || current_node.values.size() > MIN_VALUE_COUNT);
         if(current_node.values[node_loc] == value) {
             Optional<Payload> value = ::pystd2025::move(current_node.values[node_loc]);
             current_node.delete_at(node_loc);
@@ -603,6 +610,7 @@ private:
             successor.pop_front();
             return return_value;
         } else {
+            debug_print("Before merge.");
             merge_siblings(node_id, node_loc, lc_id, rc_id);
             auto sub_value = extract_value(value, lc_id);
             assert(sub_value);
@@ -625,60 +633,110 @@ private:
         return node_id;
     }
 
+    struct NodeSearchResult {
+        uint32_t loc;
+        bool has_query_value = false;
+        Optional<uint32_t> child_loc;
+    };
+
+    NodeSearchResult search_node(const Payload &value, uint32_t node_id) {
+        auto &current_node = nodes[node_id];
+        NodeSearchResult result;
+        result.loc = find_insertion_point(current_node, value);
+        if(result.loc == current_node.values.size()) {
+            result.has_query_value = false;
+            result.child_loc = current_node.children.size() - 1;
+            return result;
+        }
+        const auto &current_value = current_node.values[result.loc];
+        result.has_query_value = (!(value < current_value)) && (!(current_value < value));
+        if(!result.has_query_value) {
+            result.child_loc = value < current_value ? result.loc : result.loc + 1;
+        }
+        return result;
+    }
+
     Optional<Payload> extract_value(const Payload &value, uint32_t node_id) {
         auto &current_node = nodes[node_id];
-        auto node_loc = find_insertion_point(current_node, value);
+        NodeSearchResult search_result = search_node(value, node_id);
         if(current_node.is_leaf()) {
             // Case 1 in Cormen-Leiserson-Rivest
-            return extract_value_from_leaf(value, node_id, node_loc);
-        } else {
-            bool recurse_rightmost = false;
-            if(node_loc >= current_node.values.size()) {
-                recurse_rightmost = true;
-            } else if(value < current_node.values[node_loc]) {
-                // Normal case.
-            } else if(current_node.values[node_loc] < value) {
-                if(node_loc == current_node.values.size() - 1) {
-                    recurse_rightmost = true;
-                }
-            } else {
-                // Case 2 in Cormen-Leiserson-Rivest.
-                return extract_value_from_internal(value, node_id, node_loc);
-            }
-            // Case 3 in Cormen-Leiserson-Rivest
-            const auto child_count = current_node.children.size();
+            return extract_value_from_leaf(value, node_id, search_result.loc);
+        }
+        if(search_result.has_query_value) {
+            // Case 2 in Cormen-Leiserson-Rivest.
+            return extract_value_from_internal(value, node_id, search_result.loc);
+        }
+        // Case 3 in Cormen-Leiserson-Rivest
+        const auto child_count = current_node.children.size();
 
-            const uint32_t child_loc_to_process =
-                recurse_rightmost ? current_node.children.size() - 1 : node_loc;
-            const uint32_t child_to_process = current_node.children[child_loc_to_process];
-            const uint32_t left_sibling_loc = node_loc > 0 ? node_loc - 1 : NULL_REF;
-            const uint32_t right_sibling_loc = node_loc < child_count - 1 ? node_loc + 1 : NULL_REF;
+        const uint32_t child_loc_to_process =
+            search_result.child_loc ? *search_result.child_loc : current_node.children.size() - 1;
+        const uint32_t child_to_process = current_node.children[child_loc_to_process];
+
+        if(nodes[child_to_process].size() <= MIN_VALUE_COUNT) {
+            const uint32_t left_sibling_loc =
+                child_loc_to_process > 0 ? child_loc_to_process - 1 : NULL_REF;
+            const uint32_t right_sibling_loc =
+                child_loc_to_process < child_count - 1 ? child_loc_to_process + 1 : NULL_REF;
 
             const uint32_t left_sibling_id =
                 left_sibling_loc != NULL_REF ? current_node.children[left_sibling_loc] : NULL_REF;
             const uint32_t right_sibling_id =
                 right_sibling_loc != NULL_REF ? current_node.children[right_sibling_loc] : NULL_REF;
 
-            if(nodes[child_to_process].size() <= MIN_VALUE_COUNT) {
-                if(left_sibling_id != NULL_REF && nodes[left_sibling_id].size() > MIN_VALUE_COUNT) {
-                    shift_from_left_sibling(node_id, node_loc, left_sibling_id, child_to_process);
-                } else if(right_sibling_id != NULL_REF &&
-                          nodes[current_node.children[right_sibling_id]].size() > MIN_VALUE_COUNT) {
-                    shift_from_right_sibling(node_id, node_loc, right_sibling_id, child_to_process);
-                } else {
-                    merge_siblings(node_id, node_loc, left_sibling_id, right_sibling_id);
-                }
-            }
-            debug_print("After shift.");
-            validate_tree();
-            if(recurse_rightmost) {
-                return extract_value(value, current_node.children.back());
-            } else if(value < current_node.values[node_loc]) {
-                return extract_value(value, current_node.children[node_loc]);
+            if(left_sibling_id != NULL_REF && nodes[left_sibling_id].size() > MIN_VALUE_COUNT) {
+                shift_node_to_right(node_id, search_result.loc - 1);
+            } else if(right_sibling_id != NULL_REF &&
+                      nodes[right_sibling_id].size() > MIN_VALUE_COUNT) {
+                shift_node_to_left(node_id, search_result.loc);
             } else {
-                return extract_value(value, current_node.children[node_loc + 1]);
+                uint32_t merged_node_id;
+                if(search_result.loc == current_node.values.size()) {
+                    merged_node_id = merge_siblings2(node_id, current_node.values.size() - 1);
+                } else {
+                    merged_node_id = merge_siblings2(node_id, search_result.loc);
+                }
+                return extract_value(value, merged_node_id);
             }
         }
+        return extract_value(value, child_to_process);
+    }
+
+    void shift_node_to_right(uint32_t node_id, uint32_t node_loc) {
+        auto &p = nodes[node_id];
+        const auto left_sibling_id = p.children[node_loc];
+        auto &l = nodes[left_sibling_id];
+        const auto right_sibling_id = p.children[node_loc + 1];
+        auto &r = nodes[right_sibling_id];
+        const auto to_reparent_id = l.children.back();
+        r.values.insert(0, pystd2025::move(p.values[node_loc]));
+        p.values[node_loc] = pystd2025::move(l.values.back());
+        r.children.insert(0, pystd2025::move(l.children.back()));
+        if(to_reparent_id != NULL_REF) {
+            assert(nodes[to_reparent_id].parent == left_sibling_id);
+            nodes[to_reparent_id].parent = right_sibling_id;
+        }
+        l.values.pop_back();
+        l.children.pop_back();
+    }
+
+    void shift_node_to_left(uint32_t node_id, uint32_t node_loc) {
+        auto &p = nodes[node_id];
+        const auto left_sibling_id = p.children[node_loc];
+        auto &l = nodes[left_sibling_id];
+        const auto right_sibling_id = p.children[node_loc + 1];
+        auto &r = nodes[right_sibling_id];
+        const auto to_reparent_id = r.children.front();
+        l.values.push_back(pystd2025::move(p.values[node_loc]));
+        p.values[node_loc] = pystd2025::move(r.values.front());
+        l.children.push_back(pystd2025::move(r.children.front()));
+        if(to_reparent_id != NULL_REF) {
+            assert(nodes[to_reparent_id].parent == right_sibling_id);
+            nodes[to_reparent_id].parent = left_sibling_id;
+        }
+        r.values.pop_front();
+        r.children.pop_front();
     }
 
     void shift_from_left_sibling(uint32_t node_id,
@@ -722,28 +780,102 @@ private:
         r.children.pop_front();
     }
 
-    void merge_siblings(uint32_t node_id,
-                        uint32_t node_loc,
-                        uint32_t left_sibling_id,
-                        uint32_t right_sibling_id) {
+    void reset_parent_for_children(uint32_t node_id) {
+
+        for(auto &c_id : nodes[node_id].children) {
+            if(c_id != NULL_REF) {
+                nodes[c_id].parent = node_id;
+            }
+        }
+    }
+
+    uint32_t merge_siblings(uint32_t node_id,
+                            uint32_t node_loc,
+                            uint32_t left_sibling_id,
+                            uint32_t right_sibling_id) {
         auto &p = nodes[node_id];
+        if(node_id == root && p.values.size() == 1) {
+            // Special case, deleting the last value in root.
+            // Root fixup will be done later.
+            const auto left_tree_id = p.children[0];
+            const auto right_tree_id = p.children[1];
+            auto &lroot = nodes[left_tree_id];
+            auto &rroot = nodes[right_tree_id];
+            lroot.values.push_back(::pystd2025::move(p.values.front()));
+            lroot.values.move_append(rroot.values);
+            lroot.children.move_append(rroot.children);
+            p.values.pop_back();
+            p.children.pop_back();
+            reset_parent_for_children(left_tree_id);
+            swap_to_end_and_pop(right_tree_id);
+            return left_tree_id;
+        }
         if(left_sibling_id == NULL_REF) {
-            // Add later
-            abort();
+            assert(nodes[right_sibling_id].values.size() > MIN_VALUE_COUNT);
+            shift_from_right_sibling(node_id, node_loc, right_sibling_id, p.children.front());
+            return p.children.front();
+        } else if(right_sibling_id == NULL_REF) {
+            assert(nodes[left_sibling_id].values.size() > MIN_VALUE_COUNT);
+            shift_from_left_sibling(node_id, node_loc, left_sibling_id, p.children.back());
+            return p.children.back();
         } else {
+            const auto replacement_loc = node_loc;
             auto &l = nodes[left_sibling_id];
-            l.values.push_back(p.values[node_loc]);
-            p.values.delete_at(node_loc);
-            p.children.delete_at(node_loc + 1);
+            l.values.push_back(p.values[replacement_loc]);
+            p.values.delete_at(replacement_loc);
+            p.children.delete_at(replacement_loc + 1);
             if(right_sibling_id != NULL_REF) {
                 auto &r = nodes[right_sibling_id];
                 l.values.move_append(r.values);
                 l.children.move_append(r.children);
+                reset_parent_for_children(left_sibling_id);
                 swap_to_end_and_pop(right_sibling_id);
+                return left_sibling_id;
             } else {
                 abort();
             }
         }
+    }
+
+    uint32_t merge_siblings2(uint32_t node_id, uint32_t node_loc) {
+        auto &p = nodes[node_id];
+        assert(node_loc < p.values.size());
+
+        if(node_id == root && p.values.size() == 1) {
+            // Special case, deleting the last value in root.
+            // Root fixup will be done later.
+            const auto left_tree_id = p.children[0];
+            const auto right_tree_id = p.children[1];
+            auto &lroot = nodes[left_tree_id];
+            auto &rroot = nodes[right_tree_id];
+            lroot.values.push_back(::pystd2025::move(p.values.front()));
+            lroot.values.move_append(rroot.values);
+            lroot.children.move_append(rroot.children);
+            p.values.pop_back();
+            p.children.pop_back();
+            reset_parent_for_children(left_tree_id);
+            swap_to_end_and_pop(right_tree_id);
+            return left_tree_id;
+        }
+
+        const uint32_t left_sibling_id = p.children[node_loc];
+        const uint32_t right_sibling_id = p.children[node_loc + 1];
+        auto &l = nodes[left_sibling_id];
+        auto &r = nodes[right_sibling_id];
+        assert(l.values.size() + r.values.size() + 1 <= EntryCount);
+        l.values.push_back(p.values[node_loc]);
+        p.values.delete_at(node_loc);
+        p.children.delete_at(node_loc + 1);
+        l.values.move_append(r.values);
+        l.children.move_append(r.children);
+        const bool left_sibling_is_last = left_sibling_id == nodes.size() - 1;
+        reset_parent_for_children(left_sibling_id);
+        swap_to_end_and_pop(right_sibling_id);
+        if(left_sibling_is_last) {
+            // Because they got swapped.
+            return right_sibling_id;
+        }
+        return left_sibling_id;
     }
 
     void root_fixup() {
@@ -755,6 +887,7 @@ private:
             auto new_root = nodes[root].children[0];
             swap_to_end_and_pop(root);
             root = new_root;
+            nodes[root].parent = NULL_REF;
         }
     }
 
