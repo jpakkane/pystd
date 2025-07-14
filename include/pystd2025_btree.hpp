@@ -374,7 +374,8 @@ private:
         for(size_t i = 0; i < nodes.size(); ++i) {
             for(const auto &child : nodes[i].children) {
                 if(child != NULL_REF) {
-                    assert(nodes[child].parent == i);
+                    auto backlink = nodes[child].parent;
+                    assert(backlink == i);
                 }
             }
         }
@@ -631,56 +632,51 @@ private:
             // Case 1 in Cormen-Leiserson-Rivest
             return extract_value_from_leaf(value, node_id, node_loc);
         } else {
-            bool go_right;
+            bool recurse_rightmost = false;
             if(node_loc >= current_node.values.size()) {
-                go_right = true;
+                recurse_rightmost = true;
             } else if(value < current_node.values[node_loc]) {
-                go_right = false;
+                // Normal case.
             } else if(current_node.values[node_loc] < value) {
-                go_right = true;
+                if(node_loc == current_node.values.size() - 1) {
+                    recurse_rightmost = true;
+                }
             } else {
                 // Case 2 in Cormen-Leiserson-Rivest.
                 return extract_value_from_internal(value, node_id, node_loc);
             }
-            if(go_right) {
-                // recurse right
-                abort();
-            } else {
-                // Case 3 in Cormen-Leiserson-Rivest
-                const auto child_count = current_node.children.size();
-                const uint32_t child_to_process = current_node.children[node_loc];
-                const uint32_t left_sibling_loc = node_loc > 0 ? node_loc - 1 : NULL_REF;
-                const uint32_t right_sibling_loc =
-                    node_loc < child_count - 1 ? node_loc + 1 : NULL_REF;
+            // Case 3 in Cormen-Leiserson-Rivest
+            const auto child_count = current_node.children.size();
 
-                const uint32_t left_sibling_id = left_sibling_loc != NULL_REF
-                                                     ? current_node.children[left_sibling_loc]
-                                                     : NULL_REF;
-                const uint32_t right_sibling_id = right_sibling_loc != NULL_REF
-                                                      ? current_node.children[right_sibling_loc]
-                                                      : NULL_REF;
+            const uint32_t child_loc_to_process =
+                recurse_rightmost ? current_node.children.size() - 1 : node_loc;
+            const uint32_t child_to_process = current_node.children[child_loc_to_process];
+            const uint32_t left_sibling_loc = node_loc > 0 ? node_loc - 1 : NULL_REF;
+            const uint32_t right_sibling_loc = node_loc < child_count - 1 ? node_loc + 1 : NULL_REF;
 
-                if(nodes[child_to_process].size() <= MIN_VALUE_COUNT) {
-                    if(left_sibling_id != NULL_REF &&
-                       nodes[left_sibling_id].size() > MIN_VALUE_COUNT) {
-                        shift_from_left_sibling(
-                            node_id, node_loc, left_sibling_id, child_to_process);
-                    } else if(right_sibling_id != NULL_REF &&
-                              nodes[current_node.children[right_sibling_id]].size() >
-                                  MIN_VALUE_COUNT) {
-                        shift_from_right_sibling(
-                            node_id, node_loc, right_sibling_id, child_to_process);
-                    } else {
-                        merge_siblings(node_id, node_loc, left_sibling_id, right_sibling_id);
-                    }
-                }
-                // debug_print("After shift.");
-                validate_tree();
-                if(value < current_node.values[node_loc]) {
-                    return extract_value(value, current_node.children[node_loc]);
+            const uint32_t left_sibling_id =
+                left_sibling_loc != NULL_REF ? current_node.children[left_sibling_loc] : NULL_REF;
+            const uint32_t right_sibling_id =
+                right_sibling_loc != NULL_REF ? current_node.children[right_sibling_loc] : NULL_REF;
+
+            if(nodes[child_to_process].size() <= MIN_VALUE_COUNT) {
+                if(left_sibling_id != NULL_REF && nodes[left_sibling_id].size() > MIN_VALUE_COUNT) {
+                    shift_from_left_sibling(node_id, node_loc, left_sibling_id, child_to_process);
+                } else if(right_sibling_id != NULL_REF &&
+                          nodes[current_node.children[right_sibling_id]].size() > MIN_VALUE_COUNT) {
+                    shift_from_right_sibling(node_id, node_loc, right_sibling_id, child_to_process);
                 } else {
-                    return extract_value(value, current_node.children[node_loc + 1]);
+                    merge_siblings(node_id, node_loc, left_sibling_id, right_sibling_id);
                 }
+            }
+            debug_print("After shift.");
+            validate_tree();
+            if(recurse_rightmost) {
+                return extract_value(value, current_node.children.back());
+            } else if(value < current_node.values[node_loc]) {
+                return extract_value(value, current_node.children[node_loc]);
+            } else {
+                return extract_value(value, current_node.children[node_loc + 1]);
             }
         }
     }
@@ -693,9 +689,14 @@ private:
         auto &p = nodes[node_id];
         auto &c = nodes[child_id];
         const auto replacement_loc = node_loc - 1;
+        const auto to_reparent_id = l.children.back();
         c.values.insert(0, pystd2025::move(p.values[replacement_loc]));
         p.values[replacement_loc] = pystd2025::move(l.values.back());
         c.children.insert(0, pystd2025::move(l.children.back()));
+        if(to_reparent_id != NULL_REF) {
+            assert(nodes[to_reparent_id].parent == left_sibling_id);
+            nodes[to_reparent_id].parent = child_id;
+        }
         l.values.pop_back();
         l.children.pop_back();
     }
@@ -708,9 +709,15 @@ private:
         auto &p = nodes[node_id];
         auto &c = nodes[child_id];
         const auto replacement_loc = node_loc; // + 1;
+        const auto to_reparent_id = r.children.front();
         c.values.push_back(pystd2025::move(p.values[replacement_loc]));
         p.values[replacement_loc] = pystd2025::move(r.values.front());
         c.children.push_back(pystd2025::move(r.children.front()));
+        if(to_reparent_id != NULL_REF) {
+            assert(nodes[to_reparent_id].parent == right_sibling_id);
+            nodes[to_reparent_id].parent = child_id;
+        }
+
         r.values.pop_front();
         r.children.pop_front();
     }

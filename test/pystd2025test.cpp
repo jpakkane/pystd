@@ -694,8 +694,15 @@ int test_btree1() {
     }
     ASSERT(!btree.lookup(100));
 
-    btree.remove(7);
-    ASSERT(btree.size() == 25);
+    size_t expected_size = 26;
+
+    ASSERT(btree.size() == expected_size);
+    for(int i = 0; i < arr_size; ++i) {
+        btree.remove(shuffled[i]);
+        --expected_size;
+        ASSERT(btree.size() == expected_size);
+    }
+    ASSERT(btree.is_empty());
 
     return 0;
 }
