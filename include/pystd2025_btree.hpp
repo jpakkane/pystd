@@ -619,7 +619,7 @@ private:
             return return_value;
         } else {
             debug_print("Before merge.");
-            merge_siblings(node_id, node_loc, lc_id, rc_id);
+            merge_siblings_of_entry(node_id, node_loc);
             auto sub_value = extract_value(value, lc_id);
             assert(sub_value);
             return ::pystd2025::move(sub_value.value());
@@ -701,9 +701,10 @@ private:
             } else {
                 uint32_t merged_node_id;
                 if(search_result.loc == current_node.values.size()) {
-                    merged_node_id = merge_siblings2(node_id, current_node.values.size() - 1);
+                    merged_node_id =
+                        merge_siblings_of_entry(node_id, current_node.values.size() - 1);
                 } else {
-                    merged_node_id = merge_siblings2(node_id, search_result.loc);
+                    merged_node_id = merge_siblings_of_entry(node_id, search_result.loc);
                 }
                 return extract_value(value, merged_node_id);
             }
@@ -756,55 +757,7 @@ private:
         }
     }
 
-    uint32_t merge_siblings(uint32_t node_id,
-                            uint32_t node_loc,
-                            uint32_t left_sibling_id,
-                            uint32_t right_sibling_id) {
-        auto &p = nodes[node_id];
-        if(node_id == root && p.values.size() == 1) {
-            // Special case, deleting the last value in root.
-            // Root fixup will be done later.
-            const auto left_tree_id = p.children[0];
-            const auto right_tree_id = p.children[1];
-            auto &lroot = nodes[left_tree_id];
-            auto &rroot = nodes[right_tree_id];
-            lroot.values.push_back(::pystd2025::move(p.values.front()));
-            lroot.values.move_append(rroot.values);
-            lroot.children.move_append(rroot.children);
-            p.values.pop_back();
-            p.children.pop_back();
-            reset_parent_for_children(left_tree_id);
-            swap_to_end_and_pop(right_tree_id);
-            return left_tree_id;
-        }
-        if(left_sibling_id == NULL_REF) {
-            assert(nodes[right_sibling_id].values.size() > MIN_VALUE_COUNT);
-            shift_node_to_right(node_id, node_loc);
-            return p.children.front();
-        } else if(right_sibling_id == NULL_REF) {
-            assert(nodes[left_sibling_id].values.size() > MIN_VALUE_COUNT);
-            shift_node_to_left(node_id, node_loc);
-            return p.children.back();
-        } else {
-            const auto replacement_loc = node_loc;
-            auto &l = nodes[left_sibling_id];
-            l.values.push_back(p.values[replacement_loc]);
-            p.values.delete_at(replacement_loc);
-            p.children.delete_at(replacement_loc + 1);
-            if(right_sibling_id != NULL_REF) {
-                auto &r = nodes[right_sibling_id];
-                l.values.move_append(r.values);
-                l.children.move_append(r.children);
-                reset_parent_for_children(left_sibling_id);
-                swap_to_end_and_pop(right_sibling_id);
-                return left_sibling_id;
-            } else {
-                abort();
-            }
-        }
-    }
-
-    uint32_t merge_siblings2(uint32_t node_id, uint32_t node_loc) {
+    uint32_t merge_siblings_of_entry(uint32_t node_id, uint32_t node_loc) {
         auto &p = nodes[node_id];
         assert(node_loc < p.values.size());
 
