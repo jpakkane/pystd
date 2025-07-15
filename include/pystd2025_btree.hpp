@@ -747,47 +747,6 @@ private:
         r.children.pop_front();
     }
 
-    void shift_from_left_sibling(uint32_t node_id,
-                                 uint32_t node_loc,
-                                 uint32_t left_sibling_id,
-                                 uint32_t child_id) {
-        auto &l = nodes[left_sibling_id];
-        auto &p = nodes[node_id];
-        auto &c = nodes[child_id];
-        const auto replacement_loc = node_loc - 1;
-        const auto to_reparent_id = l.children.back();
-        c.values.insert(0, pystd2025::move(p.values[replacement_loc]));
-        p.values[replacement_loc] = pystd2025::move(l.values.back());
-        c.children.insert(0, pystd2025::move(l.children.back()));
-        if(to_reparent_id != NULL_REF) {
-            assert(nodes[to_reparent_id].parent == left_sibling_id);
-            nodes[to_reparent_id].parent = child_id;
-        }
-        l.values.pop_back();
-        l.children.pop_back();
-    }
-
-    void shift_from_right_sibling(uint32_t node_id,
-                                  uint32_t node_loc,
-                                  uint32_t right_sibling_id,
-                                  uint32_t child_id) {
-        auto &r = nodes[right_sibling_id];
-        auto &p = nodes[node_id];
-        auto &c = nodes[child_id];
-        const auto replacement_loc = node_loc; // + 1;
-        const auto to_reparent_id = r.children.front();
-        c.values.push_back(pystd2025::move(p.values[replacement_loc]));
-        p.values[replacement_loc] = pystd2025::move(r.values.front());
-        c.children.push_back(pystd2025::move(r.children.front()));
-        if(to_reparent_id != NULL_REF) {
-            assert(nodes[to_reparent_id].parent == right_sibling_id);
-            nodes[to_reparent_id].parent = child_id;
-        }
-
-        r.values.pop_front();
-        r.children.pop_front();
-    }
-
     void reset_parent_for_children(uint32_t node_id) {
 
         for(auto &c_id : nodes[node_id].children) {
@@ -820,11 +779,11 @@ private:
         }
         if(left_sibling_id == NULL_REF) {
             assert(nodes[right_sibling_id].values.size() > MIN_VALUE_COUNT);
-            shift_from_right_sibling(node_id, node_loc, right_sibling_id, p.children.front());
+            shift_node_to_right(node_id, node_loc);
             return p.children.front();
         } else if(right_sibling_id == NULL_REF) {
             assert(nodes[left_sibling_id].values.size() > MIN_VALUE_COUNT);
-            shift_from_left_sibling(node_id, node_loc, left_sibling_id, p.children.back());
+            shift_node_to_left(node_id, node_loc);
             return p.children.back();
         } else {
             const auto replacement_loc = node_loc;
