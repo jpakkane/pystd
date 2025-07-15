@@ -210,8 +210,8 @@ public:
 
     void insert(Payload &&value) {
         if(is_empty()) {
-            create_node(::pystd2025::move(value), NULL_REF);
-            root = 0;
+            create_node(::pystd2025::move(value), NodeReference::null_ref());
+            root = NodeReference{0};
             num_values = 1;
             return;
         }
@@ -223,7 +223,7 @@ public:
         if(is_empty()) {
             return;
         }
-        const uint32_t poi = 13;
+        const uint32_t poi = 22;
         if(value == poi) {
             debug_print("At point of interest.");
         }
@@ -244,10 +244,10 @@ public:
         }
         auto current_id = root;
         while(true) {
-            if(current_id == NULL_REF) {
+            if(current_id.is_null()) {
                 return nullptr;
             }
-            const auto &current_node = nodes[current_id];
+            const auto &current_node = get_node(current_id);
             auto node_loc = find_insertion_point(current_node, value);
             if(node_loc >= current_node.values.size()) {
                 current_id = current_node.children.back();
@@ -279,20 +279,20 @@ public:
                 printf("%s\n", msg);
             }
             printf("----\nB-tree with %d as root, %d nodes and %d elements.\n\n",
-                   root,
+                   root.id,
                    (int)nodes.size(),
                    (int)size());
             int32_t node_id = -1;
             for(const auto &node : nodes) {
                 ++node_id;
                 printf(
-                    "Node %d, parent %d size %d:\n", node_id, node.parent, (int)node.values.size());
+                    "Node %d, parent %d size %d:\n", node_id, node.parent.id, (int)node.values.size());
                 for(const auto &v : node.values) {
                     printf(" %d", v);
                 }
                 printf("\n");
                 for(const auto &v : node.children) {
-                    printf(" %d", v);
+                    printf(" %d", v.id);
                 }
                 printf("\n");
             }
@@ -301,15 +301,28 @@ public:
     }
 
 private:
+    static constexpr uint32_t NULL_LOC = (uint32_t)-1;
     static constexpr uint32_t NULL_REF = (uint32_t)-1;
     static constexpr uint32_t MIN_VALUE_COUNT = EntryCount / 2;
     static constexpr bool self_validate = true;
-    static constexpr bool debug_prints = false;
+    static constexpr bool debug_prints = true;
+
+    struct NodeReference {
+        uint32_t id;
+
+        bool is_null() const { return id == NULL_REF; }
+
+        static NodeReference null_ref() { return NodeReference{NULL_REF}; }
+
+        bool operator==(const NodeReference &o) const { return id == o.id; }
+
+        bool operator!=(const NodeReference &o) const { return !(*this == o); }
+    };
 
     struct Node {
-        uint32_t parent;
+        NodeReference parent;
         FixedVector<Payload, EntryCount> values;
-        FixedVector<uint32_t, EntryCount + 1> children;
+        FixedVector<NodeReference, EntryCount + 1> children;
 
         void pop_back() {
             values.pop_back();
@@ -325,7 +338,7 @@ private:
 
         bool is_leaf() const {
             for(const auto &i : children) {
-                if(i != NULL_REF) {
+                if(!i.is_null()) {
                     return false;
                 }
             }
@@ -348,7 +361,7 @@ private:
                 }
                 for(size_t i = 0; i < children.size() - 1; ++i) {
                     for(size_t j = i + 1; j < children.size(); ++j) {
-                        if(children[i] != NULL_REF) {
+                        if(!children[i].is_null()) {
                             assert(children[i] != children[j]);
                         }
                     }
@@ -358,9 +371,13 @@ private:
     };
 
     struct EntryLocation {
-        uint32_t node_id;
+        NodeReference node_id;
         uint32_t offset;
     };
+
+    Node &get_node(NodeReference ref) { return nodes[ref.id]; }
+
+    const Node &get_node(NodeReference ref) const { return nodes[ref.id]; }
 
     void validate_tree() const {
         validate_nodes();
@@ -369,9 +386,10 @@ private:
     }
 
     void validate_btree_props() const {
-        for(uint32_t node_id = 0; node_id < nodes.size(); ++node_id) {
+        for(uint32_t node_num = 0; node_num < nodes.size(); ++node_num) {
+            NodeReference node_id(node_num);
             if(node_id != root) {
-                assert(nodes[node_id].values.size() >= MIN_VALUE_COUNT);
+                assert(get_node(node_id).values.size() >= MIN_VALUE_COUNT);
             }
         }
     }
@@ -385,24 +403,24 @@ private:
     void validate_links() const {
         for(size_t i = 0; i < nodes.size(); ++i) {
             for(const auto &child : nodes[i].children) {
-                if(child != NULL_REF) {
-                    auto backlink = nodes[child].parent;
-                    assert(backlink == i);
+                if(!child.is_null()) {
+                    auto backlink = get_node(child).parent;
+                    assert(backlink.id == i);
                 }
             }
         }
         if(!is_empty()) {
-            assert(nodes[root].parent == NULL_REF);
+            assert(get_node(root).parent.is_null());
         }
     }
 
-    void insert_recursive(Payload &value, uint32_t current_node_id) {
+    void insert_recursive(Payload &value, NodeReference current_node_id) {
         if(needs_to_split(current_node_id)) {
             current_node_id = split_node(current_node_id);
             debug_print("After split");
             validate_tree();
         }
-        auto &current_node = nodes[current_node_id];
+        auto &current_node = get_node(current_node_id);
         size_t insert_loc = find_insertion_point(current_node, value);
         if(insert_loc < current_node.values.size() && current_node.values[insert_loc] == value) {
             current_node.values[insert_loc] = ::pystd2025::move(value);
@@ -410,7 +428,7 @@ private:
         }
         if(current_node.is_leaf()) {
             current_node.values.insert(insert_loc, ::pystd2025::move(value));
-            current_node.children.push_back(NULL_REF);
+            current_node.children.push_back(NodeReference::null_ref());
             current_node.validate_node();
             ++num_values;
         } else {
@@ -426,18 +444,18 @@ private:
         }
     }
 
-    bool needs_to_split(size_t node) const {
-        assert(node != NULL_REF);
-        return nodes[node].values.is_full();
+    bool needs_to_split(NodeReference node) const {
+        assert(!node.is_null());
+        return get_node(node).values.is_full();
     }
 
-    size_t split_node(size_t node_id) {
-        Node &to_split_before_push = nodes[node_id];
+    NodeReference split_node(NodeReference node_id) {
+        Node &to_split_before_push = get_node(node_id);
         assert(to_split_before_push.values.is_full());
         const size_t to_right = EntryCount / 2 + 1;
 
         Node new_node;
-        uint32_t new_node_id = nodes.size();
+        NodeReference new_node_id{(uint32_t)nodes.size()};
         new_node.parent = to_split_before_push.parent;
         for(size_t i = to_right; i < EntryCount; ++i) {
             new_node.values.push_back(pystd2025::move(to_split_before_push.values[i]));
@@ -451,8 +469,8 @@ private:
         }
         // Fix parent pointers of children.
         for(const auto child_id : new_node.children) {
-            if(child_id != NULL_REF) {
-                auto &child = nodes[child_id];
+            if(!child_id.is_null()) {
+                auto &child = get_node(child_id);
                 assert(child.parent == node_id);
                 child.parent = new_node_id;
             }
@@ -465,29 +483,29 @@ private:
         new_node.validate_node();
         to_split_before_push.validate_node();
         nodes.push_back(::pystd2025::move(new_node)); // Invalidates to_split.
-        Node &to_split = nodes[node_id];
-        uint32_t right_node_id = nodes.size() - 1;
+        Node &to_split = get_node(node_id);
+        NodeReference right_node_id{(uint32_t)nodes.size() - 1};
         if(node_id == root) {
             Node new_root;
-            new_root.parent = NULL_REF;
+            new_root.parent = NodeReference::null_ref();
             new_root.values.push_back(::pystd2025::move(value_to_move));
             new_root.children.push_back(node_id);
             new_root.children.push_back(right_node_id);
             new_root.validate_node();
             nodes.push_back(::pystd2025::move(new_root));
-            uint32_t new_root_id = nodes.size() - 1;
-            nodes[node_id].parent = new_root_id;
-            nodes[right_node_id].parent = new_root_id;
+            NodeReference new_root_id{(uint32_t)nodes.size() - 1};
+            get_node(node_id).parent = new_root_id;
+            get_node(right_node_id).parent = new_root_id;
             root = new_root_id;
             return root;
         } else {
             insert_nonfull(::pystd2025::move(value_to_move), to_split.parent, right_node_id);
-            return nodes[node_id].parent;
+            return get_node(node_id).parent;
         }
     }
 
-    void insert_nonfull(Payload &&value, uint32_t node_id, uint32_t right_id) {
-        auto &node = nodes[node_id];
+    void insert_nonfull(Payload &&value, NodeReference node_id, NodeReference right_id) {
+        auto &node = get_node(node_id);
         assert(!node.values.is_full());
         auto insert_loc = find_insertion_point(node, value);
         if(insert_loc == node.values.size()) {
@@ -509,16 +527,16 @@ private:
         return node.values.size();
     }
 
-    void create_node(Payload &&p, size_t parent_id) {
+    void create_node(Payload &&p, NodeReference parent_id) {
         Node n;
         n.parent = parent_id;
         n.values.try_push_back(::pystd2025::move(p));
-        n.children.try_push_back(NULL_REF);
-        n.children.try_push_back(NULL_REF);
+        n.children.try_push_back(NodeReference::null_ref());
+        n.children.try_push_back(NodeReference::null_ref());
         nodes.push_back(::pystd2025::move(n));
     }
 
-    EntryLocation find_location(const Payload &value, uint32_t node_id) {
+    EntryLocation find_location(const Payload &value, NodeReference node_id) {
         while(true) {
             auto &node = nodes[node_id];
             auto loc = find_insertion_point(value, node_id);
@@ -535,7 +553,7 @@ private:
         }
     }
 
-    void pop_empty_leaf(uint32_t node_id) {
+    void pop_empty_leaf(NodeReference node_id) {
         auto parent_id = nodes[node_id].parent;
         assert(parent_id != NULL_REF);
         auto &parent = nodes[parent_id];
@@ -547,20 +565,20 @@ private:
         swap_to_end_and_pop(node_id);
     }
 
-    void swap_to_end_and_pop(uint32_t node_id) {
-        assert(node_id != NULL_REF);
+    void swap_to_end_and_pop(NodeReference node_id) {
+        assert(!node_id.is_null());
 
         // You can only pop a node if nothing points to it any
         // more. Thus we only need to repoint references to the
         // last node.
-        uint32_t back_id = nodes.size() - 1;
+        NodeReference back_id{(uint32_t)nodes.size() - 1};
         if(root == back_id) {
             root = node_id;
         }
         if(node_id != back_id) {
-            const auto &to_reparent = nodes[back_id];
-            if(to_reparent.parent != NULL_REF) {
-                auto &grandparent = nodes[to_reparent.parent];
+            const auto &to_reparent = get_node(back_id);
+            if(!to_reparent.parent.is_null()) {
+                auto &grandparent = get_node(to_reparent.parent);
                 for(auto &c : grandparent.children) {
                     if(c == back_id) {
                         c = node_id;
@@ -568,18 +586,18 @@ private:
                 }
             }
             for(auto c : to_reparent.children) {
-                if(c != NULL_REF) {
-                    nodes[c].parent = node_id;
+                if(!c.is_null()) {
+                    get_node(c).parent = node_id;
                 }
             }
-            swap(nodes[node_id], nodes[back_id]);
+            swap(get_node(node_id), get_node(back_id));
         }
         nodes.pop_back();
     }
 
     Optional<Payload>
-    extract_value_from_leaf(const Payload &value, uint32_t node_id, uint32_t node_loc) {
-        auto &current_node = nodes[node_id];
+    extract_value_from_leaf(const Payload &value, NodeReference node_id, uint32_t node_loc) {
+        auto &current_node = get_node(node_id);
         assert(current_node.is_leaf());
         assert(node_loc < current_node.values.size());
         assert(node_id == root || current_node.values.size() > MIN_VALUE_COUNT);
@@ -593,26 +611,27 @@ private:
         }
     }
 
-    Payload extract_value_from_internal(const Payload &value, uint32_t node_id, uint32_t node_loc) {
-        auto &current_node = nodes[node_id];
+    Payload
+    extract_value_from_internal(const Payload &value, NodeReference node_id, uint32_t node_loc) {
+        auto &current_node = get_node(node_id);
         assert(!current_node.is_leaf());
         assert(current_node.values[node_loc] == value);
-        auto &p = nodes[node_id];
+        auto &p = get_node(node_id);
         auto lc_id = p.children[node_loc];
-        auto &lc = nodes[lc_id];
+        auto &lc = get_node(lc_id);
         auto rc_id = p.children[node_loc + 1];
-        auto &rc = nodes[rc_id];
+        auto &rc = get_node(rc_id);
 
         if(lc.size() > MIN_VALUE_COUNT) {
             auto predecessor_id = find_predecessor(lc_id);
-            auto &predecessor = nodes[predecessor_id];
+            auto &predecessor = get_node(predecessor_id);
             Payload return_value = ::pystd2025::move(p.values[node_loc]);
             p.values[node_loc] = ::pystd2025::move(predecessor.values.back());
             predecessor.pop_back();
             return return_value;
         } else if(rc.size() > MIN_VALUE_COUNT) {
             auto successor_id = find_successor(rc_id);
-            auto &successor = nodes[successor_id];
+            auto &successor = get_node(successor_id);
             Payload return_value = ::pystd2025::move(p.values[node_loc]);
             p.values[node_loc] = ::pystd2025::move(successor.values.front());
             successor.pop_front();
@@ -627,16 +646,16 @@ private:
         abort();
     }
 
-    uint32_t find_predecessor(uint32_t node_id) const {
-        while(!nodes[node_id].is_leaf()) {
-            node_id = nodes[node_id].children.back();
+    NodeReference find_predecessor(NodeReference node_id) const {
+        while(!get_node(node_id).is_leaf()) {
+            node_id = get_node(node_id).children.back();
         }
         return node_id;
     }
 
-    uint32_t find_successor(uint32_t node_id) const {
-        while(!nodes[node_id].is_leaf()) {
-            node_id = nodes[node_id].children.front();
+    NodeReference find_successor(NodeReference node_id) const {
+        while(!get_node(node_id).is_leaf()) {
+            node_id = get_node(node_id).children.front();
         }
         return node_id;
     }
@@ -647,8 +666,8 @@ private:
         Optional<uint32_t> child_loc;
     };
 
-    NodeSearchResult search_node(const Payload &value, uint32_t node_id) {
-        auto &current_node = nodes[node_id];
+    NodeSearchResult search_node(const Payload &value, NodeReference node_id) {
+        auto &current_node = get_node(node_id);
         NodeSearchResult result;
         result.loc = find_insertion_point(current_node, value);
         if(result.loc == current_node.values.size()) {
@@ -664,8 +683,8 @@ private:
         return result;
     }
 
-    Optional<Payload> extract_value(const Payload &value, uint32_t node_id) {
-        auto &current_node = nodes[node_id];
+    Optional<Payload> extract_value(const Payload &value, NodeReference node_id) {
+        auto &current_node = get_node(node_id);
         NodeSearchResult search_result = search_node(value, node_id);
         if(current_node.is_leaf()) {
             // Case 1 in Cormen-Leiserson-Rivest
@@ -680,26 +699,28 @@ private:
 
         const uint32_t child_loc_to_process =
             search_result.child_loc ? *search_result.child_loc : current_node.children.size() - 1;
-        const uint32_t child_to_process = current_node.children[child_loc_to_process];
+        const NodeReference child_to_process = current_node.children[child_loc_to_process];
 
-        if(nodes[child_to_process].size() <= MIN_VALUE_COUNT) {
+        if(get_node(child_to_process).size() <= MIN_VALUE_COUNT) {
             const uint32_t left_sibling_loc =
-                child_loc_to_process > 0 ? child_loc_to_process - 1 : NULL_REF;
+                child_loc_to_process > 0 ? child_loc_to_process - 1 : NULL_LOC;
             const uint32_t right_sibling_loc =
-                child_loc_to_process < child_count - 1 ? child_loc_to_process + 1 : NULL_REF;
+                child_loc_to_process < child_count - 1 ? child_loc_to_process + 1 : NULL_LOC;
 
-            const uint32_t left_sibling_id =
-                left_sibling_loc != NULL_REF ? current_node.children[left_sibling_loc] : NULL_REF;
-            const uint32_t right_sibling_id =
-                right_sibling_loc != NULL_REF ? current_node.children[right_sibling_loc] : NULL_REF;
+            const NodeReference left_sibling_id = left_sibling_loc != NULL_LOC
+                                                      ? current_node.children[left_sibling_loc]
+                                                      : NodeReference::null_ref();
+            const NodeReference right_sibling_id = right_sibling_loc != NULL_LOC
+                                                       ? current_node.children[right_sibling_loc]
+                                                       : NodeReference::null_ref();
 
-            if(left_sibling_id != NULL_REF && nodes[left_sibling_id].size() > MIN_VALUE_COUNT) {
+            if(!left_sibling_id.is_null() && get_node(left_sibling_id).size() > MIN_VALUE_COUNT) {
                 shift_node_to_right(node_id, search_result.loc - 1);
-            } else if(right_sibling_id != NULL_REF &&
-                      nodes[right_sibling_id].size() > MIN_VALUE_COUNT) {
+            } else if(!right_sibling_id.is_null() &&
+                      get_node(right_sibling_id).size() > MIN_VALUE_COUNT) {
                 shift_node_to_left(node_id, search_result.loc);
             } else {
-                uint32_t merged_node_id;
+                NodeReference merged_node_id;
                 if(search_result.loc == current_node.values.size()) {
                     merged_node_id =
                         merge_siblings_of_entry(node_id, current_node.values.size() - 1);
@@ -712,53 +733,53 @@ private:
         return extract_value(value, child_to_process);
     }
 
-    void shift_node_to_right(uint32_t node_id, uint32_t node_loc) {
-        auto &p = nodes[node_id];
+    void shift_node_to_right(NodeReference node_id, uint32_t node_loc) {
+        auto &p = get_node(node_id);
         const auto left_sibling_id = p.children[node_loc];
-        auto &l = nodes[left_sibling_id];
+        auto &l = get_node(left_sibling_id);
         const auto right_sibling_id = p.children[node_loc + 1];
-        auto &r = nodes[right_sibling_id];
+        auto &r = get_node(right_sibling_id);
         const auto to_reparent_id = l.children.back();
         r.values.insert(0, pystd2025::move(p.values[node_loc]));
         p.values[node_loc] = pystd2025::move(l.values.back());
         r.children.insert(0, pystd2025::move(l.children.back()));
-        if(to_reparent_id != NULL_REF) {
-            assert(nodes[to_reparent_id].parent == left_sibling_id);
-            nodes[to_reparent_id].parent = right_sibling_id;
+        if(!to_reparent_id.is_null()) {
+            assert(get_node(to_reparent_id).parent == left_sibling_id);
+            get_node(to_reparent_id).parent = right_sibling_id;
         }
         l.values.pop_back();
         l.children.pop_back();
     }
 
-    void shift_node_to_left(uint32_t node_id, uint32_t node_loc) {
-        auto &p = nodes[node_id];
+    void shift_node_to_left(NodeReference node_id, uint32_t node_loc) {
+        auto &p = get_node(node_id);
         const auto left_sibling_id = p.children[node_loc];
-        auto &l = nodes[left_sibling_id];
+        auto &l = get_node(left_sibling_id);
         const auto right_sibling_id = p.children[node_loc + 1];
-        auto &r = nodes[right_sibling_id];
+        auto &r = get_node(right_sibling_id);
         const auto to_reparent_id = r.children.front();
         l.values.push_back(pystd2025::move(p.values[node_loc]));
         p.values[node_loc] = pystd2025::move(r.values.front());
         l.children.push_back(pystd2025::move(r.children.front()));
-        if(to_reparent_id != NULL_REF) {
-            assert(nodes[to_reparent_id].parent == right_sibling_id);
-            nodes[to_reparent_id].parent = left_sibling_id;
+        if(!to_reparent_id.is_null()) {
+            assert(get_node(to_reparent_id).parent == right_sibling_id);
+            get_node(to_reparent_id).parent = left_sibling_id;
         }
         r.values.pop_front();
         r.children.pop_front();
     }
 
-    void reset_parent_for_children(uint32_t node_id) {
+    void reset_parent_for_children(NodeReference node_id) {
 
-        for(auto &c_id : nodes[node_id].children) {
-            if(c_id != NULL_REF) {
-                nodes[c_id].parent = node_id;
+        for(auto &c_id : get_node(node_id).children) {
+            if(!c_id.is_null()) {
+                get_node(c_id).parent = node_id;
             }
         }
     }
 
-    uint32_t merge_siblings_of_entry(uint32_t node_id, uint32_t node_loc) {
-        auto &p = nodes[node_id];
+    NodeReference merge_siblings_of_entry(NodeReference node_id, uint32_t node_loc) {
+        auto &p = get_node(node_id);
         assert(node_loc < p.values.size());
 
         if(node_id == root && p.values.size() == 1) {
@@ -766,8 +787,8 @@ private:
             // Root fixup will be done later.
             const auto left_tree_id = p.children[0];
             const auto right_tree_id = p.children[1];
-            auto &lroot = nodes[left_tree_id];
-            auto &rroot = nodes[right_tree_id];
+            auto &lroot = get_node(left_tree_id);
+            auto &rroot = get_node(right_tree_id);
             lroot.values.push_back(::pystd2025::move(p.values.front()));
             lroot.values.move_append(rroot.values);
             lroot.children.move_append(rroot.children);
@@ -778,17 +799,17 @@ private:
             return left_tree_id;
         }
 
-        const uint32_t left_sibling_id = p.children[node_loc];
-        const uint32_t right_sibling_id = p.children[node_loc + 1];
-        auto &l = nodes[left_sibling_id];
-        auto &r = nodes[right_sibling_id];
+        const NodeReference left_sibling_id = p.children[node_loc];
+        const NodeReference right_sibling_id = p.children[node_loc + 1];
+        auto &l = get_node(left_sibling_id);
+        auto &r = get_node(right_sibling_id);
         assert(l.values.size() + r.values.size() + 1 <= EntryCount);
         l.values.push_back(p.values[node_loc]);
         p.values.delete_at(node_loc);
         p.children.delete_at(node_loc + 1);
         l.values.move_append(r.values);
         l.children.move_append(r.children);
-        const bool left_sibling_is_last = left_sibling_id == nodes.size() - 1;
+        const bool left_sibling_is_last = left_sibling_id.id == nodes.size() - 1;
         reset_parent_for_children(left_sibling_id);
         swap_to_end_and_pop(right_sibling_id);
         if(left_sibling_is_last) {
@@ -802,21 +823,21 @@ private:
         if(is_empty()) {
             return;
         }
-        if(nodes[root].values.is_empty()) {
-            assert(nodes[root].children.size() == 1);
-            auto new_root = nodes[root].children[0];
+        if(get_node(root).values.is_empty()) {
+            assert(get_node(root).children.size() == 1);
+            auto new_root = get_node(root).children[0];
             swap_to_end_and_pop(root);
             root = new_root;
-            nodes[root].parent = NULL_REF;
+            get_node(root).parent = NodeReference::null_ref();
         }
     }
 
-    void swap_nodes(uint32_t node_one, uint32_t node_two) {}
+    void swap_nodes(NodeReference node_one, NodeReference node_two) {}
 
     static_assert(EntryCount % 2 == 1);
     static_assert(EntryCount >= 3);
 
-    uint32_t root = NULL_REF;
+    NodeReference root = NodeReference::null_ref();
     size_t num_values = 0;
     Vector<Node> nodes;
 };
