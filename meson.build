@@ -13,5 +13,8 @@ executable('pystd', 'main.cpp',
 executable('maptime', 'maptime.cpp',
   dependencies: stdlib_dep)
 
+executable('btreetime', 'btreetime.cpp',
+  dependencies: stdlib_dep)
+
 subdir('test')
 subdir('tools')
