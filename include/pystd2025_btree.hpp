@@ -269,34 +269,42 @@ public:
 
     size_t is_empty() const { return size() == 0; }
 
+    void reserve(size_t num_items) { nodes.reserve(num_items); }
+
+    bool contains(const Payload &value) const { return lookup(value); }
+
     void debug_print(const char *msg) const {
-        if(msg) {
-            printf("%s\n", msg);
-        }
-        printf("----\nB-tree with %d as root, %d nodes and %d elements.\n\n",
-               root,
-               (int)nodes.size(),
-               (int)size());
-        int32_t node_id = -1;
-        for(const auto &node : nodes) {
-            ++node_id;
-            printf("Node %d, parent %d size %d:\n", node_id, node.parent, (int)node.values.size());
-            for(const auto &v : node.values) {
-                printf(" %d", v);
+        if constexpr(debug_prints) {
+            if(msg) {
+                printf("%s\n", msg);
+            }
+            printf("----\nB-tree with %d as root, %d nodes and %d elements.\n\n",
+                   root,
+                   (int)nodes.size(),
+                   (int)size());
+            int32_t node_id = -1;
+            for(const auto &node : nodes) {
+                ++node_id;
+                printf(
+                    "Node %d, parent %d size %d:\n", node_id, node.parent, (int)node.values.size());
+                for(const auto &v : node.values) {
+                    printf(" %d", v);
+                }
+                printf("\n");
+                for(const auto &v : node.children) {
+                    printf(" %d", v);
+                }
+                printf("\n");
             }
             printf("\n");
-            for(const auto &v : node.children) {
-                printf(" %d", v);
-            }
-            printf("\n");
         }
-        printf("\n");
     }
 
 private:
     static constexpr uint32_t NULL_REF = (uint32_t)-1;
     static constexpr uint32_t MIN_VALUE_COUNT = EntryCount / 2;
     static constexpr bool self_validate = true;
+    static constexpr bool debug_prints = false;
 
     struct Node {
         uint32_t parent;
