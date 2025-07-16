@@ -269,7 +269,7 @@ public:
 
     size_t is_empty() const { return size() == 0; }
 
-    void reserve(size_t num_items) { nodes.reserve(num_items); }
+    void reserve(size_t num_items) { nodes.reserve((num_items + EntryCount - 1) / EntryCount); }
 
     bool contains(const Payload &value) const { return lookup(value); }
 
@@ -285,8 +285,10 @@ public:
             int32_t node_id = -1;
             for(const auto &node : nodes) {
                 ++node_id;
-                printf(
-                    "Node %d, parent %d size %d:\n", node_id, node.parent.id, (int)node.values.size());
+                printf("Node %d, parent %d size %d:\n",
+                       node_id,
+                       node.parent.id,
+                       (int)node.values.size());
                 for(const auto &v : node.values) {
                     printf(" %d", v);
                 }
