@@ -294,7 +294,7 @@ public:
                 }
                 printf("\n");
                 for(const auto &v : node.children) {
-                    printf(" %d", v.id);
+                    printf(" %d:%d", v.id, v.to_leaf);
                 }
                 printf("\n");
             }
@@ -304,13 +304,14 @@ public:
 
 private:
     static constexpr uint32_t NULL_LOC = (uint32_t)-1;
-    static constexpr uint32_t NULL_REF = (uint32_t)-1;
+    static constexpr uint32_t NULL_REF = ((uint32_t)-1) >> 1;
     static constexpr uint32_t MIN_VALUE_COUNT = EntryCount / 2;
     static constexpr bool self_validate = true;
     static constexpr bool debug_prints = true;
 
     struct NodeReference {
-        uint32_t id;
+        uint32_t id : 31;
+        bool to_leaf : 1;
 
         bool is_null() const { return id == NULL_REF; }
 
@@ -409,10 +410,16 @@ private:
     void validate_links() const {
         if(self_validate) {
             for(size_t i = 0; i < nodes.size(); ++i) {
-                for(const auto &child : nodes[i].children) {
+                const auto &node = nodes[i];
+                assert(!node.parent.to_leaf);
+                for(const auto &child : node.children) {
                     if(!child.is_null()) {
-                        auto backlink = get_node(child).parent;
+                        auto &c = get_node(child);
+                        auto backlink = c.parent;
                         assert(backlink.id == i);
+                        if(c.is_leaf()) {
+                            assert(child.to_leaf);
+                        }
                     }
                 }
             }
@@ -424,6 +431,7 @@ private:
 
     void insert_recursive(Payload &value, NodeReference current_node_id) {
         if(needs_to_split(current_node_id)) {
+            debug_print("Before split");
             current_node_id = split_node(current_node_id);
             debug_print("After split");
             validate_tree();
@@ -462,6 +470,7 @@ private:
         assert(to_split_before_push.values.is_full());
         const size_t to_right = EntryCount / 2 + 1;
 
+        const bool node_to_split_is_leaf = to_split_before_push.is_leaf();
         Node new_node;
         NodeReference new_node_id{(uint32_t)nodes.size()};
         new_node.parent = to_split_before_push.parent;
@@ -490,15 +499,19 @@ private:
         assert(to_split_before_push.children.size() == EntryCount / 2 + 1);
         new_node.validate_node();
         to_split_before_push.validate_node();
-        nodes.push_back(::pystd2025::move(new_node)); // Invalidates to_split.
+        nodes.push_back(::pystd2025::move(new_node)); // Invalidates to_split_before_push.
         Node &to_split = get_node(node_id);
         NodeReference right_node_id{(uint32_t)nodes.size() - 1};
         if(node_id == root) {
             Node new_root;
             new_root.parent = NodeReference::null_ref();
             new_root.values.push_back(::pystd2025::move(value_to_move));
-            new_root.children.push_back(node_id);
-            new_root.children.push_back(right_node_id);
+            NodeReference left_ref = node_id;
+            left_ref.to_leaf = node_to_split_is_leaf;
+            new_root.children.push_back(left_ref);
+            NodeReference right_ref = right_node_id;
+            right_ref.to_leaf = node_to_split_is_leaf;
+            new_root.children.push_back(right_ref);
             new_root.validate_node();
             nodes.push_back(::pystd2025::move(new_root));
             NodeReference new_root_id{(uint32_t)nodes.size() - 1};
@@ -508,7 +521,30 @@ private:
             return root;
         } else {
             insert_nonfull(::pystd2025::move(value_to_move), to_split.parent, right_node_id);
+            child_was_split(to_split.parent, node_id, right_node_id);
             return get_node(node_id).parent;
+        }
+    }
+
+    void child_was_split(NodeReference parent,
+                         NodeReference node_that_was_split,
+                         NodeReference new_node) {
+        if(parent.is_null()) {
+            return;
+        }
+        const bool split_is_leaf = get_node(node_that_was_split).is_leaf();
+        const bool new_is_leaf = get_node(new_node).is_leaf();
+        for(auto &c : get_node(parent).children) {
+            if(c.id == node_that_was_split.id) {
+                c.to_leaf = split_is_leaf;
+                break;
+            }
+        }
+        for(auto &c : get_node(parent).children) {
+            if(c.id == new_node.id) {
+                c.to_leaf = new_is_leaf;
+                break;
+            }
         }
     }
 
