@@ -388,31 +388,37 @@ private:
     }
 
     void validate_btree_props() const {
-        for(uint32_t node_num = 0; node_num < nodes.size(); ++node_num) {
-            NodeReference node_id(node_num);
-            if(node_id != root) {
-                assert(get_node(node_id).values.size() >= MIN_VALUE_COUNT);
+        if(self_validate) {
+            for(uint32_t node_num = 0; node_num < nodes.size(); ++node_num) {
+                NodeReference node_id(node_num);
+                if(node_id != root) {
+                    assert(get_node(node_id).values.size() >= MIN_VALUE_COUNT);
+                }
             }
         }
     }
 
     void validate_nodes() const {
-        for(const auto &n : nodes) {
-            n.validate_node();
+        if(self_validate) {
+            for(const auto &n : nodes) {
+                n.validate_node();
+            }
         }
     }
 
     void validate_links() const {
-        for(size_t i = 0; i < nodes.size(); ++i) {
-            for(const auto &child : nodes[i].children) {
-                if(!child.is_null()) {
-                    auto backlink = get_node(child).parent;
-                    assert(backlink.id == i);
+        if(self_validate) {
+            for(size_t i = 0; i < nodes.size(); ++i) {
+                for(const auto &child : nodes[i].children) {
+                    if(!child.is_null()) {
+                        auto backlink = get_node(child).parent;
+                        assert(backlink.id == i);
+                    }
                 }
             }
-        }
-        if(!is_empty()) {
-            assert(get_node(root).parent.is_null());
+            if(!is_empty()) {
+                assert(get_node(root).parent.is_null());
+            }
         }
     }
 
