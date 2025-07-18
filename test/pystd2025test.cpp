@@ -11,10 +11,12 @@ const char daikatana[] = "大刀";
 
 }
 
+int breakpoint_opportunity(int number) { return number; }
+
 #define ASSERT_WITH(statement, message)                                                            \
     if(!(statement)) {                                                                             \
         printf("%s:%d %s\n", __FILE__, __LINE__, message);                                         \
-        return 1;                                                                                  \
+        return breakpoint_opportunity(1);                                                          \
     }
 
 #define ASSERT(statement) ASSERT_WITH((statement), "Check failed.");
@@ -682,16 +684,20 @@ int test_btree1() {
     ASSERT(btree.is_empty());
     for(int i = 0; i < arr_size; ++i) {
         btree.insert(shuffled[i]);
+        for(int j = 0; j < arr_size; ++j) {
+            auto *valptr = btree.lookup(shuffled[j]);
+            if(j <= i) {
+                ASSERT(valptr);
+                ASSERT(*valptr == shuffled[j]);
+            } else {
+                ASSERT(!valptr);
+            }
+        }
     }
     ASSERT(btree.size() == 26);
     btree.insert(7);
     ASSERT(btree.size() == 26);
 
-    for(int i = 0; i < arr_size; ++i) {
-        auto *valptr = btree.lookup(shuffled[i]);
-        ASSERT(valptr);
-        ASSERT(*valptr == shuffled[i]);
-    }
     ASSERT(!btree.lookup(100));
 
     size_t expected_size = 26;

@@ -216,6 +216,7 @@ public:
             return;
         }
         insert_recursive(value, root);
+        debug_print("After insert");
         validate_tree();
     }
 
@@ -223,7 +224,7 @@ public:
         if(is_empty()) {
             return;
         }
-        const uint32_t poi = 22;
+        const uint32_t poi = 17;
         if(value == poi) {
             debug_print("At point of interest.");
         }
@@ -244,12 +245,13 @@ public:
         }
         auto current_id = root;
         while(true) {
-            if(current_id.is_null()) {
-                return nullptr;
-            }
+            assert(!current_id.is_null());
             const auto &current_common = get_node_common(current_id);
             auto node_loc = find_insertion_point(current_common, value);
             if(current_id.to_leaf) {
+                if(node_loc >= current_common.values.size()) {
+                    return nullptr;
+                }
                 const auto &prospective_value = current_common.values[node_loc];
                 if(value < prospective_value) {
                     return nullptr;
@@ -293,19 +295,21 @@ public:
             if(msg) {
                 printf("%s\n", msg);
             }
-            printf(
-                "----\nB-tree with %d as root, %d internal nodes, %d leaves and %d elements.\n\n",
-                root.id,
-                (int)internals.size(),
-                (int)leaves.size(),
-                (int)size());
+            printf("----\nB-tree with %d:%d as root, %d internal nodes, %d leaves and %d "
+                   "elements.\n\n",
+                   root.id,
+                   (int)root.to_leaf,
+                   (int)internals.size(),
+                   (int)leaves.size(),
+                   (int)size());
             int32_t node_id = -1;
             printf("Internal nodes\n");
             for(const auto &node : internals) {
                 ++node_id;
-                printf("Node %d, parent %d size %d:\n",
+                printf("Inode %d:0, parent %d:%d size %d:\n",
                        node_id,
                        node.parent.id,
+                       (int)node.parent.to_leaf,
                        (int)node.values.size());
                 for(const auto &v : node.values) {
                     printf(" %d", v);
@@ -316,12 +320,14 @@ public:
                 }
                 printf("\n");
             }
-            printf("Leaves\n");
+            printf("\nLeaves\n");
+            node_id = -1;
             for(const auto &node : leaves) {
                 ++node_id;
-                printf("Node %d, parent %d size %d:\n",
+                printf("Lnode %d:1, parent %d:%d size %d:\n",
                        node_id,
                        node.parent.id,
+                       (int)node.parent.to_leaf,
                        (int)node.values.size());
                 for(const auto &v : node.values) {
                     printf(" %d", v);
@@ -347,7 +353,7 @@ private:
 
         static NodeReference null_ref() { return NodeReference{NULL_REF, false}; }
 
-        bool operator==(const NodeReference &o) const { return id == o.id; }
+        bool operator==(const NodeReference &o) const { return id == o.id && to_leaf == o.to_leaf; }
 
         bool operator!=(const NodeReference &o) const { return !(*this == o); }
     };
@@ -432,14 +438,14 @@ private:
 
     NodeCommon &get_node_common(NodeReference ref) {
         if(ref.to_leaf) {
-            return static_cast<NodeCommon &>(internals[ref.id]);
+            return static_cast<NodeCommon &>(leaves[ref.id]);
         }
         return static_cast<NodeCommon &>(internals[ref.id]);
     }
 
     const NodeCommon &get_node_common(NodeReference ref) const {
         if(ref.to_leaf) {
-            return static_cast<const NodeCommon &>(internals[ref.id]);
+            return static_cast<const NodeCommon &>(leaves[ref.id]);
         }
         return static_cast<const NodeCommon &>(internals[ref.id]);
     }
@@ -478,8 +484,8 @@ private:
                     assert(get_internal(node_id).values.size() >= MIN_VALUE_COUNT);
                 }
             }
-            for(uint32_t lnode_num = 0; lnode_num < internals.size(); ++lnode_num) {
-                NodeReference node_id(lnode_num, false);
+            for(uint32_t lnode_num = 0; lnode_num < leaves.size(); ++lnode_num) {
+                NodeReference node_id(lnode_num, true);
                 if(node_id != root) {
                     assert(get_leaf(node_id).values.size() >= MIN_VALUE_COUNT);
                 }
@@ -559,7 +565,43 @@ private:
         }
     }
 
-    NodeReference split_leaf_node(NodeReference node_id) { abort(); }
+    NodeReference split_leaf_node(NodeReference node_id) {
+        const bool splitting_root = node_id == root;
+        auto &to_split = get_leaf(node_id);
+        assert(to_split.values.size() == EntryCount);
+        NodeReference parent_id;
+        if(splitting_root) {
+            assert(leaves.size() == 1);
+            assert(internals.size() == 0);
+            InternalNode new_root;
+            new_root.parent = NodeReference::null_ref();
+            new_root.children.push_back(node_id);
+            internals.push_back(pystd2025::move(new_root));
+            parent_id = NodeReference{0, false};
+            root = parent_id;
+        } else {
+            parent_id = to_split.parent;
+        }
+        NodeReference new_leaf_id{(uint32_t)leaves.size(), true};
+
+        LeafNode new_leaf;
+
+        new_leaf.parent = parent_id;
+        to_split.parent = parent_id;
+        Payload value_to_parent = pystd2025::move(to_split.values[EntryCount / 2]);
+        // new_root.children.push_back(node_id);
+        // new_root.children.push_back(new_leaf_id);
+        for(size_t i = EntryCount / 2 + 1; i < EntryCount; ++i) {
+            new_leaf.values.push_back(to_split.values[i]);
+        }
+        while(to_split.values.size() > (EntryCount / 2)) {
+            to_split.values.pop_back();
+        }
+        leaves.push_back(pystd2025::move(new_leaf));
+
+        insert_nonfull(pystd2025::move(value_to_parent), parent_id, new_leaf_id);
+        return parent_id;
+    }
 
     NodeReference split_internal_node(NodeReference node_id) {
         InternalNode &to_split_before_push = get_internal(node_id);
@@ -711,7 +753,31 @@ private:
         }
     }
 
-    void swap_to_end_and_pop_leaf(NodeReference node_id) { abort(); }
+    void swap_to_end_and_pop_leaf(NodeReference node_id) {
+        // You can only pop a node if nothing points to it any
+        // more. Thus we only need to repoint references to the
+        // last node.
+        NodeReference back_id;
+        assert(node_id.to_leaf);
+        back_id.id = (uint32_t)leaves.size() - 1;
+        back_id.to_leaf = true;
+        if(root == back_id) {
+            root = node_id;
+        }
+        if(node_id != back_id) {
+            const auto &to_reparent = get_leaf(back_id);
+            if(!to_reparent.parent.is_null()) {
+                auto &grandparent = get_internal(to_reparent.parent);
+                for(auto &c : grandparent.children) {
+                    if(c == back_id) {
+                        c = node_id;
+                    }
+                }
+            }
+            swap(get_leaf(node_id), get_leaf(back_id));
+        }
+        leaves.pop_back();
+    }
 
     void swap_to_end_and_pop_internal(NodeReference node_id) {
         // You can only pop a node if nothing points to it any
@@ -748,9 +814,10 @@ private:
     extract_value_from_leaf(const Payload &value, NodeReference node_id, uint32_t node_loc) {
         auto &current_node = get_leaf(node_id);
         assert(current_node.is_leaf());
-        assert(node_loc < current_node.values.size());
+        assert(node_loc < current_node.values.size() + 1);
         assert(node_id == root || current_node.values.size() > MIN_VALUE_COUNT);
-        if(current_node.values[node_loc] == value) {
+        const auto &prospective = current_node.values[node_loc];
+        if(!(prospective < value) && !(value < prospective)) {
             Optional<Payload> value = ::pystd2025::move(current_node.values[node_loc]);
             current_node.delete_at(node_loc);
             return value;
@@ -971,6 +1038,7 @@ private:
         const NodeReference left_sibling_id = p.children[node_loc];
         const NodeReference right_sibling_id = p.children[node_loc + 1];
 
+        const bool merging_leaves = left_sibling_id.to_leaf;
 #if 0
         if(node_id == root && p.values.size() == 1) {
             // Special case, deleting the last value in root.
@@ -998,28 +1066,25 @@ private:
             }
         }
 #endif
-        if(left_sibling_id.to_leaf) {
-            auto &l = get_leaf(left_sibling_id);
-            auto &r = get_leaf(right_sibling_id);
-            abort();
-        } else {
-            auto &l = get_internal(left_sibling_id);
-            auto &r = get_internal(right_sibling_id);
-            assert(l.values.size() + r.values.size() + 1 <= EntryCount);
-            l.values.push_back(p.values[node_loc]);
-            p.values.delete_at(node_loc);
-            p.children.delete_at(node_loc + 1);
-            l.values.move_append(r.values);
-            l.children.move_append(r.children);
-            const bool left_sibling_is_last = left_sibling_id.id == internals.size() - 1;
-            reset_parent_for_children(left_sibling_id);
-            swap_to_end_and_pop(right_sibling_id);
-            if(left_sibling_is_last) {
-                // Because they got swapped.
-                return right_sibling_id;
-            }
-            return left_sibling_id;
+        auto &l = get_node_common(left_sibling_id);
+        auto &r = get_node_common(right_sibling_id);
+        assert(l.values.size() + r.values.size() + 1 <= EntryCount);
+        l.values.push_back(p.values[node_loc]);
+        p.values.delete_at(node_loc);
+        p.children.delete_at(node_loc + 1);
+        l.values.move_append(r.values);
+        if(!merging_leaves) {
+            static_cast<InternalNode &>(l).children.move_append(
+                static_cast<InternalNode &>(r).children);
         }
+        const bool left_sibling_is_last =
+            left_sibling_id.id == merging_leaves ? leaves.size() - 1 : internals.size() - 1;
+        reset_parent_for_children(left_sibling_id);
+        swap_to_end_and_pop(right_sibling_id);
+        if(left_sibling_is_last) {
+            return right_sibling_id;
+        }
+        return left_sibling_id;
     }
 
     void root_fixup() {
