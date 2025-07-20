@@ -342,8 +342,8 @@ private:
     static constexpr uint32_t NULL_LOC = (uint32_t)-1;
     static constexpr uint32_t NULL_REF = ((uint32_t)-1) >> 1;
     static constexpr uint32_t MIN_VALUE_COUNT = EntryCount / 2;
-    static constexpr bool self_validate = true;
-    static constexpr bool debug_prints = true;
+    static constexpr bool self_validate = false;
+    static constexpr bool debug_prints = false;
 
     struct NodeReference {
         uint32_t id : 31;
