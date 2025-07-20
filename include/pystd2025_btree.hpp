@@ -224,7 +224,7 @@ public:
         if(is_empty()) {
             return;
         }
-        const uint32_t poi = 17;
+        const uint32_t poi = 23;
         if(value == poi) {
             debug_print("At point of interest.");
         }
@@ -816,6 +816,9 @@ private:
         assert(current_node.is_leaf());
         assert(node_loc < current_node.values.size() + 1);
         assert(node_id == root || current_node.values.size() > MIN_VALUE_COUNT);
+        if(node_loc >= current_node.values.size()) {
+            return Optional<Payload>{};
+        }
         const auto &prospective = current_node.values[node_loc];
         if(!(prospective < value) && !(value < prospective)) {
             Optional<Payload> value = ::pystd2025::move(current_node.values[node_loc]);
@@ -1039,33 +1042,6 @@ private:
         const NodeReference right_sibling_id = p.children[node_loc + 1];
 
         const bool merging_leaves = left_sibling_id.to_leaf;
-#if 0
-        if(node_id == root && p.values.size() == 1) {
-            // Special case, deleting the last value in root.
-            // Root fixup will be done later.
-            if(node_id.to_leaf) {
-                abort();
-            } else {
-                auto &p = static_cast<InternalNode &>(pc);
-                const auto left_tree_id = p.children[0];
-                const auto right_tree_id = p.children[1];
-                auto &lroot_c = get_node_common(left_tree_id);
-                auto &rroot_c = get_node_common(right_tree_id);
-                lroot_c.values.push_back(::pystd2025::move(p.values.back()));
-                lroot_c.values.move_append(rroot_c.values);
-                p.values.pop_back();
-                if(!left_tree_id.to_leaf) {
-                    auto &lroot = static_cast<InternalNode&>(lroot_c);
-                    auto &rroot = static_cast<InternalNode&>(rroot_c);
-                    lroot.children.move_append(rroot.children);
-                    p.children.pop_back();
-                }
-                reset_parent_for_children(left_tree_id);
-                swap_to_end_and_pop(right_tree_id);
-                return left_tree_id;
-            }
-        }
-#endif
         auto &l = get_node_common(left_sibling_id);
         auto &r = get_node_common(right_sibling_id);
         assert(l.values.size() + r.values.size() + 1 <= EntryCount);
@@ -1078,7 +1054,7 @@ private:
                 static_cast<InternalNode &>(r).children);
         }
         const bool left_sibling_is_last =
-            left_sibling_id.id == merging_leaves ? leaves.size() - 1 : internals.size() - 1;
+            left_sibling_id.id == (merging_leaves ? leaves.size() - 1 : internals.size() - 1);
         reset_parent_for_children(left_sibling_id);
         swap_to_end_and_pop(right_sibling_id);
         if(left_sibling_is_last) {
