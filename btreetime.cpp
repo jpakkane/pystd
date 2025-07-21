@@ -9,19 +9,21 @@
 
 #include <pystd2025_btree.hpp>
 
+const int BTREE_NODE_SIZE = 2047;
+
 double to_double(const timespec &t) {
     double res = t.tv_sec;
     res += t.tv_nsec / 1.0e9;
     return res;
 }
 
-void build(pystd2025::BTree<int, 5> &map) {
+void build(pystd2025::BTree<int, BTREE_NODE_SIZE> &map) {
     for(size_t i = 0; i < NUM_ENTRIES; ++i) {
         map.insert(entries[i]);
     }
 }
 
-void query(pystd2025::BTree<int, 5> &map) {
+void query(pystd2025::BTree<int, BTREE_NODE_SIZE> &map) {
     for(size_t i = 0; i < NUM_QUERIES; ++i) {
         if(!map.contains(queries[i])) {
             fprintf(stderr, "Query failure!\n");
@@ -31,7 +33,7 @@ void query(pystd2025::BTree<int, 5> &map) {
 }
 
 void measure() {
-    pystd2025::BTree<int, 5> map;
+    pystd2025::BTree<int, BTREE_NODE_SIZE> map;
     timespec starttime, startquerytime, endtime;
     map.reserve(NUM_ENTRIES);
     clock_gettime(CLOCK_MONOTONIC, &starttime);
