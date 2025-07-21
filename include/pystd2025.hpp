@@ -2625,6 +2625,23 @@ template<typename T> void sort_relocatable(T *data, size_t bufsize) {
     qsort(data, bufsize, sizeof(T), ordering);
 }
 
+template<typename It, typename Value> It lower_bound(It first, It last, const Value &value) {
+    It it{};
+    auto count = last - first;
+    while(count > 0) {
+        it = first;
+        auto step = count / 2;
+        it += step;
+        if(*it < value) {
+            first = ++it;
+            count -= step + 1;
+        } else {
+            count = step;
+        }
+    }
+    return it;
+}
+
 double clamp(double val, double lower, double upper);
 int64_t clamp(int64_t val, int64_t lower, int64_t upper);
 

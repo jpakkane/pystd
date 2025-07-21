@@ -701,12 +701,13 @@ private:
     }
 
     uint32_t find_insertion_point(const NodeCommon &node, const Payload &value) const {
-        for(size_t i = 0; i < node.values.size(); ++i) {
-            if(!(node.values[i] < value)) {
-                return i;
-            }
+        const auto &value_array = node.values;
+        if(node.values.is_empty()) {
+            return 0;
         }
-        return node.values.size();
+        auto it = lower_bound(value_array.begin(), value_array.end(), value);
+
+        return &(*it) - &node.values.front();
     }
 
     void create_root_node(Payload &&p) {
