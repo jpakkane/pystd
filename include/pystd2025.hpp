@@ -1049,7 +1049,7 @@ public:
     CStringView(const char *str) noexcept;
     CStringView(const char *start, const char *stop);
     CStringView(const char *str, size_t length);
-    CStringView(const CString &str) noexcept;
+    explicit CStringView(const CString &str) noexcept;
 
     bool operator==(const char *str);
     bool operator==(CStringView o);
@@ -1128,6 +1128,7 @@ public:
     // Fixme: add <=>
 
     bool operator==(const char *str);
+    bool operator==(const CStringView &o);
 
     CString &operator+=(const CString &o);
 

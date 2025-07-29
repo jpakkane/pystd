@@ -558,6 +558,8 @@ void CString::split(CStringViewCallback cb, void *ctx) const {
 
 bool CString::operator==(const char *str) { return strcmp(str, c_str()) == 0; }
 
+bool CString::operator==(const CStringView &o) { return this->view() == o; }
+
 CString &CString::operator+=(const CString &o) {
     if(this == &o) {
         // FIXME make fast.
