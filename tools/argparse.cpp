@@ -6,6 +6,8 @@
 
 namespace pystd2025 {
 
+typedef Variant<bool, int64_t, CString, Vector<CString>> ArgumentValue;
+
 enum class ArgumentType : uint8_t {
     String,
     StringArray,
@@ -26,19 +28,29 @@ struct Argument {
     CString long_arg;
     U8String help;
     CString name;
-    ArgumentType atype;
+    ArgumentType type;
+    Optional<ArgumentValue> default_value;
     ArgumentAction aaction;
     Optional<int64_t> minval;
     Optional<int64_t> maxval;
 };
 
 struct ArgValue {
-    size_t index;
-    CString value;
+    CString name;
+    ArgumentValue v;
 };
 
 struct ParseResult {
     pystd2025::Vector<ArgValue> values;
+
+    ArgValue *find(CStringView csv) {
+        for(auto &v : values) {
+            if(v.name == csv) {
+                return &v;
+            }
+        }
+        return nullptr;
+    }
 };
 
 class ArgParse;
@@ -51,7 +63,7 @@ public:
 
     ParseOutput &operator=(ParseOutput &&o) noexcept = default;
 
-    const CString *value_of(const ArgParse &parser, CStringView arg_name);
+    const ArgumentValue *value_of(CStringView arg_name);
 
 private:
     ParseResult pr;
@@ -71,11 +83,16 @@ private:
     friend class ParseOutput;
     Optional<size_t> find_long_argument(CStringView optname);
 
+    ParseResult create_value_obj() const;
+
     int process_long_argument(
         int argc, const char **argv, ParseResult &result, int i, CStringView current);
     int process_short_argument(
         int argc, const char **argv, ParseResult &result, int i, CStringView current);
     [[noreturn]] void print_help_and_exit();
+
+    void argument_matched(ParseResult &pr, size_t match_index, CStringView value);
+
     const char *progname = nullptr;
     U8String description;
     bool store_posargs = false;
@@ -85,8 +102,114 @@ private:
 };
 
 void ArgParse::add_argument(Argument a) {
-    // FIXME, check for dupes.
+    for(const auto &arg : arguments) {
+        if(a.name == arg.name) {
+            throw PyException("Duplicate option name in ArgParse.");
+        }
+    }
     arguments.push_back(move(a));
+}
+
+static void
+append_entry(ParseResult &pr, ArgumentType atype, const CString &name, const ArgumentValue &v) {
+    switch(atype) {
+    case ArgumentType::String:
+        pr.values.emplace_back(name, v.get<CString>());
+        break;
+    case ArgumentType::Integer:
+        pr.values.emplace_back(name, v.get<int64_t>());
+        break;
+    case ArgumentType::Boolean:
+        pr.values.emplace_back(name, v.get<bool>());
+        break;
+    case ArgumentType::StringArray:
+        pr.values.emplace_back(name, v.get<Vector<CString>>());
+        break;
+    default:
+        abort();
+    }
+}
+
+static void append_entry_valueless(ParseResult &pr, ArgumentType atype, const CString &name) {
+    switch(atype) {
+    case ArgumentType::String:
+        pr.values.emplace_back(name, CString{});
+        break;
+    case ArgumentType::Integer:
+        pr.values.emplace_back(name, int64_t{});
+        break;
+    case ArgumentType::Boolean:
+        pr.values.emplace_back(name, bool{});
+        break;
+    case ArgumentType::StringArray:
+        pr.values.emplace_back(name, Vector<CString>{});
+        break;
+    default:
+        abort();
+    }
+}
+
+ParseResult ArgParse::create_value_obj() const {
+    ParseResult pr;
+    for(const auto &arg : arguments) {
+        if(arg.default_value) {
+            const auto &def = arg.default_value.value();
+            append_entry(pr, arg.type, arg.name, def);
+        }
+        return pr;
+    }
+}
+
+static void update_value(const Argument &atype, ArgValue vobj, CStringView source) {
+    switch(atype.aaction) {
+    case ArgumentAction::Store:
+        switch(atype.type) {
+        case ArgumentType::String:
+            vobj.v = source;
+            break;
+        case ArgumentType::Boolean:
+            break;
+        case ArgumentType::Integer: {
+            // FIXME, needed for null terminator.
+            CString tmp(source);
+            int64_t intval = strtol(tmp.data(), nullptr, 10);
+            vobj.v = intval;
+        } break;
+        case ArgumentType::StringArray: {
+            // Seems a bit silly, but why not?
+            Vector<CString> new_array;
+            new_array.emplace_back(source);
+            vobj.v = move(new_array);
+        } break;
+        default:
+            abort();
+        }
+        break;
+    case ArgumentAction::StoreFalse:
+        vobj.v = false;
+        break;
+    case ArgumentAction::StoreTrue:
+        vobj.v = true;
+        break;
+    case ArgumentAction::AppendArray:
+        vobj.v.get<Vector<CString>>().emplace_back(source);
+        break;
+    default:
+        abort();
+    }
+}
+
+void ArgParse::argument_matched(ParseResult &pr, size_t match_index, CStringView value) {
+    const auto &arg = arguments[match_index];
+    auto *existing = pr.find(arg.name.view());
+    if(existing) {
+        //
+    } else {
+        append_entry_valueless(pr, arg.type, arg.name);
+        existing = &pr.values.back();
+    }
+
+    update_value(arg, *existing, value);
 }
 
 Optional<ParseOutput> ArgParse::parse_args(int argc, const char **argv) {
@@ -166,7 +289,7 @@ int ArgParse::process_long_argument(
         exit(1);
     }
     const auto match_index = opt_result.value();
-    result.values.push_back(ArgValue{match_index, valuepart});
+    argument_matched(result, match_index, valuepart);
 
     return extra_consumed_args;
 }
@@ -209,10 +332,10 @@ void ArgParse::print_help_and_exit() {
     exit(0);
 }
 
-const CString *ParseOutput::value_of(const ArgParse &parser, CStringView arg_name) {
+const ArgumentValue *ParseOutput::value_of(CStringView arg_name) {
     for(const auto &s : pr.values) {
-        if(parser.arguments[s.index].name == arg_name) {
-            return &s.value;
+        if(s.name == arg_name) {
+            return &s.v;
         }
     }
     return nullptr;
