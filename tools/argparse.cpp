@@ -28,9 +28,9 @@ struct Argument {
     CString long_arg;
     U8String help;
     CString name;
-    ArgumentType type;
+    ArgumentType type = ArgumentType::String;
     Optional<ArgumentValue> default_value;
-    ArgumentAction aaction;
+    ArgumentAction aaction = ArgumentAction::Store;
     Optional<int64_t> minval;
     Optional<int64_t> maxval;
 };
@@ -156,17 +156,18 @@ ParseResult ArgParse::create_value_obj() const {
             const auto &def = arg.default_value.value();
             append_entry(pr, arg.type, arg.name, def);
         }
-        return pr;
     }
+    return pr;
 }
 
-static void update_value(const Argument &atype, ArgValue vobj, CStringView source) {
+static void update_value(const Argument &atype, ArgValue &vobj, CStringView source) {
     switch(atype.aaction) {
     case ArgumentAction::Store:
         switch(atype.type) {
-        case ArgumentType::String:
-            vobj.v = source;
+        case ArgumentType::String: {
+            vobj.v = CString(source);
             break;
+        }
         case ArgumentType::Boolean:
             break;
         case ArgumentType::Integer: {
@@ -359,9 +360,9 @@ int main(int argc, const char **argv) {
     parser.add_argument(bar);
     auto result = pystd2025::move(parser.parse_args(argc, argv).value());
 
-    const auto *r1 = result.value_of(parser, "foo");
-    printf("Foo: %s\n", r1 ? r1->c_str() : "undef");
-    const auto *r2 = result.value_of(parser, "bar");
-    printf("Bar: %s\n", r2 ? r2->c_str() : "undef");
+    const auto *r1 = result.value_of("foo");
+    printf("Foo: %s\n", r1 ? r1->get<CString>().c_str() : "undef");
+    const auto *r2 = result.value_of("bar");
+    printf("Bar: %s\n", r2 ? r2->get<CString>().c_str() : "undef");
     return 0;
 }
