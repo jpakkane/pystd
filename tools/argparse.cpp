@@ -4,6 +4,7 @@
 #include <string.h>
 #include <pystd2025.hpp>
 #include <errno.h>
+#include <assert.h>
 
 namespace pystd2025 {
 
@@ -34,6 +35,10 @@ struct Argument {
     ArgumentAction aaction = ArgumentAction::Store;
     Optional<int64_t> minval;
     Optional<int64_t> maxval;
+
+    bool needs_parameter() const {
+        return !(aaction == ArgumentAction::StoreTrue || aaction == ArgumentAction::StoreFalse);
+    }
 };
 
 struct ArgValue {
@@ -42,7 +47,8 @@ struct ArgValue {
 };
 
 struct ParseResult {
-    pystd2025::Vector<ArgValue> values;
+    Vector<ArgValue> values;
+    Vector<CString> extra_args;
 
     ArgValue *find(CStringView csv) {
         for(auto &v : values) {
@@ -83,6 +89,7 @@ public:
 private:
     friend class ParseOutput;
     Optional<size_t> find_long_argument(CStringView optname);
+    Optional<size_t> find_short_argument(char c);
 
     ParseResult create_value_obj() const;
 
@@ -106,6 +113,12 @@ void ArgParse::add_argument(Argument a) {
     for(const auto &arg : arguments) {
         if(a.name == arg.name) {
             throw PyException("Duplicate option name in ArgParse.");
+        }
+        if(!a.long_arg.is_empty() && a.long_arg == arg.long_arg) {
+            throw PyException("Long argument name already taken.");
+        }
+        if(a.short_arg && a.short_arg == arg.short_arg) {
+            throw PyException("Short argument character already taken.");
         }
     }
     arguments.push_back(move(a));
@@ -226,7 +239,7 @@ void ArgParse::argument_matched(ParseResult &pr, size_t match_index, CStringView
 
 Optional<ParseOutput> ArgParse::parse_args(int argc, const char **argv) {
     progname = argv[0];
-    ParseResult result;
+    ParseResult result = create_value_obj();
     for(int i = 1; i < argc; ++i) {
         CStringView current(argv[i]);
         if(current.is_empty()) {
@@ -264,6 +277,7 @@ Optional<ParseOutput> ArgParse::parse_args(int argc, const char **argv) {
             }
         }
     }
+    result.extra_args = move(posargs);
     return Optional<ParseOutput>(ParseOutput(pystd2025::move(result)));
 }
 
@@ -276,31 +290,50 @@ Optional<size_t> ArgParse::find_long_argument(CStringView optname) {
     return Optional<size_t>{};
 }
 
+Optional<size_t> ArgParse::find_short_argument(char c) {
+    for(size_t i = 0; i < arguments.size(); ++i) {
+        if(arguments[i].short_arg == c) {
+            return i;
+        }
+    }
+    return Optional<size_t>{};
+}
+
 int ArgParse::process_long_argument(
     int argc, const char **argv, ParseResult &result, int i, CStringView current) {
     CStringView keypart;
     CStringView valuepart;
     auto splitpoint = current.find('=');
     int extra_consumed_args = 0;
+    CStringView option_name;
+
     if(splitpoint != (size_t)-1) {
         keypart = current.substr(0, splitpoint);
-        valuepart = current.substr(splitpoint + 1);
     } else {
         keypart = current;
-        if(i + 1 >= argc) {
-            fprintf(stderr, "Last entry on the command line would need a further argument.\n");
-            exit(1);
-        }
-        valuepart = argv[i + 1];
-        extra_consumed_args = 1;
     }
 
     const auto opt_result = find_long_argument(keypart);
+
     if(!opt_result) {
         fprintf(stderr, "Unknown argument: %s\n", argv[i]);
         exit(1);
     }
     const auto match_index = opt_result.value();
+    const auto &arg = arguments[match_index];
+
+    if(arg.needs_parameter()) {
+        if(splitpoint != (size_t)-1) {
+            valuepart = current.substr(splitpoint + 1);
+        } else {
+            if(i + 1 >= argc) {
+                fprintf(stderr, "Last entry on the command line would need a further argument.\n");
+                exit(1);
+            }
+            valuepart = argv[i + 1];
+            extra_consumed_args = 1;
+        }
+    }
     argument_matched(result, match_index, valuepart);
 
     return extra_consumed_args;
@@ -308,17 +341,32 @@ int ArgParse::process_long_argument(
 
 int ArgParse::process_short_argument(
     int argc, const char **argv, ParseResult &result, int i, CStringView current) {
-    CStringView keypart;
     CStringView valuepart;
-    auto splitpoint = current.find('=');
-    if(splitpoint != (size_t)-1) {
-        keypart = current.substr(0, splitpoint);
-        valuepart = current.substr(splitpoint + 1);
-    } else {
-        keypart = current;
-    }
+    assert(current.starts_with("-"));
+    const char shortchar = current[1];
+    int extra_consumed_args = 0;
 
-    return 0;
+    const auto opt_result = find_short_argument(shortchar);
+    if(!opt_result) {
+        fprintf(stderr, "Unknown argument: %s\n", argv[i]);
+        exit(1);
+    }
+    const auto match_index = opt_result.value();
+    const auto &arg = arguments[match_index];
+
+    if(arg.needs_parameter()) {
+        if(current.size() == 2) {
+            valuepart = argv[i + 1];
+            extra_consumed_args = 1;
+        } else {
+            // FIXME, check for "-x=something".
+            valuepart = current.substr(2);
+        }
+    } else {
+    }
+    argument_matched(result, match_index, valuepart);
+
+    return extra_consumed_args;
 }
 
 void ArgParse::print_help_and_exit() {
@@ -381,10 +429,21 @@ int main(int argc, const char **argv) {
 
     Argument include;
     include.long_arg = "--include";
-    include.name = "I";
+    include.short_arg = 'I';
+    include.name = "include";
     include.type = ArgumentType::StringArray;
     include.aaction = ArgumentAction::AppendArray;
     parser.add_argument(include);
+
+    Argument verbose;
+    verbose.name = "verbose";
+    verbose.short_arg = 'v';
+    verbose.help = U8String("Verbose mode");
+    verbose.type = ArgumentType::Boolean;
+    verbose.aaction = ArgumentAction::StoreTrue;
+    verbose.default_value = false;
+
+    parser.add_argument(verbose);
 
     auto result = pystd2025::move(parser.parse_args(argc, argv).value());
 
@@ -394,7 +453,7 @@ int main(int argc, const char **argv) {
     printf("Bar: %s\n", r2 ? r2->get<CString>().c_str() : "undef");
     const auto *r3 = result.value_of("size");
     printf("Size: %d\n", r3 ? (int)r3->get<int64_t>() : -1);
-    const auto *r4 = result.value_of("I");
+    const auto *r4 = result.value_of("include");
     if(r4) {
         const auto &arr = r4->get<Vector<CString>>();
         printf("Include: %d entries \n", (int)arr.size());
@@ -402,5 +461,7 @@ int main(int argc, const char **argv) {
             printf(" %s\n", v.c_str());
         }
     }
+    const auto *r5 = result.value_of("verbose");
+    printf("Verbose: %d\n", r5->get<bool>() ? 1 : 0);
     return 0;
 }

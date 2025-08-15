@@ -494,7 +494,7 @@ public:
         if(this != &o) {
             destroy();
             if(o) {
-                new(&data.value) T{o.data.value};
+                new(&data.value) T{pystd2025::move(o.data.value)};
                 has_value = true;
                 o.destroy();
             }
@@ -518,7 +518,7 @@ public:
         if(*this) {
             data.value = pystd2025::move(o);
         } else {
-            new(&data.value) T{o};
+            new(&data.value) T{pystd2025::move(o)};
             has_value = true;
         }
     }
