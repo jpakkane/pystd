@@ -3,6 +3,7 @@
 
 #include <string.h>
 #include <pystd2025.hpp>
+#include <errno.h>
 
 namespace pystd2025 {
 
@@ -173,7 +174,17 @@ static void update_value(const Argument &atype, ArgValue &vobj, CStringView sour
         case ArgumentType::Integer: {
             // FIXME, needed for null terminator.
             CString tmp(source);
+            errno = 0;
             int64_t intval = strtol(tmp.data(), nullptr, 10);
+            if(errno != 0) {
+                throw PyException(strerror(errno));
+            }
+            if(atype.minval && intval < atype.minval.value()) {
+                throw PyException("Argument value less than min value.");
+            }
+            if(atype.maxval && intval > atype.maxval.value()) {
+                throw PyException("Argument value larger than max value.");
+            }
             vobj.v = intval;
         } break;
         case ArgumentType::StringArray: {
@@ -358,11 +369,22 @@ int main(int argc, const char **argv) {
     bar.name = "bar";
     bar.help = pystd2025::U8String("The bar to barnicate.");
     parser.add_argument(bar);
+
+    Argument intval;
+    intval.long_arg = "--size";
+    intval.name = "size";
+    intval.type = ArgumentType::Integer;
+    intval.minval = 0;
+    intval.maxval = 9;
+    parser.add_argument(intval);
+
     auto result = pystd2025::move(parser.parse_args(argc, argv).value());
 
     const auto *r1 = result.value_of("foo");
     printf("Foo: %s\n", r1 ? r1->get<CString>().c_str() : "undef");
     const auto *r2 = result.value_of("bar");
     printf("Bar: %s\n", r2 ? r2->get<CString>().c_str() : "undef");
+    const auto *r3 = result.value_of("size");
+    printf("Size: %d\n", r3 ? (int)r3->get<int64_t>() : -1);
     return 0;
 }
