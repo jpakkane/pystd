@@ -338,8 +338,9 @@ void ArgParse::print_help_and_exit() {
             printf("-%c ", a.short_arg);
         }
         if(!a.help.is_empty()) {
-            printf("          %s\n", a.help.c_str());
+            printf("          %s", a.help.c_str());
         }
+        printf("\n");
     }
     exit(0);
 }
@@ -378,6 +379,13 @@ int main(int argc, const char **argv) {
     intval.maxval = 9;
     parser.add_argument(intval);
 
+    Argument include;
+    include.long_arg = "--include";
+    include.name = "I";
+    include.type = ArgumentType::StringArray;
+    include.aaction = ArgumentAction::AppendArray;
+    parser.add_argument(include);
+
     auto result = pystd2025::move(parser.parse_args(argc, argv).value());
 
     const auto *r1 = result.value_of("foo");
@@ -386,5 +394,13 @@ int main(int argc, const char **argv) {
     printf("Bar: %s\n", r2 ? r2->get<CString>().c_str() : "undef");
     const auto *r3 = result.value_of("size");
     printf("Size: %d\n", r3 ? (int)r3->get<int64_t>() : -1);
+    const auto *r4 = result.value_of("I");
+    if(r4) {
+        const auto &arr = r4->get<Vector<CString>>();
+        printf("Include: %d entries \n", (int)arr.size());
+        for(const auto &v : arr) {
+            printf(" %s\n", v.c_str());
+        }
+    }
     return 0;
 }
