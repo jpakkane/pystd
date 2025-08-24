@@ -1085,8 +1085,6 @@ private:
         }
     }
 
-    // void swap_nodes(NodeReference node_one, NodeReference node_two) {}
-
     static_assert(EntryCount % 2 == 1);
     static_assert(EntryCount >= 3);
 
@@ -1094,6 +1092,63 @@ private:
     size_t num_values = 0;
     Vector<InternalNode> internals;
     Vector<LeafNode> leaves;
+};
+
+template<WellBehaved Key, size_t EntrySize> class BTreeSet {
+public:
+    BTreeSet() noexcept = default;
+
+    void insert(const Key &value) { tree.insert(value); }
+
+    bool contains(const Key &value) { return tree.contains(value); }
+
+    void remove(const Key &value) { tree.remove(value); }
+
+    size_t size() const noexcept { return tree.size(); }
+
+    bool is_empty() const noexcept { return tree.is_empty(); }
+
+private:
+    BTree<Key, EntrySize> tree;
+};
+
+template<WellBehaved Key, WellBehaved Value, size_t EntrySize> class BTreeMap {
+private:
+    struct MapEntry {
+        Key key;
+        Value value;
+        bool operator==(const MapEntry &o) const noexcept { return key == o.key; }
+        bool operator<(const MapEntry &o) const noexcept { return key < o.key; }
+
+        bool operator==(const Key &k) const noexcept { return k == key; }
+        bool operator<(const Key &k) const noexcept { return k <= key; }
+    };
+
+public:
+    BTreeMap() noexcept = default;
+
+    // These make a copy of the key object. Fix at some point.
+    void insert(const Key &key, Value v) {
+        MapEntry entry{key, pystd2025::move(v)};
+        tree.insert(pystd2025::move(entry));
+    }
+
+    Value *lookup(const Key &key) {
+        MapEntry entry{key, Value{}};
+        auto *loc = tree.lookup(entry);
+        if(loc) {
+            return &(loc->value);
+        }
+        return nullptr;
+    }
+
+    void remove(const Key &key) {
+        MapEntry entry{key, Value{}};
+        tree.remove(pystd2025::move(entry));
+    }
+
+private:
+    BTree<MapEntry, EntrySize> tree;
 };
 
 } // namespace pystd2025
