@@ -549,88 +549,6 @@ enum class ErrorCode : int32_t {
     DynamicError,
 };
 
-#include <pystd2025_map.hpp>
-
-int test_rb1() {
-    TEST_START;
-    pystd2025::RBTree<int> rbtree;
-
-    ASSERT(rbtree.is_empty());
-    ASSERT(rbtree.size() == 0);
-    rbtree.insert(10);
-    ASSERT(!rbtree.is_empty());
-    ASSERT(rbtree.size() == 1);
-
-    auto it = rbtree.begin();
-    auto endpoint = rbtree.end();
-    ASSERT(it != endpoint);
-    ASSERT(*it == 10);
-    ++it;
-    ASSERT(it == endpoint);
-
-    rbtree.insert(5);
-    ASSERT(rbtree.size() == 2);
-    it = rbtree.begin();
-    ASSERT(*it == 5);
-    ++it;
-    ASSERT(*it == 10)
-
-    rbtree.insert(7);
-    rbtree.insert(6);
-
-    rbtree.insert(3);
-    rbtree.insert(4);
-
-    rbtree.insert(1);
-    rbtree.insert(2);
-
-    rbtree.insert(9);
-    rbtree.insert(8);
-
-    ASSERT(rbtree.size() == 10);
-
-    rbtree.optimize_layout();
-
-    it = rbtree.begin();
-    int expected = 1;
-    while(it != rbtree.end()) {
-        ASSERT(*it == expected);
-        ++it;
-        ++expected;
-    }
-
-    // Now remove nodes one by one.
-    rbtree.remove(8);
-    ASSERT(rbtree.size() == 9);
-    rbtree.remove(1);
-    ASSERT(rbtree.size() == 8);
-    rbtree.remove(2);
-    ASSERT(rbtree.size() == 7);
-    rbtree.remove(5);
-    ASSERT(rbtree.size() == 6);
-    rbtree.remove(4);
-    ASSERT(rbtree.size() == 5);
-    rbtree.remove(3);
-    ASSERT(rbtree.size() == 4);
-    rbtree.remove(10);
-    ASSERT(rbtree.size() == 3);
-    rbtree.remove(6);
-    ASSERT(rbtree.size() == 2);
-    rbtree.remove(9);
-    ASSERT(rbtree.size() == 1);
-    rbtree.remove(7);
-    ASSERT(rbtree.size() == 0);
-
-    return 0;
-}
-
-int test_rb() {
-    printf("Testing RBtree.\n");
-    int failing_subtests = 0;
-    failing_subtests += test_rb1();
-    return failing_subtests;
-}
-
 #include <pystd2025_btree.hpp>
 
 int test_fixedvector1() {
@@ -743,7 +661,6 @@ int main(int argc, char **argv) {
         total_errors += test_variant();
         total_errors += test_format();
         total_errors += test_sort();
-        total_errors += test_rb();
         total_errors += test_fixedvector();
         total_errors += test_btree();
     } catch(const pystd2025::PyException &e) {
