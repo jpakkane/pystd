@@ -71,7 +71,8 @@ public:
 
     ParseOutput &operator=(ParseOutput &&o) noexcept = default;
 
-    const ArgumentValue *value_of(CStringView arg_name);
+    const ArgumentValue *value_of(CStringView arg_name) const;
+    ArgumentValue *value_of(CStringView arg_name);
 
 private:
     ParseResult pr;
@@ -415,8 +416,17 @@ void ArgParse::print_help_and_exit() {
     exit(0);
 }
 
-const ArgumentValue *ParseOutput::value_of(CStringView arg_name) {
+const ArgumentValue *ParseOutput::value_of(CStringView arg_name) const {
     for(const auto &s : pr.values) {
+        if(s.name == arg_name) {
+            return &s.v;
+        }
+    }
+    return nullptr;
+}
+
+ArgumentValue *ParseOutput::value_of(CStringView arg_name) {
+    for(auto &s : pr.values) {
         if(s.name == arg_name) {
             return &s.v;
         }
@@ -430,11 +440,13 @@ using namespace pystd2025;
 
 int main(int argc, const char **argv) {
     ArgParse parser(U8String("Test application for command line parser."));
+
     Argument foo;
     foo.long_arg = "--foo";
     foo.name = "foo";
     foo.help = pystd2025::U8String("The foo value to use.");
     parser.add_argument(foo);
+
     Argument bar;
     bar.long_arg = "--bar";
     bar.name = "bar";
@@ -472,7 +484,7 @@ int main(int argc, const char **argv) {
 
     parser.add_argument(verbose);
 
-    auto result = pystd2025::move(parser.parse_args(argc, argv).value());
+    const auto &result = parser.parse_args(argc, argv).value();
 
     const auto *r1 = result.value_of("foo");
     printf("Foo: %s\n", r1 ? r1->get<CString>().c_str() : "undef");
