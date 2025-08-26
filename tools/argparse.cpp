@@ -388,6 +388,33 @@ void ArgParse::print_help_and_exit() {
         if(!a.help.is_empty()) {
             printf("          %s", a.help.c_str());
         }
+        if(a.default_value) {
+            printf(" (default: ");
+            const auto &v = a.default_value.value();
+            if(auto *b = v.get_if<bool>()) {
+                printf("%s", *b ? "true" : "false");
+            } else if(auto *i = v.get_if<int64_t>()) {
+                printf("%ld", *i);
+            } else if(auto *s = v.get_if<CString>()) {
+                printf("%s", s->c_str());
+            } else if(auto *arr = v.get_if<Vector<CString>>()) {
+                if(arr->is_empty()) {
+                    printf("empty array");
+                } else {
+                    printf("[");
+                    for(size_t i = 0; i < arr->size(); ++i) {
+                        printf("%s", (*arr)[i].c_str());
+                        if(i != arr->size() - 1) {
+                            printf(", ");
+                        }
+                    }
+                    printf("]");
+                }
+            } else {
+                abort();
+            }
+            printf(")");
+        }
         printf("\n");
     }
     exit(0);
@@ -433,6 +460,11 @@ int main(int argc, const char **argv) {
     include.name = "include";
     include.type = ArgumentType::StringArray;
     include.aaction = ArgumentAction::AppendArray;
+    Vector<CString> default_array;
+    default_array.emplace_back("one");
+    default_array.emplace_back("two");
+    include.default_value = pystd2025::move(default_array);
+
     parser.add_argument(include);
 
     Argument verbose;
