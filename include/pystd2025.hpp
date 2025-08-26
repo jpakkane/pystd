@@ -977,7 +977,7 @@ private:
         for(size_t i = 0; i < num_entries; ++i) {
             objptr(i)->~T();
         }
-        buf_capacity = 0;
+        num_entries = 0;
     }
 
     bool needs_to_grow_for(size_t num_new_items) {
