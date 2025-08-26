@@ -484,7 +484,8 @@ int main(int argc, const char **argv) {
 
     parser.add_argument(verbose);
 
-    const auto &result = parser.parse_args(argc, argv).value();
+    auto res_opt = parser.parse_args(argc, argv);
+    auto &result = res_opt.value();
 
     const auto *r1 = result.value_of("foo");
     printf("Foo: %s\n", r1 ? r1->get<CString>().c_str() : "undef");
