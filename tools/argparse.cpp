@@ -48,6 +48,7 @@ struct ArgValue {
 
 struct ParseResult {
     Vector<ArgValue> values;
+    Vector<CString> posargs;
     Vector<CString> extra_args;
 
     ArgValue *find(CStringView csv) {
@@ -107,6 +108,7 @@ private:
 
     Vector<Argument> arguments;
     Vector<CString> posargs;
+    Vector<CString> extra_args; // Those after a "--".
 };
 
 void ArgParse::add_argument(Argument a) {
@@ -250,18 +252,10 @@ Optional<ParseOutput> ArgParse::parse_args(int argc, const char **argv) {
             print_help_and_exit();
         }
         if(current == "--") {
-            // FIXME, end and store posargs.
-            if(store_posargs) {
-                for(int k = i + 1; k < argc; ++k) {
-                    posargs.push_back(CString(argv[k]));
-                }
-            } else {
-                if(i + 1 < argc) {
-                    fprintf(stderr,
-                            "Arguments after \"--\", but storing posargs is not permitted.\n");
-                    exit(1);
-                }
+            for(int k = i + 1; k < argc; ++k) {
+                extra_args.push_back(CString(argv[k]));
             }
+            break;
         } else if(current.starts_with("--")) {
             const auto consumed_extra_args = process_long_argument(argc, argv, result, i, current);
             i += consumed_extra_args;
@@ -277,7 +271,8 @@ Optional<ParseOutput> ArgParse::parse_args(int argc, const char **argv) {
             }
         }
     }
-    result.extra_args = move(posargs);
+    result.extra_args = move(extra_args);
+    result.posargs = move(posargs);
     return Optional<ParseOutput>(ParseOutput(pystd2025::move(result)));
 }
 
@@ -370,7 +365,7 @@ int ArgParse::process_short_argument(
 }
 
 void ArgParse::print_help_and_exit() {
-    printf("usage: %s [-h]\n", progname);
+    printf("Usage: %s [-h]\n", progname);
     printf("\n");
     if(!description.is_empty()) {
         printf("%s\n", description.c_str());
