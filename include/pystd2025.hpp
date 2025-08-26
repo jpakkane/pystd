@@ -14,6 +14,8 @@ void *operator new(size_t, void *ptr) noexcept;
 
 namespace pystd2025 {
 
+enum class align_val_t : size_t {};
+
 // PyException stores its message as
 // UTF-8. Thus no code that is needed
 // to implement U8String can throw
@@ -764,7 +766,7 @@ public:
     Vector() noexcept = default;
 
     Vector(const Vector<T> &o) {
-        reserve(o.size());
+        reserve(o.num_entries);
         for(const auto &i : o) {
             push_back(i);
         }
@@ -778,14 +780,16 @@ public:
         }
     }
 
-    Vector(Vector<T> &&o) noexcept : backing(move(o.backing)), num_entries{o.num_entries} {
+    Vector(Vector<T> &&o) noexcept
+        : buffer(o.buffer), buf_capacity(o.buf_capacity), num_entries{o.num_entries} {
+        o.buffer = nullptr;
+        o.buf_capacity = 0;
         o.num_entries = 0;
     }
 
     ~Vector() {
-        for(size_t i = 0; i < num_entries; ++i) {
-            objptr(i)->~T();
-        }
+        deallocate_objects();
+        free(buffer);
     }
 
     void push_back(const T &obj) noexcept {
@@ -793,12 +797,12 @@ public:
             // Fixme, maybe compute index to the backing store
             // and then use that, skipping the temporary.
             T tmp{obj};
-            backing.extend(sizeof(T));
+            reserve(num_entries + 1);
             auto obj_loc = objptr(num_entries);
             new(obj_loc) T(::pystd2025::move(tmp));
             ++num_entries;
         } else {
-            backing.extend(sizeof(T));
+            reserve(num_entries + 1);
             auto obj_loc = objptr(num_entries);
             new(obj_loc) T(obj);
             ++num_entries;
@@ -810,12 +814,12 @@ public:
             // Fixme, maybe compute index to the backing store
             // and then use that, skipping the temporary.
             T tmp{::pystd2025::move(obj)};
-            backing.extend(sizeof(T));
+            reserve(num_entries + 1);
             auto obj_loc = objptr(num_entries);
             new(obj_loc) T(::pystd2025::move(tmp));
             ++num_entries;
         } else {
-            backing.extend(sizeof(T));
+            reserve(num_entries + 1);
             auto obj_loc = objptr(num_entries);
             new(obj_loc) T(::pystd2025::move(obj));
             ++num_entries;
@@ -826,7 +830,7 @@ public:
         if constexpr(sizeof...(args) == 1 && pystd2025::is_same_v<decltype(args...[0]), T>) {
             this->push_back(pystd2025::forward(args...[0]));
         } else {
-            backing.extend(sizeof(T));
+            reserve(num_entries + 1);
             auto obj_loc = objptr(num_entries);
             new(obj_loc) T(pystd2025::forward<decltype(args)>(args)...);
             ++num_entries;
@@ -857,11 +861,11 @@ public:
         }
         T *obj = objptr(num_entries - 1);
         obj->~T();
-        backing.shrink(sizeof(T));
+        // FIXME: shrink if needed.
         --num_entries;
     }
 
-    size_t capacity() const noexcept { return backing.size() / sizeof(T); }
+    size_t capacity() const noexcept { return buf_capacity; }
     size_t size() const noexcept { return num_entries; }
 
     bool is_empty() const noexcept { return size() == 0; }
@@ -900,7 +904,7 @@ public:
         return (*this)[size() - 1];
     }
 
-    T *data() { return (T *)backing.data(); }
+    T *data() { return reinterpret_cast<T *>(buffer); }
 
     T &operator[](size_t i) {
         if(i >= num_entries) {
@@ -922,9 +926,14 @@ public:
 
     Vector<T> &operator=(Vector<T> &&o) noexcept {
         if(this != &o) {
-            backing = move(o.backing);
+            deallocate_objects();
+            free(buffer);
+            buffer = o.buffer;
             num_entries = o.num_entries;
+            buf_capacity = o.buf_capacity;
+            o.buffer = nullptr;
             o.num_entries = 0;
+            o.buf_capacity = 0;
         }
         return *this;
     }
@@ -937,7 +946,7 @@ public:
             return false;
         }
         for(size_t i = 0; i < size(); ++i) {
-            if(backing[i] != o.backing[i]) {
+            if((*this)[i] != o[i]) {
                 return false;
             }
         }
@@ -945,6 +954,7 @@ public:
     }
 
     bool operator!=(const Vector<T> &o) const noexcept { return !(*this == o); }
+
     const T *cbegin() const { return objptr(0); }
     const T *cend() const { return objptr(num_entries); }
 
@@ -953,23 +963,51 @@ public:
 
     void reserve(size_t new_size) {
         if(new_size > size()) {
-            backing.resize_to(new_size * sizeof(T));
+            resize_to(new_size);
         }
     }
 
 private:
     T *objptr(size_t i) noexcept { return reinterpret_cast<T *>(rawptr(i)); }
     const T *objptr(size_t i) const noexcept { return reinterpret_cast<const T *>(rawptr(i)); }
-    char *rawptr(size_t i) noexcept { return backing.data() + i * sizeof(T); }
-    const char *rawptr(size_t i) const noexcept { return backing.data() + i * sizeof(T); }
+    char *rawptr(size_t i) noexcept { return buffer + i * sizeof(T); }
+    const char *rawptr(size_t i) const noexcept { return buffer + i * sizeof(T); }
 
-    bool needs_to_grow_for(size_t num_new_items) {
-        return num_entries + num_new_items * sizeof(T) > backing.size();
+    void deallocate_objects() {
+        for(size_t i = 0; i < num_entries; ++i) {
+            objptr(i)->~T();
+        }
+        buf_capacity = 0;
     }
 
-    bool is_ptr_within(const T *ptr) const { return backing.is_ptr_within((const char *)ptr); }
+    bool needs_to_grow_for(size_t num_new_items) {
+        return num_entries + num_new_items > buf_capacity;
+    }
 
-    Bytes backing;
+    bool is_ptr_within(const T *ptr) const { return ptr >= begin() && ptr < end(); }
+
+    void resize_to(size_t new_capacity) {
+        const size_t MIN_CAPACITY = 16;
+        if(new_capacity < num_entries) {
+            throw PyException("Shrinking too small.");
+        }
+        if(new_capacity < MIN_CAPACITY) {
+            // To avoid multiple small allocations at the beginning.
+            new_capacity = MIN_CAPACITY;
+        }
+        char *new_buf = (char *)aligned_alloc(alignof(T), new_capacity * sizeof(T));
+        for(size_t i = 0; i < num_entries; ++i) {
+            T *obj = objptr(i);
+            new(new_buf + i * sizeof(T)) T(::pystd2025::move(*obj));
+            obj->~T();
+        }
+        buf_capacity = new_capacity;
+        free(buffer);
+        buffer = new_buf;
+    }
+
+    char *buffer = nullptr;
+    size_t buf_capacity = 0;
     size_t num_entries = 0;
 };
 
