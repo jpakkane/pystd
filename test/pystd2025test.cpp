@@ -647,6 +647,28 @@ int test_btree() {
     return failing_subtests;
 }
 
+int test_partition1() {
+    TEST_START;
+    int buf[6] = {1, 3, 1, 3, 3, 1};
+    auto midpoint = pystd2025::partition(buf, buf + 6, [](const int i) -> bool { return i < 2; });
+
+    ASSERT(midpoint - buf == 3);
+    ASSERT(buf[0] == 1);
+    ASSERT(buf[1] == 1);
+    ASSERT(buf[2] == 1);
+    ASSERT(buf[3] == 3);
+    ASSERT(buf[4] == 3);
+    ASSERT(buf[5] == 3);
+    return 0;
+}
+
+int test_partition() {
+    printf("Testing partition.\n");
+    int failing_subtests = 0;
+    failing_subtests += test_partition1();
+    return failing_subtests;
+}
+
 int main(int argc, char **argv) {
     int total_errors = 0;
     try {
@@ -663,6 +685,7 @@ int main(int argc, char **argv) {
         total_errors += test_sort();
         total_errors += test_fixedvector();
         total_errors += test_btree();
+        total_errors += test_partition();
     } catch(const pystd2025::PyException &e) {
         printf("Testing failed: %s\n", e.what().c_str());
         return 42;

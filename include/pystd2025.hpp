@@ -2681,6 +2681,36 @@ template<typename It, typename Value> It lower_bound(It first, It last, const Va
     return it;
 }
 
+template<class It, class Predicate> It find_if(It first, It last, const Predicate &&pred) {
+    for(; first != last; ++first)
+        if(pred(*first))
+            return first;
+    return last;
+}
+
+template<class It, class Predicate> It find_if_not(It first, It last, const Predicate &&pred) {
+    for(; first != last; ++first)
+        if(!pred(*first))
+            return first;
+    return last;
+}
+
+template<typename It, typename Predicate> It partition(It first, It last, const Predicate &&pred) {
+    first = find_if_not(first, last, move(pred));
+    if(first == last)
+        return first;
+
+    It i = first;
+    ++i;
+    for(; i != last; ++i)
+        if(pred(*i)) {
+            swap(*i, *first);
+            ++first;
+        }
+
+    return first;
+}
+
 double clamp(double val, double lower, double upper);
 int64_t clamp(int64_t val, int64_t lower, int64_t upper);
 
