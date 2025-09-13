@@ -1186,7 +1186,11 @@ public:
 
     template<typename T = CString> Vector<T> split() const;
 
+    template<typename T = CString> Vector<T> split_by(char c) const;
+
     void split(CStringViewCallback cb, void *ctx) const;
+
+    void split_by(char c, CStringViewCallback cb, void *ctx) const;
 
     bool is_empty() const {
         // The buffer always has a null terminator.
@@ -1829,8 +1833,11 @@ public:
     CString extension() const;
     Path filename() const;
 
+    Vector<CString> split() const;
+
     Path operator/(const Path &o) const noexcept;
     Path operator/(const char *str) const noexcept;
+    Path operator/(const CString &str) const noexcept;
 
     Optional<Bytes> load_bytes();
     Optional<U8String> load_text();

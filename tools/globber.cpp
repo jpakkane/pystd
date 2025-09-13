@@ -4,7 +4,7 @@
 #include <pystd2025.hpp>
 #include <assert.h>
 
-int main(int argc, char **argv) {
+int actual_main(int argc, char **argv) {
     if(argc != 2) {
         printf("%s <glob pattern>", argv[0]);
         return 1;
@@ -15,4 +15,14 @@ int main(int argc, char **argv) {
         printf("%s\n", p.c_str());
     }
     return 0;
+}
+
+int main(int argc, char **argv) {
+    try {
+        actual_main(argc, argv);
+    } catch(const char *msg) {
+        printf("%s\n", msg);
+    } catch(const pystd2025::PyException &exp) {
+        printf("%s\n", exp.what().c_str());
+    }
 }

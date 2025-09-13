@@ -535,6 +535,18 @@ template<> Vector<CString> CString::split() const {
     return arr;
 }
 
+template<> Vector<CString> CString::split_by(char c) const {
+    auto cb_lambda = [](const CStringView &piece, void *ctx) -> bool {
+        auto *arr = static_cast<Vector<CString> *>(ctx);
+        arr->push_back(CString{piece});
+        return true;
+    };
+    Vector<CString> arr;
+    split_by(c, cb_lambda, static_cast<void *>(&arr));
+
+    return arr;
+}
+
 void CString::split(CStringViewCallback cb, void *ctx) const {
     size_t i = 0;
     while(i < size()) {
@@ -547,6 +559,27 @@ void CString::split(CStringViewCallback cb, void *ctx) const {
         const auto string_start = i;
         ++i;
         while(i < size() && (!is_ascii_whitespace(bytes[i]))) {
+            ++i;
+        }
+        CStringView piece{c_str() + string_start, i - string_start};
+        if(!cb(piece, ctx)) {
+            break;
+        }
+    }
+}
+
+void CString::split_by(char c, CStringViewCallback cb, void *ctx) const {
+    size_t i = 0;
+    while(i < size()) {
+        while(i < size() && bytes[i] == c) {
+            ++i;
+        }
+        if(i == size()) {
+            break;
+        }
+        const auto string_start = i;
+        ++i;
+        while(i < size() && (bytes[i] != c)) {
             ++i;
         }
         CStringView piece{c_str() + string_start, i - string_start};

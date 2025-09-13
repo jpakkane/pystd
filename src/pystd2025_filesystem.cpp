@@ -3,11 +3,19 @@
 
 #include <pystd2025.hpp>
 #include <sys/stat.h>
+#include <dirent.h>
 #include <assert.h>
 
 // Currently does only Posix paths.
 
 namespace pystd2025 {
+
+namespace {
+struct DirCloser {
+    static void del(DIR *dir) { closedir(dir); }
+};
+
+} // namespace
 
 Path::Path(const char *path) : buf{path} {
     while(!buf.is_empty() && buf.back() == '/') {
@@ -60,6 +68,8 @@ Path Path::operator/(const char *str) const noexcept {
     return *this / p;
 }
 
+Path Path::operator/(const CString &str) const noexcept { return *this / str.c_str(); }
+
 CString Path::extension() const {
     auto loc = buf.rfind('.');
     if(loc == (size_t)-1) {
@@ -75,6 +85,8 @@ Path Path::filename() const {
     }
     return Path(buf.substr(loc + 1));
 }
+
+Vector<CString> Path::split() const { return buf.split_by('/'); }
 
 Optional<Bytes> Path::load_bytes() {
     FILE *f = fopen(buf.c_str(), "rb");
@@ -141,22 +153,45 @@ GlobResult Path::glob(const char *pattern) { return GlobResult(*this, pattern); 
 
 class GlobResultInternal {
 public:
-    GlobResultInternal(Path &path, const char *glob_pattern)
-        : root_dir{path}, pattern{glob_pattern} {}
+    GlobResultInternal(const Path &path, const char *glob_pattern)
+        : root_dir{path}, pattern{glob_pattern} {
+        parts = path.split();
+        if(parts.size() != 0) {
+            throw PyException("Subdirs not supported yet.");
+        }
+        Path dirpart = "."; // path / parts.front();
+        DIR *d = opendir(dirpart.c_str());
+        if(!d) {
+            throw PyException("Unknown directory.");
+        }
+        current_dir.reset(d);
+    }
 
-    Optional<Path> next() { throw "Not implemented yet."; }
+    Optional<Path> next() {
+        if(!current_dir) {
+            return {};
+        }
+        dirent *entry = readdir(current_dir.get());
+        if(!entry) {
+            current_dir.release();
+            return {};
+        }
+        return Path(entry->d_name);
+    }
 
 private:
     Path root_dir;
     CString pattern;
     Vector<CString> parts;
+    unique_ptr<DIR, DirCloser> current_dir;
 };
 
 GlobResult::GlobResult(GlobResult &&o) noexcept = default;
 
 GlobResult::~GlobResult() = default;
 
-GlobResult::GlobResult(const Path &path, const char *glob_pattern) { throw "Not implemented yet."; }
+GlobResult::GlobResult(const Path &path, const char *glob_pattern)
+    : p(new GlobResultInternal{path, glob_pattern}) {}
 
 Optional<Path> GlobResult::next() {
     if(!p) {
