@@ -11,9 +11,42 @@
 namespace pystd2025 {
 
 namespace {
+
 struct DirCloser {
     static void del(DIR *dir) { closedir(dir); }
 };
+
+bool glob_matches(const char *text, const char *pattern) {
+    if(text[0] == '\0') {
+        if(pattern[0] == '\0') {
+            return true;
+        }
+        return false;
+    }
+    if(pattern[0] == '\0') {
+        return false;
+    }
+    if(pattern[0] == '?') {
+        return glob_matches(text + 1, pattern + 1);
+    } else if(pattern[0] == '*') {
+        if(pattern[1] == '\0') {
+            // Pattern ends with a *, so it will match everything.
+            return true;
+        }
+        size_t gap = 1;
+        while(text[gap] != '\0') {
+            if(glob_matches(text + gap, pattern + 1)) {
+                return true;
+            }
+            ++gap;
+        }
+        return false;
+    } else if(pattern[0] == text[0]) {
+        return glob_matches(text + 1, pattern + 1);
+    } else {
+        return false;
+    }
+}
 
 } // namespace
 
@@ -171,12 +204,24 @@ public:
         if(!current_dir) {
             return {};
         }
-        dirent *entry = readdir(current_dir.get());
-        if(!entry) {
-            current_dir.release();
-            return {};
+        while(true) {
+            dirent *entry = readdir(current_dir.get());
+            if(!entry) {
+                current_dir.release();
+                return {};
+            }
+            if(entry->d_name[0] == '.') {
+                if(entry->d_name[1] == '\0') {
+                    continue;
+                }
+                if(entry->d_name[1] == '.' && entry->d_name[2] == '\0') {
+                    continue;
+                }
+            }
+            if(glob_matches(entry->d_name, pattern.c_str())) {
+                return Path(entry->d_name);
+            }
         }
-        return Path(entry->d_name);
     }
 
 private:

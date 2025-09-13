@@ -1091,8 +1091,8 @@ public:
     CStringView(const char *str, size_t length);
     explicit CStringView(const CString &str) noexcept;
 
-    bool operator==(const char *str);
-    bool operator==(CStringView o);
+    bool operator==(const char *str) const;
+    bool operator==(CStringView o) const;
     bool is_empty() const { return bufsize == 0; }
 
     char front() const;

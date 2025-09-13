@@ -365,7 +365,7 @@ CStringView::CStringView(const CString &str) noexcept {
     bufsize = str.size();
 }
 
-bool CStringView::operator==(const char *str) {
+bool CStringView::operator==(const char *str) const {
     for(size_t i = 0; i < bufsize; ++i) {
         if(str[i] == '\0') {
             return false;
@@ -377,7 +377,7 @@ bool CStringView::operator==(const char *str) {
     return str[bufsize] == '\0';
 }
 
-bool CStringView::operator==(CStringView o) {
+bool CStringView::operator==(CStringView o) const {
     if(bufsize != o.bufsize) {
         return false;
     }
