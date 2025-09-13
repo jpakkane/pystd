@@ -857,14 +857,16 @@ public:
         append(start, end);
     }
 
-    void pop_back() noexcept {
+    Optional<T> pop_back() noexcept {
         if(num_entries == 0) {
-            return;
+            return {};
         }
         T *obj = objptr(num_entries - 1);
+        Optional<T> retval(move(*obj));
         obj->~T();
         // FIXME: shrink if needed.
         --num_entries;
+        return retval;
     }
 
     size_t capacity() const noexcept { return buf_capacity; }

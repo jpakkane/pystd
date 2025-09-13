@@ -16,36 +16,77 @@ struct DirCloser {
     static void del(DIR *dir) { closedir(dir); }
 };
 
-bool glob_matches(const char *text, const char *pattern) {
-    if(text[0] == '\0') {
-        if(pattern[0] == '\0') {
+bool glob_matches(const char *text,
+                  const size_t text_offset,
+                  const char *pattern,
+                  const size_t pattern_offset) {
+    const char text_char = text[text_offset];
+    const char pattern_char = pattern[pattern_offset];
+    if(text_char == '\0') {
+        if(pattern_char == '\0') {
             return true;
         }
         return false;
     }
-    if(pattern[0] == '\0') {
+    if(pattern_char == '\0') {
         return false;
     }
-    if(pattern[0] == '?') {
-        return glob_matches(text + 1, pattern + 1);
-    } else if(pattern[0] == '*') {
-        if(pattern[1] == '\0') {
+    if(pattern_char == '?') {
+        return glob_matches(text, text_offset + 1, pattern, pattern_offset + 1);
+    } else if(pattern_char == '*') {
+        if(text_offset == 0 && text_char == '.') {
+            // Files with leading dots do not match star globs.
+            return false;
+        }
+        if(pattern[pattern_offset + 1] == '\0') {
             // Pattern ends with a *, so it will match everything.
             return true;
         }
-        size_t gap = 1;
+        size_t gap = 0;
         while(text[gap] != '\0') {
-            if(glob_matches(text + gap, pattern + 1)) {
+            if(glob_matches(text, text_offset + gap, pattern, pattern_offset + 1)) {
                 return true;
             }
             ++gap;
         }
         return false;
-    } else if(pattern[0] == text[0]) {
-        return glob_matches(text + 1, pattern + 1);
+    } else if(pattern_char == text_char) {
+        return glob_matches(text, text_offset + 1, pattern, pattern_offset + 1);
     } else {
         return false;
     }
+}
+
+bool glob_matches(const char *text, const char *pattern) {
+    return glob_matches(text, 0, pattern, 0);
+}
+
+void append_subdirs_of(const Path &root_, Vector<Path> &dirs) {
+    Path root(root_); // Make a copy, because root_ may be in the vector and it may grow.
+    DIR *d = root.is_empty() ? opendir(".") : opendir(root.c_str());
+    if(!d) {
+        return;
+    }
+    dirent *entry = readdir(d);
+    unique_ptr<DIR, DirCloser> dc(d);
+    while(entry) {
+        // Entries with a leading dot do not match globs.
+        if(entry->d_type == DT_DIR && entry->d_name[0] != '.') {
+            dirs.push_back(root / entry->d_name);
+        }
+        entry = readdir(d);
+    }
+}
+
+Vector<Path> glob_starstar_dirs(const Path &root) {
+    Vector<Path> all_subdirs;
+    append_subdirs_of(root, all_subdirs);
+    size_t i = 0;
+    while(i < all_subdirs.size()) {
+        append_subdirs_of(all_subdirs[i], all_subdirs);
+        ++i;
+    }
+    return all_subdirs;
 }
 
 } // namespace
@@ -192,8 +233,8 @@ public:
         if(parts.size() != 0) {
             throw PyException("Subdirs not supported yet.");
         }
-        Path dirpart = "."; // path / parts.front();
-        DIR *d = opendir(dirpart.c_str());
+        Path dirpart = ""; // path / parts.front();
+        DIR *d = dirpart.is_empty() ? opendir(".") : opendir(dirpart.c_str());
         if(!d) {
             throw PyException("Unknown directory.");
         }
