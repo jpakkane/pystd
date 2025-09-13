@@ -394,6 +394,8 @@ public:
     T *operator->() noexcept { return ptr; }
     const T *operator->() const noexcept { return ptr; }
 
+    operator bool() const noexcept { return ptr; }
+
 private:
     T *ptr;
 };
@@ -1810,6 +1812,8 @@ private:
     int64_t step;
 };
 
+class GlobResult;
+
 class Path {
 public:
     Path() noexcept {};
@@ -1841,8 +1845,28 @@ public:
 
     bool rename_to(const Path &targetname) const noexcept;
 
+    GlobResult glob(const char *pattern);
+
 private:
     CString buf;
+};
+
+class GlobResultInternal;
+
+class GlobResult {
+public:
+    friend class Path;
+    GlobResult() noexcept;
+    GlobResult(GlobResult &&o) noexcept;
+    ~GlobResult();
+    Optional<Path> next();
+
+    GlobResult &operator=(GlobResult &&o) noexcept = default;
+
+private:
+    GlobResult(const Path &path, const char *glob_pattern);
+
+    unique_ptr<GlobResultInternal> p;
 };
 
 class MMapping {

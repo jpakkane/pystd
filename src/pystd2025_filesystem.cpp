@@ -137,4 +137,32 @@ bool Path::rename_to(const Path &targetname) const noexcept {
     return rc == 0;
 }
 
+GlobResult Path::glob(const char *pattern) { return GlobResult(*this, pattern); }
+
+class GlobResultInternal {
+public:
+    GlobResultInternal(Path &path, const char *glob_pattern)
+        : root_dir{path}, pattern{glob_pattern} {}
+
+    Optional<Path> next() { throw "Not implemented yet."; }
+
+private:
+    Path root_dir;
+    CString pattern;
+    Vector<CString> parts;
+};
+
+GlobResult::GlobResult(GlobResult &&o) noexcept = default;
+
+GlobResult::~GlobResult() = default;
+
+GlobResult::GlobResult(const Path &path, const char *glob_pattern) { throw "Not implemented yet."; }
+
+Optional<Path> GlobResult::next() {
+    if(!p) {
+        return Optional<Path>();
+    }
+    return p->next();
+}
+
 } // namespace pystd2025
