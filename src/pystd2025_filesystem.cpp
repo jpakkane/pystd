@@ -242,11 +242,7 @@ public:
                 }
             }
         }
-        DIR *d = root_dir.is_empty() ? opendir(".") : opendir(root_dir.c_str());
-        if(!d) {
-            throw PyException("Unknown directory.");
-        }
-        dir_stack.emplace_back(0, root_dir, unique_ptr<DIR, DirCloser>(d));
+        enter_subdir(Path(), root_dir.c_str());
     }
 
     Optional<Path> next() {
@@ -273,17 +269,7 @@ public:
                     return dir_stack.back().path / entry->d_name;
                 } else {
                     if(entry->d_type == DT_DIR) {
-                        Path subdir_name = dir_stack.back().path / entry->d_name;
-                        auto *sd = opendir(subdir_name.c_str());
-                        if(sd) {
-                            dir_stack.emplace_back(dir_stack.back().part_number + 1,
-                                                   move(subdir_name),
-                                                   unique_ptr<DIR, DirCloser>(sd));
-                        } else {
-                            // Dir can not be accessed, so ignore it. Happens e.g. when
-                            // you don't have access rights or the directory was deleted
-                            // before we could access it.
-                        }
+                        enter_subdir(dir_stack.back().path, entry->d_name);
                     }
                 }
             }
@@ -291,6 +277,37 @@ public:
     }
 
 private:
+    void enter_subdir(const Path &parent_dir, const char *subdir_name) {
+        Path full_path = parent_dir / subdir_name;
+        auto *sd = full_path.is_empty() ? opendir(".") : opendir(full_path.c_str());
+        const auto new_depth = dir_stack.is_empty() ? 0 : dir_stack.back().part_number + 1;
+        if(sd) {
+            dir_stack.emplace_back(new_depth, move(subdir_name), unique_ptr<DIR, DirCloser>(sd));
+            const bool do_starstar = parts[new_depth] == "**";
+            if(do_starstar) {
+                // ** may expand to empty.
+                DIR *pd = parent_dir.is_empty() ? opendir(".") : opendir(parent_dir.c_str());
+                if(pd) {
+                    dir_stack.emplace_back(
+                        new_depth + 1, parent_dir, unique_ptr<DIR, DirCloser>(pd));
+                }
+                auto sstar_dirs = glob_starstar_dirs(subdir_name);
+                for(auto &sdir : sstar_dirs) {
+                    auto *ssd = opendir(sdir.c_str());
+                    if(ssd) {
+                        dir_stack.emplace_back(
+                            new_depth + 1, move(sdir), unique_ptr<DIR, DirCloser>(ssd));
+                    }
+                }
+            } else {
+            }
+        } else {
+            // Dir can not be accessed, so ignore it. Happens e.g. when
+            // you don't have access rights or the directory was deleted
+            // before we could access it.
+        }
+    }
+
     struct DirSearchState {
         size_t part_number;
         Path path;
