@@ -442,6 +442,25 @@ CStringView CStringView::substr(size_t pos, size_t count) const {
     return CStringView(buf + pos, actual_count);
 }
 
+size_t CStringView::find(CStringView substr) const {
+    if(substr.size() > size()) {
+        return false;
+    }
+    for(size_t start = 0; start < size() - substr.size(); ++start) {
+        bool has_mismatch = false;
+        for(size_t i = 0; i < substr.size(); ++i) {
+            if(buf[start + i] != substr.buf[i]) {
+                has_mismatch = true;
+                break;
+            }
+        }
+        if(!has_mismatch) {
+            return start;
+        }
+    }
+    return (size_t)-1;
+}
+
 bool CStringView::operator<(const CStringView &o) const {
     const size_t common_size = o.size() < size() ? o.size() : size();
     auto rc = strncmp(data(), o.data(), common_size);
@@ -589,9 +608,9 @@ void CString::split_by(char c, CStringViewCallback cb, void *ctx) const {
     }
 }
 
-bool CString::operator==(const char *str) { return strcmp(str, c_str()) == 0; }
+bool CString::operator==(const char *str) const { return strcmp(str, c_str()) == 0; }
 
-bool CString::operator==(const CStringView &o) { return this->view() == o; }
+bool CString::operator==(const CStringView &o) const { return this->view() == o; }
 
 CString &CString::operator+=(const CString &o) {
     if(this == &o) {
@@ -669,6 +688,8 @@ void CString::insert(size_t i, const CStringView &v) noexcept {
     }
     bytes.insert(i, v.data(), v.size());
 }
+
+size_t CString::find(CStringView substr) const { return view().find(substr); }
 
 size_t CString::rfind(const char c) const noexcept {
     size_t i = bytes.size() - 1;

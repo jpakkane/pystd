@@ -1113,6 +1113,8 @@ public:
         return buf[index];
     }
 
+    size_t find(CStringView substr) const;
+
     char at(size_t index) const { return (*this)[index]; }
 
     const char *begin() const { return buf; }
@@ -1169,8 +1171,8 @@ public:
     bool operator<(const CString &o) const { return bytes < o.bytes; }
     // Fixme: add <=>
 
-    bool operator==(const char *str);
-    bool operator==(const CStringView &o);
+    bool operator==(const char *str) const;
+    bool operator==(const CStringView &o) const;
 
     CString &operator+=(const CString &o);
 
@@ -1207,6 +1209,8 @@ public:
     void push_back(const char c) noexcept { append(c); }
 
     void insert(size_t i, const CStringView &v) noexcept;
+
+    size_t find(CStringView substr) const;
 
     size_t rfind(const char c) const noexcept;
 

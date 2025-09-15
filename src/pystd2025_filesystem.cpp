@@ -233,6 +233,19 @@ public:
         if(parts.size() != 0) {
             throw PyException("Subdirs not supported yet.");
         }
+        bool starstar_used = false;
+        for(const auto &part : parts) {
+            if(part == "**") {
+                if(starstar_used) {
+                    throw PyException("Multiple ** operators in a glob lookup not yet supported.");
+                }
+                starstar_used = true;
+            } else {
+                if(part.find("**") != (size_t)-1) {
+                    throw PyException("The ** operator must be its own full segment.");
+                }
+            }
+        }
         Path dirpart = ""; // path / parts.front();
         DIR *d = dirpart.is_empty() ? opendir(".") : opendir(dirpart.c_str());
         if(!d) {
