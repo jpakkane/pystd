@@ -2739,12 +2739,12 @@ template<typename It, typename Predicate> It partition(It first, It last, const 
 
     It i = first;
     ++i;
-    for(; i != last; ++i)
+    for(; i != last; ++i) {
         if(pred(*i)) {
             swap(*i, *first);
             ++first;
         }
-
+    }
     return first;
 }
 

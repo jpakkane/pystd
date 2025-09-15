@@ -6,7 +6,7 @@
 
 int actual_main(int argc, char **argv) {
     if(argc != 2) {
-        printf("%s <glob pattern>", argv[0]);
+        printf("%s <glob pattern>\n", argv[0]);
         return 1;
     }
     pystd2025::Path curdir;

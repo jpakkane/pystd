@@ -228,11 +228,7 @@ GlobResult Path::glob(const char *pattern) { return GlobResult(*this, pattern); 
 class GlobResultInternal {
 public:
     GlobResultInternal(const Path &path, const char *glob_pattern)
-        : root_dir{path}, pattern{glob_pattern} {
-        parts = path.split();
-        if(parts.size() != 0) {
-            throw PyException("Subdirs not supported yet.");
-        }
+        : root_dir{path}, pattern{glob_pattern}, parts(pattern.split_by('/')) {
         bool starstar_used = false;
         for(const auto &part : parts) {
             if(part == "**") {
@@ -246,23 +242,23 @@ public:
                 }
             }
         }
-        Path dirpart = ""; // path / parts.front();
-        DIR *d = dirpart.is_empty() ? opendir(".") : opendir(dirpart.c_str());
+        DIR *d = root_dir.is_empty() ? opendir(".") : opendir(root_dir.c_str());
         if(!d) {
             throw PyException("Unknown directory.");
         }
-        current_dir.reset(d);
+        dir_stack.emplace_back(0, root_dir, unique_ptr<DIR, DirCloser>(d));
     }
 
     Optional<Path> next() {
-        if(!current_dir) {
-            return {};
-        }
         while(true) {
-            dirent *entry = readdir(current_dir.get());
-            if(!entry) {
-                current_dir.release();
+            if(dir_stack.is_empty()) {
                 return {};
+            }
+            const bool is_last_part = dir_stack.back().part_number == parts.size() - 1;
+            dirent *entry = readdir(dir_stack.back().d.get());
+            if(!entry) {
+                dir_stack.pop_back();
+                continue;
             }
             if(entry->d_name[0] == '.') {
                 if(entry->d_name[1] == '\0') {
@@ -272,17 +268,38 @@ public:
                     continue;
                 }
             }
-            if(glob_matches(entry->d_name, pattern.c_str())) {
-                return Path(entry->d_name);
+            if(glob_matches(entry->d_name, parts[dir_stack.back().part_number].c_str())) {
+                if(is_last_part) {
+                    return dir_stack.back().path / entry->d_name;
+                } else {
+                    if(entry->d_type == DT_DIR) {
+                        Path subdir_name = dir_stack.back().path / entry->d_name;
+                        auto *sd = opendir(subdir_name.c_str());
+                        if(sd) {
+                            dir_stack.emplace_back(dir_stack.back().part_number + 1,
+                                                   move(subdir_name),
+                                                   unique_ptr<DIR, DirCloser>(sd));
+                        } else {
+                            // Dir can not be accessed, so ignore it. Happens e.g. when
+                            // you don't have access rights or the directory was deleted
+                            // before we could access it.
+                        }
+                    }
+                }
             }
         }
     }
 
 private:
+    struct DirSearchState {
+        size_t part_number;
+        Path path;
+        unique_ptr<DIR, DirCloser> d;
+    };
     Path root_dir;
     CString pattern;
     Vector<CString> parts;
-    unique_ptr<DIR, DirCloser> current_dir;
+    Vector<DirSearchState> dir_stack;
 };
 
 GlobResult::GlobResult(GlobResult &&o) noexcept = default;

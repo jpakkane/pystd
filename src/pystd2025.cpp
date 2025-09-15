@@ -444,7 +444,7 @@ CStringView CStringView::substr(size_t pos, size_t count) const {
 
 size_t CStringView::find(CStringView substr) const {
     if(substr.size() > size()) {
-        return false;
+        return -1;
     }
     for(size_t start = 0; start < size() - substr.size(); ++start) {
         bool has_mismatch = false;
