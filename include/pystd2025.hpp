@@ -1462,13 +1462,13 @@ public:
         return *v;
     }
 
-    void insert(const Key &key, Value v) {
+    Value &insert(const Key &key, Value v) {
         if(fill_ratio() >= MAX_LOAD) {
             grow();
         }
 
         const auto hashval = hash_for(key);
-        insert_internal(hashval, key, pystd2025::move(v));
+        return insert_internal(hashval, key, pystd2025::move(v));
     }
 
     void remove(const Key &key) {
@@ -1497,6 +1497,15 @@ public:
                 }
             }
             slot = (slot + 1) & mod_mask;
+        }
+    }
+
+    Value &operator[](const Key &k) {
+        auto *c = lookup(k);
+        if(c) {
+            return (*c);
+        } else {
+            return insert(k, Value{});
         }
     }
 
@@ -1597,7 +1606,7 @@ private:
         return slot;
     }
 
-    void insert_internal(size_t hashval, const Key &key, Value &&v) {
+    Value &insert_internal(size_t hashval, const Key &key, Value &&v) {
         auto slot = hash_to_slot(hashval);
         while(true) {
             if(data.hashes[slot] == FREE_SLOT) {
@@ -1607,14 +1616,14 @@ private:
                 new(value_loc) Value{pystd2025::move(v)};
                 data.hashes[slot] = hashval;
                 ++num_entries;
-                return;
+                return *value_loc;
             }
             if(data.hashes[slot] == hashval) {
                 auto *potential_key = data.keyptr(slot);
                 if(*potential_key == key) {
                     auto *value_loc = data.valueptr(slot);
                     *value_loc = pystd2025::move(v);
-                    return;
+                    return *value_loc;
                 }
             }
             slot = (slot + 1) & mod_mask;

@@ -39,12 +39,7 @@ int file_main(int argc, char **argv) {
             pystd::U8String u8line(move(line));
             auto words = u8line.split_ascii();
             for(const auto &w : words) {
-                auto *c = counts.lookup(w);
-                if(c) {
-                    ++(*c);
-                } else {
-                    counts.insert(w, 1);
-                }
+                ++counts[w];
             }
         }
         pystd::Vector<WordCount> stats;
