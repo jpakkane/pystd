@@ -607,6 +607,83 @@ enum class EncodingPolicy {
     Ignore,
 };
 
+// A pointer has an optional null state, so it
+// does not need a separate boolean value to specify
+// whether it is valid or not.
+template<typename T> class Optional<T *> final {
+public:
+    Optional() noexcept { ptr = nullptr; }
+
+    Optional(T *o) { ptr = o; }
+
+    Optional(T &&o) noexcept { ptr = o.ptr; }
+
+    Optional(const Optional<T *> &o) { ptr = o.ptr; }
+
+    Optional(Optional<T *> &&o) noexcept { ptr = o.ptr; }
+
+    ~Optional() = default;
+
+    operator bool() const noexcept { return ptr; }
+
+    void operator=(Optional<T *> &&o) noexcept { ptr = o.ptr; }
+
+    void operator=(const Optional<T *> &o) noexcept { ptr = o.ptr; }
+
+    void operator=(T &&o) noexcept { ptr = o.ptr; }
+
+    void operator=(const T &o) noexcept { ptr = o.ptr; }
+
+    T &operator*() {
+        if(!*this) {
+            bootstrap_throw("Empty optional.");
+        }
+        return ptr;
+    }
+
+    T *operator->() {
+        if(!*this) {
+            bootstrap_throw("Empty optional.");
+        }
+        return ptr;
+    }
+
+    const T *operator->() const {
+        if(!*this) {
+            bootstrap_throw("Empty optional.");
+        }
+        return ptr;
+    }
+
+    T &value() {
+        if(!*this) {
+            bootstrap_throw("Empty optional.");
+        }
+        return *ptr;
+    }
+
+    const T &value() const {
+        if(!*this) {
+            bootstrap_throw("Empty optional.");
+        }
+        return *ptr;
+    }
+
+    const T &operator*() const {
+        if(!*this) {
+            bootstrap_throw("Empty optional.");
+        }
+        return *ptr;
+    }
+
+    void reset() { ptr = nullptr; }
+
+private:
+    T *ptr;
+};
+
+static_assert(sizeof(Optional<int *>) == sizeof(int *));
+
 class PyException;
 
 class Bytes;
