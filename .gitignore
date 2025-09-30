@@ -2,4 +2,5 @@
 *~
 *.bak
 others/stdlibcounter
+__pycache__
 
