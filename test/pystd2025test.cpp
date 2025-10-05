@@ -357,6 +357,28 @@ int test_files() {
     return failing_subtests;
 }
 
+int test_hashmap() {
+    TEST_START;
+    pystd2025::HashMap<int, int> map;
+    const int NUM_ENTRIES = 32;
+    ASSERT(map.is_empty());
+    for(int i = 0; i < NUM_ENTRIES; ++i) {
+        ASSERT(map.lookup(i) == nullptr);
+        map.insert(i, NUM_ENTRIES - i);
+        ASSERT(*map.lookup(i) == NUM_ENTRIES - i);
+    }
+    ASSERT(map.size() == NUM_ENTRIES);
+
+    for(int i = 0; i < NUM_ENTRIES; ++i) {
+        ASSERT(*map.lookup(i) == NUM_ENTRIES - i);
+        map.remove(i);
+        ASSERT(map.lookup(i) == nullptr);
+    }
+    ASSERT(map.is_empty());
+
+    return 0;
+}
+
 int test_hashset() {
     TEST_START;
     pystd2025::HashSet<int> set;
@@ -679,6 +701,7 @@ int main(int argc, char **argv) {
         total_errors += test_range();
         total_errors += test_vector();
         total_errors += test_files();
+        total_errors += test_hashmap();
         total_errors += test_hashset();
         total_errors += test_variant();
         total_errors += test_format();
