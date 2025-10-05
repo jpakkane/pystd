@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <string.h>
 
 #ifndef __GLIBCXX__
 void *operator new(size_t, void *ptr) noexcept;
@@ -1508,7 +1509,7 @@ public:
         size_in_powers_of_two = 4;
         auto initial_table_size = 1 << size_in_powers_of_two;
         mod_mask = initial_table_size - 1;
-        data.hashes = unique_arr<size_t>(initial_table_size);
+        data.md = unique_arr<SlotMetadata>(initial_table_size);
         data.reset_hash_values();
         data.keydata = Bytes(initial_table_size * sizeof(Key));
         data.valuedata = Bytes(initial_table_size * sizeof(Value));
@@ -1518,10 +1519,11 @@ public:
         const auto hashval = hash_for(key);
         auto slot = hash_to_slot(hashval);
         while(true) {
-            if(data.hashes[slot] == FREE_SLOT) {
+            if(data.md[slot].state == SlotState::Empty) {
                 return nullptr;
-            }
-            if(data.hashes[slot] == hashval) {
+            } else if(data.md[slot].state == SlotState::Tombstone) {
+
+            } else if(data.md[slot].bloom_matches(hashval)) {
                 auto *potential_key = data.keyptr(slot);
                 if(*potential_key == key) {
                     return const_cast<Value *>(data.valueptr(slot));
@@ -1552,22 +1554,22 @@ public:
         const auto hashval = hash_for(key);
         auto slot = hash_to_slot(hashval);
         while(true) {
-            if(data.hashes[slot] == FREE_SLOT) {
+            if(data.md[slot].state == SlotState::Empty) {
                 return;
-            } else if(data.hashes[slot] == TOMBSTONE) {
+            } else if(data.md[slot].state == SlotState::Tombstone) {
 
-            } else if(data.hashes[slot] == hashval) {
+            } else if(data.md[slot].bloom_matches(hashval)) {
                 auto *potential_key = data.keyptr(slot);
                 if(*potential_key == key) {
                     auto *value_loc = data.valueptr(slot);
                     value_loc->~Value();
                     const auto previous_slot = (slot + table_size() - 1) & mod_mask;
                     const auto next_slot = (slot + 1) % mod_mask;
-                    if(data.hashes[previous_slot] == FREE_SLOT &&
-                       data.hashes[next_slot] == FREE_SLOT) {
-                        data.hashes[slot] = FREE_SLOT;
+                    if(data.md[previous_slot].state == SlotState::Empty &&
+                       data.md[next_slot].state == SlotState::Empty) {
+                        data.md[slot].state = SlotState::Empty;
                     } else {
-                        data.hashes[slot] = TOMBSTONE;
+                        data.md[slot].state = SlotState::Tombstone;
                     }
                     --num_entries;
                     return;
@@ -1606,23 +1608,39 @@ public:
     }
 
 private:
+    static constexpr uint8_t BLOOM_MASK = 0b111111;
+
+    enum class SlotState : uint8_t {
+        Empty,
+        HasValue,
+        Tombstone,
+    };
+    struct SlotMetadata {
+        SlotState state : 2;
+        uint8_t bloom : 6;
+
+        bool bloom_matches(size_t hashcode) const {
+            return bloom == (uint8_t)(hashcode & BLOOM_MASK);
+        }
+    };
+
     // This is neither fast, memory efficient nor elegant.
     // At this point in the project life cycle it does not need to be.
     struct MapData {
-        unique_arr<size_t> hashes;
+        unique_arr<SlotMetadata> md;
         Bytes keydata;
         Bytes valuedata;
 
         MapData() = default;
         MapData(MapData &&o) noexcept {
-            hashes = move(o.hashes);
+            md = move(o.md);
             keydata = move(o.keydata);
             valuedata = move(o.valuedata);
         }
 
         void operator=(MapData &&o) noexcept {
             if(this != &o) {
-                hashes = move(o.hashes);
+                md = move(o.md);
                 keydata = move(o.keydata);
                 valuedata = move(o.valuedata);
             }
@@ -1642,19 +1660,14 @@ private:
             return (const Value *)(valuedata.data() + i * sizeof(Value));
         }
 
-        void reset_hash_values() noexcept {
-            for(size_t i = 0; i < hashes.size(); ++i) {
-                hashes[i] = FREE_SLOT;
-            }
-        }
+        void reset_hash_values() noexcept { memset(md.get(), 0, md.size_bytes()); }
 
         void deallocate_contents() noexcept {
-            for(size_t i = 0; i < hashes.size(); ++i) {
-                if(!has_value(i)) {
-                    continue;
+            for(size_t i = 0; i < md.size(); ++i) {
+                if(md[i].state == SlotState::HasValue) {
+                    keyptr(i)->~Key();
+                    valueptr(i)->~Value();
                 }
-                keyptr(i)->~Key();
-                valueptr(i)->~Value();
             }
         }
 
@@ -1663,11 +1676,11 @@ private:
             reset_hash_values();
         }
 
-        bool has_value(size_t offset) const {
-            if(offset >= hashes.size()) {
+        bool has_value_at(size_t offset) const {
+            if(offset >= md.size()) {
                 return false;
             }
-            return !(hashes[offset] == TOMBSTONE || hashes[offset] == FREE_SLOT);
+            return md[offset].state == SlotState::HasValue;
         }
     };
 
@@ -1686,16 +1699,16 @@ private:
     Value &insert_internal(size_t hashval, const Key &key, Value &&v) {
         auto slot = hash_to_slot(hashval);
         while(true) {
-            if(data.hashes[slot] == FREE_SLOT) {
+            if(data.md[slot].state != SlotState::HasValue) {
                 auto *key_loc = data.keyptr(slot);
                 auto *value_loc = data.valueptr(slot);
                 new(key_loc) Key(key);
                 new(value_loc) Value{pystd2025::move(v)};
-                data.hashes[slot] = hashval;
+                data.md[slot] = SlotMetadata{SlotState::HasValue, (uint8_t)(hashval & BLOOM_MASK)};
                 ++num_entries;
                 return *value_loc;
             }
-            if(data.hashes[slot] == hashval) {
+            if(data.md[slot].bloom_matches(hashval)) {
                 auto *potential_key = data.keyptr(slot);
                 if(*potential_key == key) {
                     auto *value_loc = data.valueptr(slot);
@@ -1713,7 +1726,7 @@ private:
         const auto new_mod_mask = new_size - 1;
         MapData grown;
 
-        grown.hashes = unique_arr<size_t>(new_size);
+        grown.md = unique_arr<SlotMetadata>(new_size);
         grown.keydata = Bytes(new_size * sizeof(Key));
         grown.valuedata = Bytes(new_size * sizeof(Value));
 
@@ -1723,11 +1736,12 @@ private:
         size_in_powers_of_two = new_powers_of_two;
         mod_mask = new_mod_mask;
         num_entries = 0;
-        for(size_t i = 0; i < old.hashes.size(); ++i) {
-            if(old.hashes[i] == FREE_SLOT || old.hashes[i] == TOMBSTONE) {
-                continue;
+        for(size_t i = 0; i < old.md.size(); ++i) {
+            if(old.md[i].state == SlotState::HasValue) {
+                auto &old_key = *old.keyptr(i);
+                auto hashval = hash_for(old_key);
+                insert_internal(hashval, old_key, pystd2025::move(*old.valueptr(i)));
             }
-            insert_internal(old.hashes[i], *old.keyptr(i), pystd2025::move(*old.valueptr(i)));
         }
     }
 
@@ -1736,19 +1750,12 @@ private:
         h.feed_hash(salt);
         h.feed_hash(k);
         auto raw_hash = h.get_hash_value();
-        if(raw_hash == FREE_SLOT) {
-            raw_hash = FREE_SLOT + 1;
-        } else if(raw_hash == TOMBSTONE) {
-            raw_hash = TOMBSTONE + 1;
-        }
         return raw_hash;
     }
 
-    size_t table_size() const { return data.hashes.size(); }
+    size_t table_size() const { return data.md.size(); }
 
     double fill_ratio() const { return double(num_entries) / table_size(); }
-    static constexpr size_t FREE_SLOT = 42;
-    static constexpr size_t TOMBSTONE = 666;
     static constexpr double MAX_LOAD = 0.7;
 
     MapData data;
@@ -1766,7 +1773,7 @@ template<typename Key, typename Value> struct KeyValue {
 template<typename Key, typename Value> class HashMapIterator final {
 public:
     HashMapIterator(HashMap<Key, Value> *map, size_t offset) : map{map}, offset{offset} {
-        if(offset == 0 && !map->data.has_value(offset)) {
+        if(offset == 0 && !map->data.has_value_at(offset)) {
             advance();
         }
     }
@@ -1785,7 +1792,7 @@ public:
 private:
     void advance() {
         ++offset;
-        while(offset < map->table_size() && !map->data.has_value(offset)) {
+        while(offset < map->table_size() && !map->data.has_value_at(offset)) {
             ++offset;
         }
     }
