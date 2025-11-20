@@ -1093,6 +1093,200 @@ private:
     size_t num_entries = 0;
 };
 
+template<WellBehaved T, size_t MAX_SIZE> class FixedVector {
+public:
+    FixedVector() noexcept = default;
+    FixedVector(FixedVector &&o) noexcept { swipe_from(o); }
+
+    ~FixedVector() { destroy_contents(); }
+
+    FixedVector &operator=(FixedVector &&o) noexcept {
+        if(this != &o) {
+            destroy_contents();
+            swipe_from(o);
+        }
+        return *this;
+    }
+
+    bool try_push_back(const T &obj) noexcept {
+        if(is_full()) {
+            return false;
+        }
+        auto obj_loc = objptr(num_entries);
+        new(obj_loc) T(obj);
+        ++num_entries;
+        return true;
+    }
+
+    bool try_push_back(T &&obj) noexcept {
+        if(is_full()) {
+            return false;
+        }
+        auto obj_loc = objptr(num_entries);
+        new(obj_loc) T(::pystd2025::move(obj));
+        ++num_entries;
+        return true;
+    }
+
+    void push_back(const T &obj) {
+        if(!try_push_back(obj)) {
+            throw PyException("Tried to push back to a full FixedVector.");
+        }
+    }
+
+    void push_back(T &&obj) {
+        if(!try_push_back(::pystd2025::move(obj))) {
+            throw PyException("Tried to push back to a full FixedVector.");
+        }
+    }
+
+    void insert(size_t loc, T &&obj) {
+        if(is_full()) {
+            throw PyException("Insert to a full vector.");
+        }
+        if(loc > size()) {
+            throw PyException("Insertion past the end of Fixed vector.");
+        }
+        if(loc == size()) {
+            ++num_entries;
+            new(objptr(loc)) T(::pystd2025::move(obj));
+            return;
+        }
+        auto *last = objptr(size() - 1);
+        ++num_entries;
+        new(objptr(size() - 1)) T(::pystd2025::move(*last));
+        for(size_t i = num_entries - 2; i > loc; --i) {
+            auto *dst = objptr(i);
+            auto *src = objptr(i - 1);
+            *dst = ::pystd2025::move(*src);
+        }
+        *objptr(loc) = ::pystd2025::move(obj);
+    }
+
+    size_t capacity() const noexcept { return MAX_SIZE; }
+
+    size_t size() const noexcept { return num_entries; }
+
+    bool is_empty() const noexcept { return size() == 0; }
+
+    bool is_full() const noexcept { return size() >= MAX_SIZE; }
+
+    void pop_back() noexcept {
+        if(is_empty()) {
+            return;
+        }
+        T *obj = objptr(num_entries - 1);
+        obj->~T();
+        --num_entries;
+    }
+
+    void pop_front() noexcept {
+        if(is_empty()) {
+            return;
+        }
+        delete_at(0);
+    }
+
+    void delete_at(size_t i) {
+        if(i >= size()) {
+            throw PyException("OOB in delete_at.");
+        }
+        ++i;
+        while(i < size()) {
+            *objptr(i - 1) = ::pystd2025::move(*objptr(i));
+            ++i;
+        }
+        pop_back();
+    }
+
+    void move_append(FixedVector &o) {
+        if(this == &o) {
+            throw PyException("Can not move append self.");
+        }
+        if(size() + o.size() > MAX_SIZE) {
+            throw PyException("Appending would exceed max size.");
+        }
+        for(auto &i : o) {
+            push_back(::pystd2025::move(i));
+        }
+    }
+
+    T &front() {
+        if(is_empty()) {
+            throw PyException("Tried to access empty array.");
+        }
+        return (*this)[0];
+    }
+
+    const T &front() const {
+        if(is_empty()) {
+            throw PyException("Tried to access empty array.");
+        }
+        return (*this)[0];
+    }
+
+    T &back() {
+        if(is_empty()) {
+            throw PyException("Tried to access empty array.");
+        }
+        return (*this)[size() - 1];
+    }
+
+    const T &back() const {
+        if(is_empty()) {
+            throw PyException("Tried to access empty array.");
+        }
+        return (*this)[size() - 1];
+    }
+
+    T *data() noexcept { return reinterpret_cast<T *>(backing); }
+
+    T &operator[](size_t i) {
+        if(i >= num_entries) {
+            throw PyException("FixedVector index out of bounds.");
+        }
+        return *objptr(i);
+    }
+
+    const T &operator[](size_t i) const {
+        if(i >= num_entries) {
+            throw PyException("Fixed Vector index out of bounds.");
+        }
+        return *objptr(i);
+    }
+
+    T *begin() const { return const_cast<T *>(objptr(0)); }
+    T *end() const { return const_cast<T *>(objptr(num_entries)); }
+
+private:
+    T *objptr(size_t i) noexcept { return reinterpret_cast<T *>(rawptr(i)); }
+    const T *objptr(size_t i) const noexcept { return reinterpret_cast<const T *>(rawptr(i)); }
+    char *rawptr(size_t i) noexcept { return backing + i * sizeof(T); }
+    const char *rawptr(size_t i) const noexcept { return backing + i * sizeof(T); }
+
+    void destroy_contents() noexcept {
+        for(size_t i = 0; i < num_entries; ++i) {
+            objptr(i)->~T();
+        }
+        num_entries = 0;
+    }
+
+    void swipe_from(FixedVector &o) noexcept {
+        if(this == &o) {
+            internal_failure("Identity confusion.");
+        }
+        for(size_t i = 0; i < o.num_entries; ++i) {
+            auto obj_loc = objptr(i);
+            new(obj_loc) T(::pystd2025::move(*o.objptr(i)));
+        }
+        num_entries = o.num_entries;
+        o.destroy_contents();
+    }
+
+    char backing[MAX_SIZE * sizeof(T)] alignas(alignof(T));
+    size_t num_entries = 0;
+};
+
 // Iterates over the code points of a valid UTF 8 string.
 // If the string used is not valid UTF-8, result is undefined.
 class ValidatedU8Iterator {
