@@ -906,7 +906,7 @@ void U8String::insert(const ValidatedU8Iterator &it, U8StringView view) {
 }
 
 void U8String::remove(U8StringView view) {
-    if(!is_within(view)) {
+    if(!contains(view)) {
         throw PyException("Section to remove is not contained within string.");
     }
     const size_t start_index = (const char *)view.start.byte_location() - cstring.c_str();
@@ -934,7 +934,7 @@ void U8String::pop_back() noexcept {
     remove(U8StringView(start, end));
 }
 
-bool U8String::is_within(U8StringView view) const {
+bool U8String::contains(U8StringView view) const {
     return view.start.byte_location() >= (const unsigned char *)cstring.c_str() &&
            view.end.byte_location() <= (const unsigned char *)(cstring.c_str() + cstring.size());
 }

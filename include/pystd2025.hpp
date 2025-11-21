@@ -1599,7 +1599,7 @@ public:
     void pop_front() noexcept;
     void pop_back() noexcept;
 
-    bool is_within(U8StringView view) const;
+    bool contains(U8StringView view) const;
 
 private:
     CString cstring;
