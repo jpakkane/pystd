@@ -833,6 +833,8 @@ public:
 
     const char *end() const noexcept { return buf.get() + bufsize; }
 
+    void remove(size_t from, size_t to);
+
 private:
     void grow_to(size_t new_size);
 
@@ -1490,6 +1492,8 @@ public:
 
     void resize(size_t new_size) noexcept { bytes.resize(new_size); }
 
+    void remove(size_t from, size_t to) { bytes.remove(from, to); }
+
 private:
     bool view_points_to_this(const CStringView &v) const;
 
@@ -1588,6 +1592,10 @@ public:
     }
 
     void insert(const ValidatedU8Iterator &it, U8StringView view);
+
+    void remove(U8StringView view);
+
+    bool is_within(U8StringView view) const;
 
 private:
     CString cstring;

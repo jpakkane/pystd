@@ -341,6 +341,19 @@ char Bytes::back() const {
     return result;
 }
 
+void Bytes::remove(size_t from, size_t to) {
+    if(from > to) {
+        throw PyException("Invalid sequence to remove.");
+    }
+    if(from == to) {
+        return;
+    }
+    const auto bytes_to_remove = to - from;
+    const auto bytes_to_copy = size() - from - bytes_to_remove;
+    memmove(buf.get() + from, buf.get() + to, bytes_to_copy);
+    bufsize -= bytes_to_remove;
+}
+
 CStringView::CStringView(const char *str) noexcept : buf{str}, bufsize{strlen(str)} {}
 
 CStringView::CStringView(const char *str, size_t length) {
@@ -878,6 +891,20 @@ void U8String::split(U8StringViewCallback cb, IsSplittingCharacter is_split_char
 
 void U8String::insert(const ValidatedU8Iterator &it, U8StringView view) {
     cstring.insert(it.byte_location() - (const unsigned char *)cstring.data(), view.raw_view());
+}
+
+void U8String::remove(U8StringView view) {
+    if(!is_within(view)) {
+        throw PyException("Section to remove is not contained within string.");
+    }
+    const size_t start_index = (const char *)view.start.byte_location() - cstring.c_str();
+    const size_t end_index = (const char *)view.end.byte_location() - cstring.c_str();
+    cstring.remove(start_index, end_index);
+}
+
+bool U8String::is_within(U8StringView view) const {
+    return view.start.byte_location() >= (const unsigned char *)cstring.c_str() &&
+           view.end.byte_location() < (const unsigned char *)(cstring.c_str() + cstring.size());
 }
 
 void ValidatedU8Iterator::compute_char_info() {

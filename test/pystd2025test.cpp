@@ -189,6 +189,23 @@ int test_u8_splice() {
     return 0;
 }
 
+int test_u8_remove() {
+    TEST_START;
+    pystd2025::U8String text("大a刀");
+    pystd2025::U8String splice("a");
+    pystd2025::U8String result(daikatana);
+
+    auto start = text.cbegin();
+    ++start;
+    auto end = start;
+    ++end;
+
+    pystd2025::U8StringView to_remove(start, end);
+    text.remove(to_remove);
+    ASSERT(text == result);
+    return 0;
+}
+
 int test_u8_strings() {
     TEST_START;
     int failing_subtests = 0;
@@ -201,6 +218,7 @@ int test_u8_strings() {
     failing_subtests += test_u8_append();
     failing_subtests += test_u8_join();
     failing_subtests += test_u8_splice();
+    failing_subtests += test_u8_remove();
     return failing_subtests;
 }
 
