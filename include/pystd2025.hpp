@@ -1305,6 +1305,8 @@ public:
     ValidatedU8Iterator &operator++();
     ValidatedU8Iterator operator++(int);
 
+    ValidatedU8Iterator &operator--();
+
     bool operator==(const ValidatedU8Iterator &o) const;
     bool operator!=(const ValidatedU8Iterator &o) const;
 
@@ -1594,6 +1596,8 @@ public:
     void insert(const ValidatedU8Iterator &it, U8StringView view);
 
     void remove(U8StringView view);
+    void pop_front() noexcept;
+    void pop_back() noexcept;
 
     bool is_within(U8StringView view) const;
 

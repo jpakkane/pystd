@@ -206,6 +206,20 @@ int test_u8_remove() {
     return 0;
 }
 
+int test_u8_pop() {
+    TEST_START;
+    pystd2025::U8String text("ab大");
+    pystd2025::U8String r1("b大");
+    pystd2025::U8String r2("b");
+
+    text.pop_front();
+    ASSERT(text == r1);
+
+    text.pop_back();
+    ASSERT(text == r2);
+    return 0;
+}
+
 int test_u8_strings() {
     TEST_START;
     int failing_subtests = 0;
@@ -219,6 +233,7 @@ int test_u8_strings() {
     failing_subtests += test_u8_join();
     failing_subtests += test_u8_splice();
     failing_subtests += test_u8_remove();
+    failing_subtests += test_u8_pop();
     return failing_subtests;
 }
 

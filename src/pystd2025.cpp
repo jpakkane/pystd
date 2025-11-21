@@ -738,6 +738,18 @@ ValidatedU8Iterator ValidatedU8Iterator::operator++(int) {
     return rval;
 }
 
+ValidatedU8Iterator &ValidatedU8Iterator::operator--() {
+    // FIXME, it is possible to decrement past the beginning.
+    const uint8_t CONTINUATION_MASK = 0b11000000;
+    const uint8_t CONTINUATION_VALUE = 0b10000000;
+    --buf;
+    while((*buf & CONTINUATION_MASK) == CONTINUATION_VALUE) {
+        --buf;
+    }
+    has_char_info = false;
+    return *this;
+}
+
 bool ValidatedU8Iterator::operator==(const ValidatedU8Iterator &o) const { return buf == o.buf; }
 
 bool ValidatedU8Iterator::operator!=(const ValidatedU8Iterator &o) const { return !(*this == o); }
@@ -902,9 +914,29 @@ void U8String::remove(U8StringView view) {
     cstring.remove(start_index, end_index);
 }
 
+void U8String::pop_front() noexcept {
+    if(is_empty()) {
+        return;
+    }
+    auto start = cbegin();
+    auto end = start;
+    ++end;
+    remove(U8StringView(start, end));
+}
+
+void U8String::pop_back() noexcept {
+    if(is_empty()) {
+        return;
+    }
+    auto end = cend();
+    auto start = end;
+    --start;
+    remove(U8StringView(start, end));
+}
+
 bool U8String::is_within(U8StringView view) const {
     return view.start.byte_location() >= (const unsigned char *)cstring.c_str() &&
-           view.end.byte_location() < (const unsigned char *)(cstring.c_str() + cstring.size());
+           view.end.byte_location() <= (const unsigned char *)(cstring.c_str() + cstring.size());
 }
 
 void ValidatedU8Iterator::compute_char_info() {
