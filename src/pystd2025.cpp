@@ -486,6 +486,21 @@ bool CStringView::operator<(const CStringView &o) const {
     return size() < o.size();
 }
 
+bool CStringView::overlaps(CStringView &other) const {
+    const auto s1 = buf;
+    const auto e1 = buf + bufsize;
+    const auto s2 = other.buf;
+    const auto e2 = other.buf + other.bufsize;
+
+    if(e2 < s1) {
+        return false;
+    }
+    if(e1 < s2) {
+        return false;
+    }
+    return true;
+}
+
 CString::CString(Bytes incoming) {
     bytes = move(incoming);
     bytes.append('\0');
@@ -812,6 +827,12 @@ CStringView U8StringView::raw_view() const {
                        (size_t)(end.byte_location() - start.byte_location())};
 }
 
+bool U8StringView::overlaps(const U8StringView &o) const {
+    auto cv1 = raw_view();
+    auto cv2 = o.raw_view();
+    return cv1.overlaps(cv2);
+}
+
 bool U8StringView::operator==(const char *txt) const {
     const unsigned char *data_start = start.byte_location();
     const unsigned char *data_end = end.byte_location();
@@ -934,9 +955,14 @@ void U8String::pop_back() noexcept {
     remove(U8StringView(start, end));
 }
 
-bool U8String::contains(U8StringView view) const {
+bool U8String::contains(const U8StringView &view) const {
     return view.start.byte_location() >= (const unsigned char *)cstring.c_str() &&
            view.end.byte_location() <= (const unsigned char *)(cstring.c_str() + cstring.size());
+}
+
+bool U8String::overlaps(const U8StringView &o) const {
+    const auto v1 = view();
+    return v1.overlaps(o);
 }
 
 void ValidatedU8Iterator::compute_char_info() {

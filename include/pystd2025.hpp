@@ -1399,6 +1399,8 @@ public:
 
     bool operator<(const CStringView &o) const;
 
+    bool overlaps(CStringView &other) const;
+
 private:
     const char *buf;
     size_t bufsize;
@@ -1510,6 +1512,7 @@ struct U8StringView {
 
     CStringView raw_view() const;
 
+    bool overlaps(const U8StringView &o) const;
     bool operator==(const char *) const;
 };
 
@@ -1599,7 +1602,8 @@ public:
     void pop_front() noexcept;
     void pop_back() noexcept;
 
-    bool contains(U8StringView view) const;
+    bool contains(const U8StringView &view) const;
+    bool overlaps(const U8StringView &view) const;
 
 private:
     CString cstring;
