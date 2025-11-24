@@ -1506,6 +1506,147 @@ private:
     Bytes bytes;
 };
 
+template<size_t BUF_SIZE> class FixedCString {
+    static_assert(BUF_SIZE > 0);
+
+public:
+    FixedCString() noexcept {
+        buf[0] = '\0';
+        strsize = 0;
+    }
+
+    FixedCString(FixedCString &&o) noexcept { swipe(o); }
+
+    FixedCString(const FixedCString &o) noexcept {
+        for(size_t i = 0; i < o.strsize + 1; ++i) {
+            buf[i] = o.buf[i];
+        }
+        strsize = o.strsize;
+    }
+
+    explicit FixedCString(const char *str, const uint32_t length_in = (uint32_t)-1) {
+        if(length_in == (uint32_t)-1) {
+            for(size_t i = 0; i < BUF_SIZE + 1; ++i) {
+                buf[i] = str[i];
+                if(buf[i] == '\0') {
+                    strsize = i;
+                    return;
+                }
+            }
+            bootstrap_throw("Input string too long for FixedCString.");
+        }
+        if(length_in > BUF_SIZE) {
+            bootstrap_throw("Input string too long for FixedCString.");
+        }
+        for(size_t i = 0; i < length_in + 1; ++i) {
+            buf[i] = str[i];
+        }
+        strsize = length_in;
+    }
+
+    FixedCString &operator=(FixedCString &&o) noexcept {
+        if(this != &o) {
+            swipe(o);
+        }
+        return *this;
+    }
+
+    FixedCString &operator=(const FixedCString &o) noexcept {
+        if(this != &o) {
+            for(uint32_t i = 0; i < o.strsize + 1; ++i) {
+                buf[i] = o.buf[i];
+            }
+            strsize = o.strsize;
+        }
+        return *this;
+    }
+
+    template<size_t OTHER_BUFSIZE>
+    FixedCString &operator=(const FixedCString<OTHER_BUFSIZE> &o) noexcept {
+        *this = o.view();
+        return *this;
+    }
+
+    FixedCString &operator=(const CStringView &o) {
+        if(o.data() == buf) {
+            return *this;
+        }
+        if(o.size() > BUF_SIZE) {
+            bootstrap_throw("Input string too long for FixedCString.");
+        }
+        if(o.data() > buf && o.data() < (buf + BUF_SIZE)) {
+            bootstrap_throw("Self sub-assignment not yet supported.");
+        }
+
+        for(uint32_t i = 0; i < o.size(); ++i) {
+            buf[i] = o[i];
+        }
+        strsize = o.size();
+        buf[strsize] = '\0';
+        return *this;
+    }
+
+    bool operator==(const CStringView &other) noexcept {
+        if(strsize != other.size()) {
+            return false;
+        }
+        return view() == other;
+    }
+
+    bool operator==(const char *str) noexcept {
+        for(size_t i = 0; i < strsize + 1; ++i) {
+            if(buf[i] != str[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    char &operator[](uint32_t index) {
+        if(index > BUF_SIZE) {
+            bootstrap_throw("OoB in FixedCString");
+        }
+        return buf[index];
+    }
+
+    const char &operator[](uint32_t index) const {
+        if(index > BUF_SIZE) {
+            bootstrap_throw("OoB in FixedCString");
+        }
+        return buf[index];
+    }
+
+    CStringView view() const noexcept { return CStringView(buf, strsize); }
+
+    char *c_str() noexcept { return buf; }
+
+    const char *c_str() const noexcept { return buf; }
+
+    bool is_empty() const noexcept { return strsize == 0; }
+
+    size_t size() const noexcept { return strsize; }
+
+    void pop_back() noexcept {
+        if(strsize > 0) {
+            --strsize;
+            buf[strsize] = '\0';
+        }
+    }
+
+private:
+    void swipe(FixedCString &o) noexcept {
+        for(size_t i = 0; i < BUF_SIZE + 1; ++i) {
+            buf[i] = o.buf[i];
+        }
+        strsize = o.strsize;
+        o.strsize = 0;
+        o.buf[0] = '\0';
+    }
+
+    char buf[BUF_SIZE + 1];
+    uint32_t strsize; // This could even be a uint16_t to save space.
+};
+
 struct U8StringView {
     ValidatedU8Iterator start;
     ValidatedU8Iterator end;

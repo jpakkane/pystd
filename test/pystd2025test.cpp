@@ -70,6 +70,61 @@ int test_c_strings() {
     return failing_subtests;
 }
 
+int test_fixed_c_string_basic() {
+    TEST_START;
+    pystd2025::FixedCString<16> empty;
+    ASSERT(empty == "");
+    ASSERT(empty != "abc");
+
+    pystd2025::FixedCString<16> one("abc");
+    pystd2025::FixedCString<16> two("def");
+
+    ASSERT(one.size() == 3);
+    ASSERT(one[1] == 'b');
+
+    // There is no actual equality operator because GCC says it is not standards compliant
+    // due to standardese shenanigans.
+    ASSERT(one != two.view());
+
+    two.pop_back();
+    ASSERT(two == "de");
+    ASSERT(two.size() == 2);
+    ASSERT(!two.is_empty());
+    two.pop_back();
+    two.pop_back();
+    ASSERT(two.is_empty());
+    two = one;
+    ASSERT(two == one.view());
+
+    pystd2025::FixedCString<32> big;
+    big = one;
+    ASSERT(big == one.view());
+    return 0;
+}
+
+int test_fixed_c_string_toobig() {
+    TEST_START;
+    pystd2025::FixedCString<8> small;
+    bool exception_happened = false;
+    try {
+        small = "This is way too big for you to handle.";
+    } catch(const pystd2025::PyException &) {
+        exception_happened = true;
+    }
+
+    ASSERT(exception_happened);
+    ASSERT(small.is_empty());
+    return 0;
+}
+
+int test_fixed_c_strings() {
+    TEST_START;
+    int failing_subtests = 0;
+    failing_subtests += test_fixed_c_string_basic();
+    failing_subtests += test_fixed_c_string_toobig();
+    return failing_subtests;
+}
+
 int test_u8string_simple() {
     TEST_START;
     pystd2025::U8String str("abc");
@@ -728,6 +783,7 @@ int main(int argc, char **argv) {
     int total_errors = 0;
     try {
         total_errors += test_c_strings();
+        total_errors += test_fixed_c_strings();
         total_errors += test_u8_strings();
         total_errors += test_u8_regex();
         total_errors += test_optional();
