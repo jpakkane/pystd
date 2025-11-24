@@ -3195,4 +3195,10 @@ template<typename It, typename Predicate> It partition(It first, It last, const 
 double clamp(double val, double lower, double upper);
 int64_t clamp(int64_t val, int64_t lower, int64_t upper);
 
+struct UnicodeConversionResult {
+    uint32_t codepoints[3];
+};
+
+UnicodeConversionResult uppercase_unicode(uint32_t codepoint);
+
 } // namespace pystd2025

@@ -779,6 +779,41 @@ int test_partition() {
     return failing_subtests;
 }
 
+int test_uppercasing() {
+    TEST_START;
+    auto rc = pystd2025::uppercase_unicode('c');
+    ASSERT(rc.codepoints[0] == 'C');
+    ASSERT(rc.codepoints[1] == 0);
+    ASSERT(rc.codepoints[2] == 0);
+
+    memset(&rc, 42, sizeof(rc));
+    rc = pystd2025::uppercase_unicode('C');
+    ASSERT(rc.codepoints[0] == 'C');
+    ASSERT(rc.codepoints[1] == 0);
+    ASSERT(rc.codepoints[2] == 0);
+
+    memset(&rc, 42, sizeof(rc));
+    rc = pystd2025::uppercase_unicode(223); // ß
+    ASSERT(rc.codepoints[0] == 'S');
+    ASSERT(rc.codepoints[1] == 'S');
+    ASSERT(rc.codepoints[2] == 0);
+
+    memset(&rc, 42, sizeof(rc));
+    rc = pystd2025::uppercase_unicode(958); // ξ
+    ASSERT(rc.codepoints[0] == 926);        // Ξ
+    ASSERT(rc.codepoints[1] == 0);
+    ASSERT(rc.codepoints[2] == 0);
+
+    return 0;
+}
+
+int test_unicode() {
+    printf("Testing partition.\n");
+    int failing_subtests = 0;
+    failing_subtests += test_uppercasing();
+    return failing_subtests;
+}
+
 int main(int argc, char **argv) {
     int total_errors = 0;
     try {
@@ -798,6 +833,7 @@ int main(int argc, char **argv) {
         total_errors += test_fixedvector();
         total_errors += test_btree();
         total_errors += test_partition();
+        total_errors += test_unicode();
     } catch(const pystd2025::PyException &e) {
         printf("Testing failed: %s\n", e.what().c_str());
         return 42;
