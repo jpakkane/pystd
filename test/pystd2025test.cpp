@@ -813,10 +813,45 @@ int test_uppercasing() {
     return 0;
 }
 
+int test_lowercasing() {
+    TEST_START;
+    auto rc = pystd2025::lowercase_unicode('C');
+    ASSERT(rc.codepoints[0] == 'c');
+    ASSERT(rc.codepoints[1] == 0);
+    ASSERT(rc.codepoints[2] == 0);
+
+    memset(&rc, 42, sizeof(rc));
+    rc = pystd2025::lowercase_unicode('c');
+    ASSERT(rc.codepoints[0] == 'c');
+    ASSERT(rc.codepoints[1] == 0);
+    ASSERT(rc.codepoints[2] == 0);
+
+    memset(&rc, 42, sizeof(rc));
+    rc = pystd2025::lowercase_unicode(304); // İ
+    ASSERT(rc.codepoints[0] == 105);
+    ASSERT(rc.codepoints[1] == 775);
+    ASSERT(rc.codepoints[2] == 0);
+
+    memset(&rc, 42, sizeof(rc));
+    rc = pystd2025::lowercase_unicode(926); // Ξ
+    ASSERT(rc.codepoints[0] == 958);        // ξ
+    ASSERT(rc.codepoints[1] == 0);
+    ASSERT(rc.codepoints[2] == 0);
+
+    memset(&rc, 42, sizeof(rc));
+    rc = pystd2025::lowercase_unicode(33333);
+    ASSERT(rc.codepoints[0] == 33333);
+    ASSERT(rc.codepoints[1] == 0);
+    ASSERT(rc.codepoints[2] == 0);
+
+    return 0;
+}
+
 int test_unicode() {
     printf("Testing partition.\n");
     int failing_subtests = 0;
     failing_subtests += test_uppercasing();
+    failing_subtests += test_lowercasing();
     return failing_subtests;
 }
 

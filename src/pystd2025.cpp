@@ -1177,4 +1177,35 @@ UnicodeConversionResult uppercase_unicode(uint32_t codepoint) {
     return r;
 }
 
+UnicodeConversionResult lowercase_unicode(uint32_t codepoint) {
+    if(codepoint < 128) {
+        UnicodeConversionResult r;
+        memset(&r, 0, sizeof(UnicodeConversionResult));
+        r.codepoints[0] = tolower(codepoint);
+        return r;
+    }
+
+    static_assert(NUM_LOWERCASING_MULTICHAR_ENTRIES == 1);
+    if(lowercasing_multi[0].codepoint == codepoint) {
+        return lowercasing_multi[0].converted;
+    }
+    UnicodeConversionResult r;
+    memset(&r, 0, sizeof(UnicodeConversionResult));
+    auto sit = lower_bound(lowercasing_single,
+                           lowercasing_single + NUM_LOWERCASING_SINGLECHAR_ENTRIES,
+                           codepoint,
+                           [](const UnicodeConversionSingleChar &trial, uint32_t cp) {
+                               return trial.from_codepoint < cp;
+                           });
+    if(sit != lowercasing_single + NUM_LOWERCASING_SINGLECHAR_ENTRIES) {
+        if(sit->from_codepoint == codepoint) {
+            r.codepoints[0] = sit->to_codepoint;
+            return r;
+        }
+    }
+    // Letter has no lower case form, return itself.
+    r.codepoints[0] = codepoint;
+    return r;
+}
+
 } // namespace pystd2025

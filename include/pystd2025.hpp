@@ -3206,5 +3206,6 @@ struct UnicodeConversionResult {
 };
 
 UnicodeConversionResult uppercase_unicode(uint32_t codepoint);
+UnicodeConversionResult lowercase_unicode(uint32_t codepoint);
 
 } // namespace pystd2025
