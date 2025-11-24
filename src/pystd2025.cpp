@@ -2667,28 +2667,31 @@ UnicodeConversionResult uppercase_unicode(uint32_t codepoint) {
         r.codepoints[0] = toupper(codepoint);
         return r;
     }
-    for(size_t i = 0; i < NUM_UPPERCASING_MULTICHAR_ENTRIES; ++i) {
-        if(uppercasing_multi[i].codepoint == codepoint) {
-            return uppercasing_multi[i].converted;
-        }
-        if(uppercasing_multi[i].codepoint > codepoint) {
-            break;
+    auto mit = lower_bound(
+        uppercasing_multi,
+        uppercasing_multi + NUM_UPPERCASING_MULTICHAR_ENTRIES,
+        codepoint,
+        [](const UnicodeConversionMultiChar &trial, uint32_t cp) { return trial.codepoint < cp; });
+    if(mit != uppercasing_multi + NUM_UPPERCASING_MULTICHAR_ENTRIES) {
+        if(mit->codepoint == codepoint) {
+            return mit->converted;
         }
     }
 
     UnicodeConversionResult r;
     memset(&r, 0, sizeof(UnicodeConversionResult));
-    // FIXME, use lower_bound or something else that is more efficient.
-    for(size_t i = 0; i < NUM_UPPERCASING_SINGLE_ENTRIES; ++i) {
-        if(uppercasing_single[i].from_codepoint == codepoint) {
-            r.codepoints[0] = uppercasing_single[i].to_codepoint;
+    auto sit = lower_bound(uppercasing_single,
+                           uppercasing_single + NUM_UPPERCASING_SINGLE_ENTRIES,
+                           codepoint,
+                           [](const UnicodeConversionSingleChar &trial, uint32_t cp) {
+                               return trial.from_codepoint < cp;
+                           });
+    if(sit != uppercasing_single + NUM_UPPERCASING_SINGLE_ENTRIES) {
+        if(sit->from_codepoint == codepoint) {
+            r.codepoints[0] = sit->to_codepoint;
             return r;
         }
-        if(uppercasing_single[i].from_codepoint > codepoint) {
-            break;
-        }
     }
-
     // Letter has no upper case form, return itself.
     r.codepoints[0] = codepoint;
     return r;

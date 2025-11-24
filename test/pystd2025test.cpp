@@ -804,6 +804,12 @@ int test_uppercasing() {
     ASSERT(rc.codepoints[1] == 0);
     ASSERT(rc.codepoints[2] == 0);
 
+    memset(&rc, 42, sizeof(rc));
+    rc = pystd2025::uppercase_unicode(33333);
+    ASSERT(rc.codepoints[0] == 33333);
+    ASSERT(rc.codepoints[1] == 0);
+    ASSERT(rc.codepoints[2] == 0);
+
     return 0;
 }
 

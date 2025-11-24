@@ -3145,14 +3145,15 @@ template<typename T> void sort_relocatable(T *data, size_t bufsize) {
     qsort(data, bufsize, sizeof(T), ordering);
 }
 
-template<typename It, typename Value> It lower_bound(It first, It last, const Value &value) {
+template<typename It, typename Value, typename Callable>
+It lower_bound(It first, It last, const Value &value, const Callable &is_less) {
     It it{};
     auto count = last - first;
     while(count > 0) {
         it = first;
         auto step = count / 2;
         it += step;
-        if(*it < value) {
+        if(is_less(*it, value)) {
             first = ++it;
             count -= step + 1;
         } else {
@@ -3160,6 +3161,11 @@ template<typename It, typename Value> It lower_bound(It first, It last, const Va
         }
     }
     return it;
+}
+
+template<typename It, typename Value> It lower_bound(It first, It last, const Value &value) {
+    return lower_bound(
+        first, last, value, [](const Value &v1, const Value &v2) { return v1 < v2; });
 }
 
 template<class It, class Predicate> It find_if(It first, It last, const Predicate &&pred) {
