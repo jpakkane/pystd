@@ -403,7 +403,7 @@ private:
 
 template<typename T> class unique_arr final {
 public:
-    unique_arr() noexcept : ptr{nullptr} {}
+    unique_arr() noexcept = default;
     explicit unique_arr(size_t size) noexcept : ptr{new T[size]}, array_size{size} {}
     explicit unique_arr(T *t, size_t size = 0) noexcept : ptr{t}, array_size{size} {}
     explicit unique_arr(const unique_arr<T> &o) = delete;
@@ -449,8 +449,8 @@ public:
     }
 
 private:
-    T *ptr;
-    size_t array_size;
+    T *ptr = nullptr;
+    size_t array_size = 0;
 };
 
 template<WellBehaved T> class Optional final {

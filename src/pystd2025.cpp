@@ -172,7 +172,7 @@ void SimpleHash::feed_bytes(const char *buf, size_t bufsize) noexcept {
 
 BytesView::BytesView(const Bytes &b) noexcept : BytesView(b.data(), b.size()) {}
 
-Bytes::Bytes() noexcept : buf{new char[default_bufsize], default_bufsize} { bufsize = 0; }
+Bytes::Bytes() noexcept : buf{} { bufsize = 0; }
 
 Bytes::Bytes(size_t initial_size) noexcept : buf{new char[initial_size], initial_size} {
     bufsize = 0;
@@ -261,7 +261,9 @@ void Bytes::grow_to(size_t new_size) {
         new_capacity *= 2;
     }
     unique_arr<char> new_buf(new_capacity);
-    memcpy(new_buf.get(), buf.get(), bufsize);
+    if(bufsize > 0) {
+        memcpy(new_buf.get(), buf.get(), bufsize);
+    }
     buf = move(new_buf);
 }
 
