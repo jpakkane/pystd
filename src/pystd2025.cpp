@@ -855,6 +855,20 @@ bool U8StringView::operator==(const char *txt) const {
     }
 }
 
+U8String U8StringView::upper() const {
+    U8String result;
+    // result.reserve()
+    for(auto it = start; it != end; ++it) {
+        const auto uppered = uppercase_unicode(*it);
+        for(size_t i = 0; i < 3; ++i) {
+            if(uppered.codepoints[i] != 0) {
+                result.append_codepoint(uppered.codepoints[i]);
+            }
+        }
+    }
+    return result;
+}
+
 U8String::U8String(Bytes incoming) {
     if(!is_valid_utf8(incoming.data(), incoming.size())) {
         throw PyException("Invalid UTF-8.");
@@ -957,6 +971,28 @@ void U8String::pop_back() noexcept {
     auto start = end;
     --start;
     remove(U8StringView(start, end));
+}
+
+void U8String::append_codepoint(uint32_t codepoint) {
+    unsigned char buf[5] = {0, 0, 0, 0, 0};
+    if(codepoint < 0x80) {
+        buf[0] = codepoint;
+    } else if(codepoint < 0x800) {
+        buf[0] = 0xC0 | (codepoint >> 6 & 0x1F);
+        buf[1] = 0x80 | (codepoint & 0x3F);
+    } else if(codepoint < 0x10000) {
+        buf[0] = 0xE0 | (codepoint >> 12 & 0x0F);
+        buf[1] = 0x80 | (codepoint >> 6 & 0x3F);
+        buf[2] = 0x80 | (codepoint & 0x3F);
+    } else if(codepoint < 0x110000) {
+        buf[0] = 0xF0 | (codepoint >> 18 & 0x07);
+        buf[1] = 0x80 | (codepoint >> 12 & 0x3F);
+        buf[2] = 0x80 | (codepoint >> 6 & 0x3F);
+        buf[3] = 0x80 | (codepoint & 0x3F);
+    } else {
+        throw PyException("Unicode codepoint > 0x110000.");
+    }
+    cstring += (char *)buf;
 }
 
 bool U8String::contains(const U8StringView &view) const {

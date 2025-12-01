@@ -1647,6 +1647,8 @@ private:
     uint32_t strsize; // This could even be a uint16_t to save space.
 };
 
+class U8String;
+
 struct U8StringView {
     ValidatedU8Iterator start;
     ValidatedU8Iterator end;
@@ -1655,6 +1657,8 @@ struct U8StringView {
 
     bool overlaps(const U8StringView &o) const;
     bool operator==(const char *) const;
+
+    U8String upper() const;
 };
 
 typedef bool (*U8StringViewCallback)(const U8StringView &piece, void *ctx);
@@ -1742,9 +1746,12 @@ public:
     void remove(U8StringView view);
     void pop_front() noexcept;
     void pop_back() noexcept;
+    void append_codepoint(uint32_t codepoint);
 
     bool contains(const U8StringView &view) const;
     bool overlaps(const U8StringView &view) const;
+
+    pystd2025::U8String upper() const { return view().upper(); }
 
 private:
     CString cstring;

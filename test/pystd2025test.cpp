@@ -275,6 +275,18 @@ int test_u8_pop() {
     return 0;
 }
 
+int test_u8_casing() {
+    TEST_START;
+    const pystd2025::U8String START("Aa-åÄö.487/-");
+    const pystd2025::U8String UPPER("AA-ÅÄÖ.487/-");
+    const pystd2025::U8String LOWER("aa-åäö.487/-");
+
+    pystd2025::U8String str = START.upper();
+
+    ASSERT(str == UPPER);
+    return 0;
+}
+
 int test_u8_strings() {
     TEST_START;
     int failing_subtests = 0;
@@ -289,6 +301,7 @@ int test_u8_strings() {
     failing_subtests += test_u8_splice();
     failing_subtests += test_u8_remove();
     failing_subtests += test_u8_pop();
+    failing_subtests += test_u8_casing();
     return failing_subtests;
 }
 
@@ -458,7 +471,9 @@ int test_hashmap() {
     ASSERT(map.size() == NUM_ENTRIES);
 
     for(int i = 0; i < NUM_ENTRIES; ++i) {
-        ASSERT(*map.lookup(i) == NUM_ENTRIES - i);
+        auto *l = map.lookup(i);
+        ASSERT(l);
+        ASSERT(*l == NUM_ENTRIES - i);
         map.remove(i);
         ASSERT(map.lookup(i) == nullptr);
     }
