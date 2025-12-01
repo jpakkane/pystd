@@ -1659,6 +1659,9 @@ struct U8StringView {
     bool operator==(const char *) const;
 
     U8String upper() const;
+    U8String lower() const;
+
+    size_t size_bytes() const noexcept { return end.buf - start.buf; }
 };
 
 typedef bool (*U8StringViewCallback)(const U8StringView &piece, void *ctx);
@@ -1752,6 +1755,10 @@ public:
     bool overlaps(const U8StringView &view) const;
 
     pystd2025::U8String upper() const { return view().upper(); }
+
+    pystd2025::U8String lower() const { return view().lower(); }
+
+    void reserve(size_t size_in_bytes) noexcept { cstring.reserve(size_in_bytes); }
 
 private:
     CString cstring;

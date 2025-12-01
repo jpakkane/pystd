@@ -282,8 +282,11 @@ int test_u8_casing() {
     const pystd2025::U8String LOWER("aa-åäö.487/-");
 
     pystd2025::U8String str = START.upper();
-
     ASSERT(str == UPPER);
+
+    str = str.lower();
+    ASSERT(str == LOWER);
+
     return 0;
 }
 

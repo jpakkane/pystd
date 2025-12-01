@@ -857,12 +857,26 @@ bool U8StringView::operator==(const char *txt) const {
 
 U8String U8StringView::upper() const {
     U8String result;
-    // result.reserve()
+    result.reserve(size_bytes());
     for(auto it = start; it != end; ++it) {
         const auto uppered = uppercase_unicode(*it);
         for(size_t i = 0; i < 3; ++i) {
             if(uppered.codepoints[i] != 0) {
                 result.append_codepoint(uppered.codepoints[i]);
+            }
+        }
+    }
+    return result;
+}
+
+U8String U8StringView::lower() const {
+    U8String result;
+    result.reserve(size_bytes());
+    for(auto it = start; it != end; ++it) {
+        const auto lowered = lowercase_unicode(*it);
+        for(size_t i = 0; i < 3; ++i) {
+            if(lowered.codepoints[i] != 0) {
+                result.append_codepoint(lowered.codepoints[i]);
             }
         }
     }
