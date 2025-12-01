@@ -1401,6 +1401,9 @@ public:
 
     bool overlaps(CStringView &other) const;
 
+    CString upper() const noexcept;
+    CString lower() const noexcept;
+
 private:
     const char *buf;
     size_t bufsize;
@@ -1497,6 +1500,9 @@ public:
     void resize(size_t new_size) noexcept { bytes.resize(new_size); }
 
     void remove(size_t from, size_t to) { bytes.remove(from, to); }
+
+    CString upper() const noexcept { return view().upper(); }
+    CString lower() const noexcept { return view().lower(); }
 
 private:
     bool view_points_to_this(const CStringView &v) const;

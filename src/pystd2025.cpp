@@ -505,6 +505,24 @@ bool CStringView::overlaps(CStringView &other) const {
     return true;
 }
 
+CString CStringView::upper() const noexcept {
+    CString result;
+    result.reserve(size());
+    for(const char c : *this) {
+        result += (char)toupper((const unsigned char)c);
+    }
+    return result;
+}
+
+CString CStringView::lower() const noexcept {
+    CString result;
+    result.reserve(size());
+    for(const char c : *this) {
+        result += (char)tolower((const unsigned char)c);
+    }
+    return result;
+}
+
 CString::CString(Bytes incoming) {
     bytes = move(incoming);
     bytes.append('\0');

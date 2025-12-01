@@ -61,12 +61,27 @@ int test_cstring_splice() {
     return 0;
 }
 
+int test_cstring_casing() {
+    TEST_START;
+    const pystd2025::CString START("heLlo!");
+    const pystd2025::CString UPPER("HELLO!");
+    const pystd2025::CString LOWER("hello!");
+
+    auto str = START.upper();
+    ASSERT(str == UPPER);
+
+    str = str.lower();
+    ASSERT(str == LOWER);
+    return 0;
+}
+
 int test_c_strings() {
     TEST_START;
     int failing_subtests = 0;
     failing_subtests += test_cstring_strip();
     failing_subtests += test_cstring_split();
     failing_subtests += test_cstring_splice();
+    failing_subtests += test_cstring_casing();
     return failing_subtests;
 }
 
