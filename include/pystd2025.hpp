@@ -1935,7 +1935,7 @@ public:
                     auto *value_loc = data.valueptr(slot);
                     value_loc->~Value();
                     const auto previous_slot = (slot + table_size() - 1) & mod_mask;
-                    const auto next_slot = (slot + 1) % mod_mask;
+                    const auto next_slot = (slot + 1) & mod_mask;
                     if(data.md[previous_slot].state == SlotState::Empty &&
                        data.md[next_slot].state == SlotState::Empty) {
                         data.md[slot].state = SlotState::Empty;

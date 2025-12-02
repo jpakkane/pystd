@@ -484,7 +484,13 @@ int test_hashmap() {
     for(int i = 0; i < NUM_ENTRIES; ++i) {
         ASSERT(map.lookup(i) == nullptr);
         map.insert(i, NUM_ENTRIES - i);
-        ASSERT(*map.lookup(i) == NUM_ENTRIES - i);
+        // All other entries must remain the same.
+        for(int j = 0; j <= i; ++j) {
+            ASSERT(*map.lookup(j) == NUM_ENTRIES - j);
+        }
+        for(int j = i + 1; j < NUM_ENTRIES; ++j) {
+            ASSERT(!map.lookup(j));
+        }
     }
     ASSERT(map.size() == NUM_ENTRIES);
 
@@ -494,6 +500,12 @@ int test_hashmap() {
         ASSERT(*l == NUM_ENTRIES - i);
         map.remove(i);
         ASSERT(map.lookup(i) == nullptr);
+        for(int j = 0; j < i; ++j) {
+            ASSERT(!map.lookup(j));
+        }
+        for(int j = i + 1; j < NUM_ENTRIES; ++j) {
+            ASSERT(*map.lookup(j) == NUM_ENTRIES - j);
+        }
     }
     ASSERT(map.is_empty());
 
