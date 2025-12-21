@@ -3,6 +3,7 @@ stdlib = static_library('pystd',
   'pystd2025_regex.cpp',
   'pystd2025_filesystem.cpp',
   'pystd2025_tables.cpp',
+  'pystd2025_threading.cpp',
   include_directories: '../include',
   dependencies: pcre_dep)
 

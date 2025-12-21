@@ -962,6 +962,26 @@ int test_unicode() {
     return failing_subtests;
 }
 
+#include <pystd2025_threading.hpp>
+
+int test_mutex() {
+    TEST_START;
+
+    pystd2025::Mutex m;
+
+    ASSERT(m.try_lock());
+    ASSERT(!m.try_lock());
+    m.unlock();
+
+    {
+        pystd2025::LockGuard<pystd2025::Mutex> guard(m);
+        ASSERT(!m.try_lock());
+    }
+    ASSERT(m.try_lock());
+    m.unlock();
+    return 0;
+}
+
 int main(int argc, char **argv) {
     int total_errors = 0;
     try {
@@ -983,6 +1003,7 @@ int main(int argc, char **argv) {
         total_errors += test_btree();
         total_errors += test_partition();
         total_errors += test_unicode();
+        total_errors += test_mutex();
     } catch(const pystd2025::PyException &e) {
         printf("Testing failed: %s\n", e.what().c_str());
         return 42;
