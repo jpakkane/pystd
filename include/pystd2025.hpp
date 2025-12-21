@@ -1785,7 +1785,7 @@ private:
 template<typename T> class Span {
 public:
     Span() noexcept : array(nullptr), arraysize(0) {};
-    Span(const T *src, size_t src_size) noexcept : array(src), arraysize(src_size) {}
+    Span(T *src, size_t src_size) noexcept : array(src), arraysize(src_size) {}
     Span(Span &&o) noexcept = default;
     Span(const Span &o) noexcept = default;
 
@@ -1799,11 +1799,20 @@ public:
         return array[i];
     }
 
+    T &operator[](size_t i) {
+        if(i >= arraysize) {
+            throw PyException("OOB in span.");
+        }
+        return array[i];
+    }
+
     const T &at(size_t i) const { return (*this)[i]; }
 
-    const T *begin() const { return array; }
+    const T *cbegin() const { return array; }
+    T *begin() const { return array; }
 
-    const T *end() const { return array + arraysize; }
+    const T *cend() const { return array + arraysize; }
+    T *end() const { return array + arraysize; }
 
     size_t size() const noexcept { return arraysize; }
 
@@ -1823,7 +1832,7 @@ public:
     }
 
 private:
-    const T *array;
+    T *array;
     size_t arraysize;
 };
 

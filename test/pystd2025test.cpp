@@ -409,11 +409,23 @@ int test_span_sub() {
     return 0;
 }
 
+int test_span_write() {
+    TEST_START;
+    const int BUFSIZE = 5;
+    int buf[BUFSIZE] = {0, 1, 2, 3, 4};
+    pystd2025::Span<int> basic_span(buf, BUFSIZE);
+
+    basic_span[2] = 666;
+    ASSERT(buf[2] == 666);
+    return 0;
+}
+
 int test_span() {
     printf("Testing Span.\n");
     int failing_subtests = 0;
     failing_subtests += test_span_basic();
     failing_subtests += test_span_sub();
+    failing_subtests += test_span_write();
     return failing_subtests;
 }
 
