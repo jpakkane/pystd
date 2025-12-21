@@ -1793,7 +1793,7 @@ public:
     Span &operator=(const Span &o) noexcept = default;
 
     const T &operator[](size_t i) const {
-        if(i > arraysize) {
+        if(i >= arraysize) {
             throw PyException("OOB in span.");
         }
         return array[i];
@@ -1805,7 +1805,9 @@ public:
 
     const T *end() const { return array + arraysize; }
 
-    size_t size() const { return arraysize; }
+    size_t size() const noexcept { return arraysize; }
+
+    bool is_empty() const noexcept { return arraysize == 0; }
 
 private:
     const T *array;

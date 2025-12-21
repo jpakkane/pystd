@@ -367,6 +367,29 @@ int test_optional() {
     return 0;
 }
 
+int test_span() {
+    TEST_START;
+    const int BUFSIZE = 5;
+    const int buf[BUFSIZE] = {0, 1, 2, 3, 4};
+    pystd2025::Span<int> empty_span;
+    pystd2025::Span<const int> basic_span(buf, BUFSIZE);
+
+    ASSERT(empty_span.is_empty());
+    ASSERT(!basic_span.is_empty());
+
+    ASSERT(basic_span[1] == 1);
+    bool exception_happened = false;
+    try {
+        const auto nope = basic_span[BUFSIZE];
+        (void)nope;
+    } catch(const pystd2025::PyException &) {
+        exception_happened = true;
+    }
+    ASSERT(exception_happened);
+
+    return 0;
+}
+
 int test_range1() {
     TEST_START;
     pystd2025::Range r(3);
@@ -908,6 +931,7 @@ int main(int argc, char **argv) {
         total_errors += test_u8_strings();
         total_errors += test_u8_regex();
         total_errors += test_optional();
+        total_errors += test_span();
         total_errors += test_range();
         total_errors += test_vector();
         total_errors += test_files();
