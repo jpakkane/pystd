@@ -42,4 +42,19 @@ private:
     T &m;
 };
 
+class Thread final {
+public:
+    Thread(void *(*thread_main_func)(void *), void *ctx);
+    ~Thread();
+
+    Thread(const Thread &) = delete;
+    Thread &operator=(const Thread &) = delete;
+
+    void join();
+    void detach();
+
+private:
+    pthread_t thread;
+    bool thread_is_finalized = false;
+};
 } // namespace pystd2025

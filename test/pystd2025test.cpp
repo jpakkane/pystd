@@ -982,6 +982,42 @@ int test_mutex() {
     return 0;
 }
 
+int test_thread() {
+    TEST_START;
+    typedef struct {
+        int x;
+        pystd2025::Mutex m;
+    } Context;
+    Context ctx;
+    ctx.x = 0;
+
+    auto incrementer = [](void *ctx) -> void * {
+        Context *c = reinterpret_cast<Context *>(ctx);
+        for(int i = 0; i < 1000; ++i) {
+            pystd2025::LockGuard<pystd2025::Mutex> lg(c->m);
+            ++c->x;
+        }
+        return nullptr;
+    };
+    {
+        pystd2025::Thread th1(incrementer, &ctx);
+        pystd2025::Thread th2(incrementer, &ctx);
+        pystd2025::Thread th3(incrementer, &ctx);
+        pystd2025::Thread th4(incrementer, &ctx);
+    }
+    ASSERT(ctx.x == 4000);
+
+    return 0;
+}
+
+int test_threading() {
+    printf("Testing threading.\n");
+    int failing_subtests = 0;
+    failing_subtests += test_mutex();
+    failing_subtests += test_thread();
+    return failing_subtests;
+}
+
 int main(int argc, char **argv) {
     int total_errors = 0;
     try {
@@ -1003,7 +1039,7 @@ int main(int argc, char **argv) {
         total_errors += test_btree();
         total_errors += test_partition();
         total_errors += test_unicode();
-        total_errors += test_mutex();
+        total_errors += test_threading();
     } catch(const pystd2025::PyException &e) {
         printf("Testing failed: %s\n", e.what().c_str());
         return 42;

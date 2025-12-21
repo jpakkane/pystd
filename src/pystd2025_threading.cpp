@@ -39,4 +39,33 @@ void Mutex::unlock() {
     }
 }
 
+Thread::Thread(void *(*thread_main_func)(void *), void *ctx) {
+    pthread_attr_t attr;
+    auto rc = pthread_attr_init(&attr);
+    if(rc != 0) {
+        throw PyException(strerror(rc));
+    }
+    rc = pthread_create(&thread, &attr, thread_main_func, ctx);
+    pthread_attr_destroy(&attr);
+    if(rc != 0) {
+        throw PyException(strerror(rc));
+    }
+}
+
+Thread::~Thread() {
+    if(!thread_is_finalized) {
+        join();
+    }
+}
+
+void Thread::join() {
+    pthread_join(thread, nullptr);
+    thread_is_finalized = true;
+}
+
+void Thread::detach() {
+    pthread_detach(thread);
+    thread_is_finalized = true;
+}
+
 } // namespace pystd2025
