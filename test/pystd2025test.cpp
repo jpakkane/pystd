@@ -367,7 +367,7 @@ int test_optional() {
     return 0;
 }
 
-int test_span() {
+int test_span_basic() {
     TEST_START;
     const int BUFSIZE = 5;
     const int buf[BUFSIZE] = {0, 1, 2, 3, 4};
@@ -388,6 +388,33 @@ int test_span() {
     ASSERT(exception_happened);
 
     return 0;
+}
+
+int test_span_sub() {
+    TEST_START;
+    const int BUFSIZE = 5;
+    const int buf[BUFSIZE] = {0, 1, 2, 3, 4};
+    pystd2025::Span<const int> basic_span(buf, BUFSIZE);
+
+    auto subspan = basic_span.subspan(1, 2);
+    ASSERT(subspan.size() == 2);
+    ASSERT(subspan[0] == 1);
+
+    subspan = basic_span.subspan(2);
+    ASSERT(subspan.size() == 3);
+    ASSERT(subspan[0] == 2);
+
+    subspan = basic_span.subspan(0, 0);
+    ASSERT(subspan.is_empty());
+    return 0;
+}
+
+int test_span() {
+    printf("Testing Span.\n");
+    int failing_subtests = 0;
+    failing_subtests += test_span_basic();
+    failing_subtests += test_span_sub();
+    return failing_subtests;
 }
 
 int test_range1() {

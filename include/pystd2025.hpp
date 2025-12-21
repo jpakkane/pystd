@@ -1809,6 +1809,19 @@ public:
 
     bool is_empty() const noexcept { return arraysize == 0; }
 
+    Span subspan(size_t offset, size_t subspan_size = (size_t)-1) const {
+        if(offset >= arraysize) {
+            throw PyException("Offset OoB in subspan.");
+        }
+        if(subspan_size == (size_t)-1) {
+            return Span(array + offset, arraysize - offset);
+        }
+        if(offset + subspan_size >= arraysize) {
+            throw PyException("Subspan goes OoB.");
+        }
+        return Span(array + offset, subspan_size);
+    }
+
 private:
     const T *array;
     size_t arraysize;
