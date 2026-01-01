@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2025 Jussi Pakkanen
 
+// Include this to ensure that mixing pystd headers works.
+#include <pystd2025.hpp>
+
 #include <pystd2026.hpp>
 #include <pystd_testconfig.hpp>
 #include <string.h>
@@ -1018,6 +1021,17 @@ int test_threading() {
     return failing_subtests;
 }
 
+int test_std_mixing() {
+    printf("Testing mixing std versions.\n");
+    int failing_subtests = 0;
+    pystd2025::CString str1("abc");
+    pystd2026::CString str2("abc");
+
+    ASSERT(str1 == str2.c_str());
+    return failing_subtests;
+}
+
+
 int main(int argc, char **argv) {
     int total_errors = 0;
     try {
@@ -1040,6 +1054,7 @@ int main(int argc, char **argv) {
         total_errors += test_partition();
         total_errors += test_unicode();
         total_errors += test_threading();
+        total_errors += test_std_mixing();
     } catch(const pystd2026::PyException &e) {
         printf("Testing failed: %s\n", e.what().c_str());
         return 42;
