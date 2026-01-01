@@ -8,3 +8,8 @@ pystd2025_test = executable('pystd2025test', 'pystd2025test.cpp',
   dependencies: stdlib_dep)
 
 test('pystd2025', pystd2025_test)
+
+pystd2026_test = executable('pystd2026test', 'pystd2026test.cpp',
+  dependencies: stdlib_dep)
+
+test('pystd2026', pystd2026_test)
