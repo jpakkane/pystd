@@ -1,4 +1,5 @@
 stdlib = static_library('pystd',
+  'pystd_common.cpp',
   'pystd2025.cpp',
   'pystd2025_regex.cpp',
   'pystd2025_filesystem.cpp',
