@@ -2424,6 +2424,23 @@ template<int index, typename... T> constexpr size_t compute_alignment() {
     }
 }
 
+template<typename Desired, int8_t index, WellBehaved... T>
+constexpr int8_t get_index_for_type() noexcept {
+    if constexpr(index >= sizeof...(T)) {
+        static_assert(index < sizeof...(T));
+    } else {
+        if constexpr(is_same_v<Desired, T...[index]>) {
+            return index;
+        } else {
+            return get_index_for_type<Desired, index + 1, T...>();
+        }
+    }
+}
+
+template<typename Desired, WellBehaved... T> constexpr int8_t get_index_for_type() noexcept {
+    return get_index_for_type<Desired, 0, T...>();
+}
+
 template<WellBehaved... T> class Variant {
 
     static constexpr int MAX_TYPES = 30;
@@ -2449,7 +2466,7 @@ public:
     break;
 
     template<typename InType> constexpr Variant(InType &&o) noexcept {
-        constexpr int new_type = get_index_for_type<InType>();
+        constexpr int new_type = get_index_for_type<InType, T...>();
         switch(new_type) {
         case 0:
             PYSTD2026_VAR_MOVE_CONSTRUCT_SWITCH(0);
@@ -2527,7 +2544,7 @@ public:
     break;
 
     template<typename InType> Variant(InType &o) {
-        constexpr int new_type = get_index_for_type<InType>();
+        constexpr int new_type = get_index_for_type<InType, T...>();
         switch(new_type) {
         case 0:
             PYSTD2026_VAR_COPY_CONSTRUCT_SWITCH(0);
@@ -2597,7 +2614,7 @@ public:
     }
 
     template<typename InType> Variant(const InType &o) {
-        constexpr int new_type = get_index_for_type<InType>();
+        constexpr int new_type = get_index_for_type<InType, T...>();
         switch(new_type) {
         case 0:
             PYSTD2026_VAR_COPY_CONSTRUCT_SWITCH(0);
@@ -2669,12 +2686,12 @@ public:
     ~Variant() { destroy(); }
 
     template<WellBehaved Q> bool contains() const noexcept {
-        const auto id = get_index_for_type<Q>();
+        const auto id = get_index_for_type<Q, T...>();
         return id == type_id;
     }
 
     template<typename Desired> Desired *get_if() noexcept {
-        const int computed_type = get_index_for_type<Desired>();
+        const int computed_type = get_index_for_type<Desired, T...>();
         if(computed_type == type_id) {
             return reinterpret_cast<Desired *>(buf);
         }
@@ -2682,7 +2699,7 @@ public:
     }
 
     template<typename Desired> const Desired *get_if() const noexcept {
-        const int computed_type = get_index_for_type<Desired>();
+        const int computed_type = get_index_for_type<Desired, T...>();
         if(computed_type == type_id) {
             return reinterpret_cast<const Desired *>(buf);
         }
@@ -2706,7 +2723,7 @@ public:
     }
 
     template<typename OBJ> void insert(OBJ o) noexcept {
-        constexpr int new_type = get_index_for_type<OBJ>();
+        constexpr int new_type = get_index_for_type<OBJ, T...>();
         destroy();
         new(buf) OBJ(move(o));
         type_id = new_type;
@@ -2967,22 +2984,6 @@ private:
             PYSTD2026_VAR_COMPARE_SWITCH(29);
         }
         internal_failure("Unreachable code in variant compare.");
-    }
-
-    template<typename Desired, int8_t index> constexpr int8_t get_index_for_type() const noexcept {
-        if constexpr(index >= sizeof...(T)) {
-            static_assert(index < sizeof...(T));
-        } else {
-            if constexpr(is_same_v<Desired, T...[index]>) {
-                return index;
-            } else {
-                return get_index_for_type<Desired, index + 1>();
-            }
-        }
-    }
-
-    template<typename Desired> constexpr int8_t get_index_for_type() const noexcept {
-        return get_index_for_type<Desired, 0>();
     }
 
     void destroy() noexcept {
