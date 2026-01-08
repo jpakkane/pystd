@@ -148,6 +148,10 @@ public:
         h.feed_bytes(reinterpret_cast<const char *>(&o), sizeof(o));
     }
 
+    void feed_hash(const unsigned long o){
+        h.feed_bytes(reinterpret_cast<const char *>(&o), sizeof(o));
+    }
+
     template<typename T> void feed_hash(const T *o) {
         h.feed_bytes(reinterpret_cast<const char *>(&o), sizeof(T *));
     }
@@ -254,7 +258,7 @@ private:
         }
         state = UnionState::Empty;
     }
-    char content[maxval(sizeof(V), sizeof(E))] alignas(maxval(alignof(V), alignof(E)));
+    alignas(maxval(alignof(V), alignof(E))) char content[maxval(sizeof(V), sizeof(E))];
     UnionState state;
 };
 
@@ -962,28 +966,28 @@ public:
 
     T &front() {
         if(is_empty()) {
-            throw PyException("Tried to access empty array.");
+            bootstrap_throw("Tried to access empty array.");
         }
         return (*this)[0];
     }
 
     const T &front() const {
         if(is_empty()) {
-            throw PyException("Tried to access empty array.");
+            bootstrap_throw("Tried to access empty array.");
         }
         return (*this)[0];
     }
 
     T &back() {
         if(is_empty()) {
-            throw PyException("Tried to access empty array.");
+            bootstrap_throw("Tried to access empty array.");
         }
         return (*this)[size() - 1];
     }
 
     const T &back() const {
         if(is_empty()) {
-            throw PyException("Tried to access empty array.");
+            bootstrap_throw("Tried to access empty array.");
         }
         return (*this)[size() - 1];
     }
@@ -992,14 +996,14 @@ public:
 
     T &operator[](size_t i) {
         if(i >= num_entries) {
-            throw PyException("Vector index out of bounds.");
+            bootstrap_throw("Vector index out of bounds.");
         }
         return *objptr(i);
     }
 
     const T &operator[](size_t i) const {
         if(i >= num_entries) {
-            throw PyException("Vector index out of bounds.");
+            bootstrap_throw("Vector index out of bounds.");
         }
         return *objptr(i);
     }
@@ -1073,7 +1077,7 @@ private:
     void resize_to(size_t new_capacity) {
         const size_t MIN_CAPACITY = 16;
         if(new_capacity < num_entries) {
-            throw PyException("Shrinking too small.");
+            bootstrap_throw("Shrinking too small.");
         }
         if(new_capacity < MIN_CAPACITY) {
             // To avoid multiple small allocations at the beginning.
@@ -1132,22 +1136,22 @@ public:
 
     void push_back(const T &obj) {
         if(!try_push_back(obj)) {
-            throw PyException("Tried to push back to a full FixedVector.");
+            bootstrap_throw("Tried to push back to a full FixedVector.");
         }
     }
 
     void push_back(T &&obj) {
         if(!try_push_back(::pystd2025::move(obj))) {
-            throw PyException("Tried to push back to a full FixedVector.");
+            bootstrap_throw("Tried to push back to a full FixedVector.");
         }
     }
 
     void insert(size_t loc, T &&obj) {
         if(is_full()) {
-            throw PyException("Insert to a full vector.");
+            bootstrap_throw("Insert to a full vector.");
         }
         if(loc > size()) {
-            throw PyException("Insertion past the end of Fixed vector.");
+            bootstrap_throw("Insertion past the end of Fixed vector.");
         }
         if(loc == size()) {
             ++num_entries;
@@ -1191,7 +1195,7 @@ public:
 
     void delete_at(size_t i) {
         if(i >= size()) {
-            throw PyException("OOB in delete_at.");
+            bootstrap_throw("OOB in delete_at.");
         }
         ++i;
         while(i < size()) {
@@ -1203,10 +1207,10 @@ public:
 
     void move_append(FixedVector &o) {
         if(this == &o) {
-            throw PyException("Can not move append self.");
+            bootstrap_throw("Can not move append self.");
         }
         if(size() + o.size() > MAX_SIZE) {
-            throw PyException("Appending would exceed max size.");
+            bootstrap_throw("Appending would exceed max size.");
         }
         for(auto &i : o) {
             push_back(::pystd2025::move(i));
@@ -1215,28 +1219,28 @@ public:
 
     T &front() {
         if(is_empty()) {
-            throw PyException("Tried to access empty array.");
+            bootstrap_throw("Tried to access empty array.");
         }
         return (*this)[0];
     }
 
     const T &front() const {
         if(is_empty()) {
-            throw PyException("Tried to access empty array.");
+            bootstrap_throw("Tried to access empty array.");
         }
         return (*this)[0];
     }
 
     T &back() {
         if(is_empty()) {
-            throw PyException("Tried to access empty array.");
+            bootstrap_throw("Tried to access empty array.");
         }
         return (*this)[size() - 1];
     }
 
     const T &back() const {
         if(is_empty()) {
-            throw PyException("Tried to access empty array.");
+            bootstrap_throw("Tried to access empty array.");
         }
         return (*this)[size() - 1];
     }
@@ -1245,14 +1249,14 @@ public:
 
     T &operator[](size_t i) {
         if(i >= num_entries) {
-            throw PyException("FixedVector index out of bounds.");
+            bootstrap_throw("FixedVector index out of bounds.");
         }
         return *objptr(i);
     }
 
     const T &operator[](size_t i) const {
         if(i >= num_entries) {
-            throw PyException("Fixed Vector index out of bounds.");
+            bootstrap_throw("Fixed Vector index out of bounds.");
         }
         return *objptr(i);
     }
@@ -1285,7 +1289,7 @@ private:
         o.destroy_contents();
     }
 
-    char backing[MAX_SIZE * sizeof(T)] alignas(alignof(T));
+    alignas(alignof(T)) char backing[MAX_SIZE * sizeof(T)];
     size_t num_entries = 0;
 };
 
@@ -2442,7 +2446,7 @@ public:
     }                                                                                              \
     break;
 
-    template<typename InType> Variant(InType &&o) noexcept {
+    template<typename InType> constexpr Variant(InType &&o) noexcept {
         constexpr int new_type = get_index_for_type<InType>();
         switch(new_type) {
         case 0:
@@ -3053,7 +3057,7 @@ private:
         type_id = -1;
     }
 
-    char buf[compute_size<0, T...>()] alignas(compute_alignment<0, T...>());
+    alignas(compute_alignment<0, T...>()) char buf[compute_size<0, T...>()];
     int8_t type_id;
 };
 
