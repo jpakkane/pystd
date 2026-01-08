@@ -1031,7 +1031,6 @@ int test_std_mixing() {
     return failing_subtests;
 }
 
-
 int main(int argc, char **argv) {
     int total_errors = 0;
     try {

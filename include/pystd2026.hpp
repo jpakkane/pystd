@@ -148,9 +148,11 @@ public:
         h.feed_bytes(reinterpret_cast<const char *>(&o), sizeof(o));
     }
 
+#if defined(__APPLE__)
     void feed_hash(const unsigned long o) {
         h.feed_bytes(reinterpret_cast<const char *>(&o), sizeof(o));
     }
+#endif
 
     template<typename T> void feed_hash(const T *o) {
         h.feed_bytes(reinterpret_cast<const char *>(&o), sizeof(T *));
