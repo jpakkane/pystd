@@ -3,4 +3,6 @@
 *.bak
 others/stdlibcounter
 __pycache__
-
+.wraplock
+subprojects/packagecache
+subprojects/pcre2-*

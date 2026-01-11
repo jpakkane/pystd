@@ -1661,7 +1661,8 @@ private:
 
 class U8String;
 
-struct U8StringView {
+class U8StringView {
+public:
     ValidatedU8Iterator start;
     ValidatedU8Iterator end;
 
