@@ -1074,7 +1074,12 @@ private:
         return num_entries + num_new_items > buf_capacity;
     }
 
-    bool is_ptr_within(const T *ptr) const { return ptr >= begin() && ptr < end(); }
+    bool is_ptr_within(const T *ptr) const {
+        if(num_entries == 0) {
+            return false;
+        }
+        return ptr >= begin() && ptr < end();
+    }
 
     void resize_to(size_t new_capacity) {
         const size_t MIN_CAPACITY = 16;
@@ -1085,7 +1090,17 @@ private:
             // To avoid multiple small allocations at the beginning.
             new_capacity = MIN_CAPACITY;
         }
-        char *new_buf = (char *)aligned_alloc(alignof(T), new_capacity * sizeof(T));
+        const size_t buffer_size = new_capacity * sizeof(T);
+        const size_t end_padding_size = (alignof(T) - (buffer_size % alignof(T))) % alignof(T);
+        const size_t allocation_size = buffer_size + end_padding_size;
+#if defined __APPLE__
+        // If alignment is less than 8, macOS will return a null pointer
+        // I have no idea why.
+        const size_t alignment = alignof(T) < 8 ? 8 : alignof(T);
+#else
+        const size_t alignment = alignof(T);
+#endif
+        char *new_buf = (char *)aligned_alloc(alignment, allocation_size);
         for(size_t i = 0; i < num_entries; ++i) {
             T *obj = objptr(i);
             new(new_buf + i * sizeof(T)) T(::pystd2025::move(*obj));
