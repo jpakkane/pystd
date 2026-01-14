@@ -1313,6 +1313,8 @@ public:
     friend class U8Match;
     friend class U8StringView;
 
+    ValidatedU8Iterator() noexcept = default;
+
     ValidatedU8Iterator(const ValidatedU8Iterator &) = default;
     ValidatedU8Iterator(ValidatedU8Iterator &&) = default;
 
@@ -1339,9 +1341,9 @@ private:
 
     const unsigned char *byte_location() const { return buf; }
 
-    const unsigned char *buf;
+    const unsigned char *buf = nullptr;
     CharInfo char_info;
-    bool has_char_info;
+    bool has_char_info = false;
 };
 
 class ValidatedU8ReverseIterator {
@@ -1673,9 +1675,23 @@ class U8String;
 
 class U8StringView {
 public:
-    ValidatedU8Iterator start;
-    ValidatedU8Iterator end;
+    U8StringView() {}
 
+    U8StringView(const ValidatedU8Iterator &start_, const ValidatedU8Iterator &end_)
+        : start{start_}, stop{end_} {
+        if(start.buf == nullptr) {
+            if(stop.buf == nullptr) {
+                return;
+            }
+            bootstrap_throw("Nullptr in range start.");
+        }
+        if(stop.buf == nullptr) {
+            bootstrap_throw("Nullptr in range end.");
+        }
+        if(start.buf > stop.buf) {
+            bootstrap_throw("Invalid range to U8StringView.");
+        }
+    }
     CStringView raw_view() const;
 
     bool overlaps(const U8StringView &o) const;
@@ -1684,7 +1700,14 @@ public:
     U8String upper() const;
     U8String lower() const;
 
-    size_t size_bytes() const noexcept { return end.buf - start.buf; }
+    size_t size_bytes() const noexcept { return stop.buf - start.buf; }
+
+    ValidatedU8Iterator begin() const { return start; };
+    ValidatedU8Iterator end() const { return stop; };
+
+private:
+    ValidatedU8Iterator start;
+    ValidatedU8Iterator stop;
 };
 
 typedef bool (*U8StringViewCallback)(const U8StringView &piece, void *ctx);

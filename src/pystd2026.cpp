@@ -831,7 +831,7 @@ void ValidatedU8ReverseIterator::compute_char_info() {
 
 CStringView U8StringView::raw_view() const {
     return CStringView{(const char *)start.byte_location(),
-                       (size_t)(end.byte_location() - start.byte_location())};
+                       (size_t)(stop.byte_location() - start.byte_location())};
 }
 
 bool U8StringView::overlaps(const U8StringView &o) const {
@@ -842,7 +842,7 @@ bool U8StringView::overlaps(const U8StringView &o) const {
 
 bool U8StringView::operator==(const char *txt) const {
     const unsigned char *data_start = start.byte_location();
-    const unsigned char *data_end = end.byte_location();
+    const unsigned char *data_end = stop.byte_location();
     size_t i = 0;
     while(true) {
         if(data_start + i > data_end) {
@@ -861,7 +861,7 @@ bool U8StringView::operator==(const char *txt) const {
 U8String U8StringView::upper() const {
     U8String result;
     result.reserve(size_bytes());
-    for(auto it = start; it != end; ++it) {
+    for(auto it = start; it != stop; ++it) {
         const auto uppered = uppercase_unicode(*it);
         for(size_t i = 0; i < 3; ++i) {
             if(uppered.codepoints[i] != 0) {
@@ -875,7 +875,7 @@ U8String U8StringView::upper() const {
 U8String U8StringView::lower() const {
     U8String result;
     result.reserve(size_bytes());
-    for(auto it = start; it != end; ++it) {
+    for(auto it = start; it != stop; ++it) {
         const auto lowered = lowercase_unicode(*it);
         for(size_t i = 0; i < 3; ++i) {
             if(lowered.codepoints[i] != 0) {
@@ -894,10 +894,7 @@ U8String::U8String(Bytes incoming) {
 }
 
 U8String::U8String(const U8StringView &view) {
-    if(view.start.buf >= view.end.buf) {
-        throw PyException("Invalid UTF-8 string view.");
-    }
-    cstring = CString((const char *)view.start.buf, view.end.buf - view.start.buf);
+    cstring = CString((const char *)view.begin().buf, view.end().buf - view.begin().buf);
 }
 
 U8String::U8String(const char *txt, size_t txtsize) {
@@ -965,8 +962,8 @@ void U8String::remove(U8StringView view) {
     if(!contains(view)) {
         throw PyException("Section to remove is not contained within string.");
     }
-    const size_t start_index = (const char *)view.start.byte_location() - cstring.c_str();
-    const size_t end_index = (const char *)view.end.byte_location() - cstring.c_str();
+    const size_t start_index = (const char *)view.begin().byte_location() - cstring.c_str();
+    const size_t end_index = (const char *)view.end().byte_location() - cstring.c_str();
     cstring.remove(start_index, end_index);
 }
 
@@ -1013,8 +1010,8 @@ void U8String::append_codepoint(uint32_t codepoint) {
 }
 
 bool U8String::contains(const U8StringView &view) const {
-    return view.start.byte_location() >= (const unsigned char *)cstring.c_str() &&
-           view.end.byte_location() <= (const unsigned char *)(cstring.c_str() + cstring.size());
+    return view.begin().byte_location() >= (const unsigned char *)cstring.c_str() &&
+           view.end().byte_location() <= (const unsigned char *)(cstring.c_str() + cstring.size());
 }
 
 bool U8String::overlaps(const U8StringView &o) const {
