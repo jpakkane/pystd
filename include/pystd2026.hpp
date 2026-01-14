@@ -1679,14 +1679,8 @@ public:
 
     U8StringView(const ValidatedU8Iterator &start_, const ValidatedU8Iterator &end_)
         : start{start_}, stop{end_} {
-        if(start.buf == nullptr) {
-            if(stop.buf == nullptr) {
-                return;
-            }
-            bootstrap_throw("Nullptr in range start.");
-        }
-        if(stop.buf == nullptr) {
-            bootstrap_throw("Nullptr in range end.");
+        if(((bool)start.buf) ^ ((bool)stop.buf)) {
+            bootstrap_throw("Mixed nullptr range to U8StringView.");
         }
         if(start.buf > stop.buf) {
             bootstrap_throw("Invalid range to U8StringView.");
@@ -1704,6 +1698,9 @@ public:
 
     ValidatedU8Iterator begin() const { return start; };
     ValidatedU8Iterator end() const { return stop; };
+
+    ValidatedU8Iterator cbegin() const { return start; };
+    ValidatedU8Iterator cend() const { return stop; };
 
 private:
     ValidatedU8Iterator start;
