@@ -10,6 +10,8 @@ namespace pystd2026 {
 
 template<WellBehaved Payload, size_t EntryCount> class BTree {
 
+    class BTreeIterator;
+
 public:
     void insert(const Payload &value) {
         Payload p(value);
@@ -146,6 +148,15 @@ public:
         }
     }
 
+    BTreeIterator begin() {
+        if(is_empty()) {
+            return end();
+        }
+        return BTreeIterator(this, find_smallest_item());
+    }
+
+    BTreeIterator end() { return BTreeIterator(this); }
+
 private:
     static constexpr uint32_t NULL_LOC = (uint32_t)-1;
     static constexpr uint32_t NULL_REF = ((uint32_t)-1) >> 1;
@@ -242,6 +253,10 @@ private:
     struct EntryLocation {
         NodeReference node_id;
         uint32_t offset;
+
+        bool operator==(const EntryLocation &o) const {
+            return node_id == o.node_id && offset == o.offset;
+        }
     };
 
     NodeCommon &get_node_common(NodeReference ref) {
@@ -892,6 +907,116 @@ private:
             abort();
         }
     }
+
+    EntryLocation leftmost_of(const NodeReference &r) const {
+        auto current = r;
+        while(!current.to_leaf) {
+            current = internals[current.id].children[0];
+        }
+        return EntryLocation{current, 0};
+    }
+
+    EntryLocation find_smallest_item() const {
+        assert(!is_empty());
+        return leftmost_of(root);
+    }
+
+    pystd2026::Optional<EntryLocation> get_next_location(EntryLocation current) const {
+        if(current.node_id.to_leaf) {
+            if(current.offset < leaves[current.node_id.id].size() - 1) {
+                EntryLocation next{current};
+                ++next.offset;
+                return next;
+            } else {
+                return up_and_next(current.node_id);
+            }
+        } else {
+            // The pointer to current node's right always exists, because
+            // we skip "the end" when going back up.
+            EntryLocation next =
+                leftmost_of(internals[current.node_id.id].children[current.offset + 1]);
+            return next;
+        }
+    }
+
+    pystd2026::Optional<NodeReference> parent_of(const NodeReference &r) const {
+        if(r == root) {
+            return {};
+        }
+        if(r.to_leaf) {
+            return leaves[r.id].parent;
+        } else {
+            return internals[r.id].parent;
+        }
+    }
+
+    pystd2026::Optional<EntryLocation> up_and_next(NodeReference current) const {
+        while(true) {
+            auto maybe_parent = parent_of(current);
+            if(!maybe_parent) {
+                return {};
+            }
+            auto &parent = maybe_parent.value();
+            const auto &parent_node = internals[parent.id];
+            for(size_t i = 0; i < parent_node.size(); ++i) {
+                if(parent_node.children[i] == current) {
+                    return EntryLocation{parent, (uint32_t)i};
+                }
+            }
+            assert(parent_node.children.back() == current);
+            current = parent;
+        }
+    }
+
+    Payload &get(const EntryLocation &e) {
+        if(e.node_id.to_leaf) {
+            return leaves[e.node_id.id].values[e.offset];
+        } else {
+            return internals[e.node_id.id].values[e.offset];
+        }
+    }
+
+    const Payload &get(const EntryLocation &e) const {
+        if(e.node_id.to_leaf) {
+            return leaves[e.node_id.id].values(e.offset);
+        } else {
+            return internals[e.node_id.id].values(e.offset);
+        }
+    }
+
+    class BTreeIterator {
+    public:
+        explicit BTreeIterator(BTree *tree_) : tree{tree_} { location = sentinel_location(); }
+
+        BTreeIterator(BTree *tree_, EntryLocation location_) : tree{tree_}, location{location_} {}
+
+        Payload &operator*() { return tree->get(location); }
+
+        BTreeIterator &operator++() {
+            auto maybe_location = tree->get_next_location(location);
+            if(maybe_location) {
+                location = maybe_location.value();
+            } else {
+                location = sentinel_location();
+            }
+            return *this;
+        }
+
+        bool operator==(const BTreeIterator &o) const {
+            if(tree != o.tree) {
+                throw PyException("Comparing iterators of different B-trees.");
+            }
+            return location == o.location;
+        }
+
+    private:
+        BTree<Payload, EntryCount> *tree;
+        EntryLocation location;
+
+        EntryLocation sentinel_location() const {
+            return EntryLocation{{(uint32_t)-1, true}, (uint32_t)-1};
+        }
+    };
 
     static_assert(EntryCount % 2 == 1);
     static_assert(EntryCount >= 3);

@@ -860,10 +860,27 @@ int test_btree1() {
     return 0;
 }
 
+int test_btree_iteration() {
+    TEST_START;
+    pystd2026::BTree<int, 5> btree;
+    for(int i = 99; i >= 0; --i) {
+        btree.insert(i);
+    }
+
+    int expected = 0;
+    for(const auto &val : btree) {
+        ASSERT(val == expected);
+        ++expected;
+    }
+    ASSERT(expected == 100);
+    return 0;
+}
+
 int test_btree() {
     printf("Testing Btree.\n");
     int failing_subtests = 0;
     failing_subtests += test_btree1();
+    failing_subtests += test_btree_iteration();
     return failing_subtests;
 }
 
