@@ -769,8 +769,6 @@ enum class ErrorCode : int32_t {
     DynamicError,
 };
 
-#include <pystd2026_btree.hpp>
-
 int test_fixedvector1() {
     TEST_START;
     pystd2026::FixedVector<int, 5> fv;
@@ -812,6 +810,8 @@ int test_fixedvector() {
     failing_subtests += test_fixedvector1();
     return failing_subtests;
 }
+
+#include <pystd2026_btree.hpp>
 
 int test_btree1() {
     TEST_START;
