@@ -789,79 +789,6 @@ int test_fixedvector() {
     return failing_subtests;
 }
 
-#include <pystd2026_btree.hpp>
-
-int test_btree1() {
-    TEST_START;
-    const int shuffled[] = {7,  17, 19, 24, 2, 20, 14, 1,  6, 23, 8, 12, 25,
-                            21, 15, 22, 5,  0, 18, 4,  16, 3, 11, 9, 13, 10};
-    const int arr_size = 26;
-    pystd2026::BTree<int, 5> btree;
-    ASSERT(btree.is_empty());
-    for(int i = 0; i < arr_size; ++i) {
-        btree.insert(shuffled[i]);
-        for(int j = 0; j < arr_size; ++j) {
-            auto *valptr = btree.lookup(shuffled[j]);
-            if(j <= i) {
-                ASSERT(valptr);
-                ASSERT(*valptr == shuffled[j]);
-            } else {
-                ASSERT(!valptr);
-            }
-        }
-    }
-    ASSERT(btree.size() == 26);
-    btree.insert(7);
-    ASSERT(btree.size() == 26);
-
-    ASSERT(!btree.lookup(100));
-
-    size_t expected_size = 26;
-
-    ASSERT(btree.size() == expected_size);
-    for(int i = 0; i < arr_size; ++i) {
-        btree.remove(shuffled[i]);
-        --expected_size;
-        ASSERT(btree.size() == expected_size);
-        for(int j = 0; j < arr_size; ++j) {
-            auto *valptr = btree.lookup(shuffled[j]);
-            if(j <= i) {
-                ASSERT(!valptr);
-            } else {
-                ASSERT(valptr);
-                ASSERT(*valptr == shuffled[j]);
-            }
-        }
-    }
-    ASSERT(btree.is_empty());
-
-    return 0;
-}
-
-int test_btree_iteration() {
-    TEST_START;
-    pystd2026::BTree<int, 5> btree;
-    for(int i = 99; i >= 0; --i) {
-        btree.insert(i);
-    }
-
-    int expected = 0;
-    for(const auto &val : btree) {
-        ASSERT(val == expected);
-        ++expected;
-    }
-    ASSERT(expected == 100);
-    return 0;
-}
-
-int test_btree() {
-    printf("Testing Btree.\n");
-    int failing_subtests = 0;
-    failing_subtests += test_btree1();
-    failing_subtests += test_btree_iteration();
-    return failing_subtests;
-}
-
 int test_partition1() {
     TEST_START;
     int buf[6] = {1, 3, 1, 3, 3, 1};
@@ -1043,7 +970,6 @@ int main(int argc, char **argv) {
         total_errors += test_format();
         total_errors += test_sort();
         total_errors += test_fixedvector();
-        total_errors += test_btree();
         total_errors += test_partition();
         total_errors += test_unicode();
         total_errors += test_threading();

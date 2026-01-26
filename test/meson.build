@@ -18,3 +18,8 @@ pystd2026_test_regex = executable('pystd2026test_regex', 'pystd2026test_regex.cp
   dependencies: stdlib_dep)
 
 test('pystd2026_regex', pystd2026_test_regex)
+
+pystd2026_test_btree = executable('pystd2026test_btree', 'pystd2026test_btree.cpp',
+  dependencies: stdlib_dep)
+
+test('pystd2026_btree', pystd2026_test_btree)
