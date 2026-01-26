@@ -887,62 +887,6 @@ int test_unicode() {
     return failing_subtests;
 }
 
-#include <pystd2026_threading.hpp>
-
-int test_mutex() {
-    TEST_START;
-
-    pystd2026::Mutex m;
-
-    ASSERT(m.try_lock());
-    ASSERT(!m.try_lock());
-    m.unlock();
-
-    {
-        pystd2026::LockGuard<pystd2026::Mutex> guard(m);
-        ASSERT(!m.try_lock());
-    }
-    ASSERT(m.try_lock());
-    m.unlock();
-    return 0;
-}
-
-int test_thread() {
-    TEST_START;
-    typedef struct {
-        int x;
-        pystd2026::Mutex m;
-    } Context;
-    Context ctx;
-    ctx.x = 0;
-
-    auto incrementer = [](void *ctx) -> void * {
-        Context *c = reinterpret_cast<Context *>(ctx);
-        for(int i = 0; i < 1000; ++i) {
-            pystd2026::LockGuard<pystd2026::Mutex> lg(c->m);
-            ++c->x;
-        }
-        return nullptr;
-    };
-    {
-        pystd2026::Thread th1(incrementer, &ctx);
-        pystd2026::Thread th2(incrementer, &ctx);
-        pystd2026::Thread th3(incrementer, &ctx);
-        pystd2026::Thread th4(incrementer, &ctx);
-    }
-    ASSERT(ctx.x == 4000);
-
-    return 0;
-}
-
-int test_threading() {
-    printf("Testing threading.\n");
-    int failing_subtests = 0;
-    failing_subtests += test_mutex();
-    failing_subtests += test_thread();
-    return failing_subtests;
-}
-
 int test_std_mixing() {
     printf("Testing mixing std versions.\n");
     int failing_subtests = 0;
@@ -972,7 +916,6 @@ int main(int argc, char **argv) {
         total_errors += test_fixedvector();
         total_errors += test_partition();
         total_errors += test_unicode();
-        total_errors += test_threading();
         total_errors += test_std_mixing();
     } catch(const pystd2026::PyException &e) {
         printf("Testing failed: %s\n", e.what().c_str());

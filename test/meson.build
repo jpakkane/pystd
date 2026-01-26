@@ -23,3 +23,8 @@ pystd2026_test_btree = executable('pystd2026test_btree', 'pystd2026test_btree.cp
   dependencies: stdlib_dep)
 
 test('pystd2026_btree', pystd2026_test_btree)
+
+pystd2026_test_threading = executable('pystd2026test_threading', 'pystd2026test_threading.cpp',
+  dependencies: stdlib_dep)
+
+test('pystd2026_threading', pystd2026_test_threading)
