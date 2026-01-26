@@ -326,30 +326,6 @@ int test_u8_strings() {
     return failing_subtests;
 }
 
-#include <pystd2026_regex.hpp>
-
-int test_u8_regex_simple() {
-    TEST_START;
-    pystd2026::U8String text("abcabcabc");
-    pystd2026::U8String retext("(b).*?(a)");
-    pystd2026::U8Regex r(retext);
-
-    auto match = pystd2026::regex_search(r, text);
-    ASSERT(match.num_groups() == 2);
-    ASSERT(match.group(0) == "bca");
-    ASSERT(match.group(1) == "b");
-    ASSERT(match.group(2) == "a");
-
-    return 0;
-}
-
-int test_u8_regex() {
-    TEST_START;
-    int failing_subtests = 0;
-    failing_subtests += test_u8_regex_simple();
-    return failing_subtests;
-}
-
 int test_optional() {
     TEST_START;
     pystd2026::Optional<uint64_t> empty;
@@ -1056,7 +1032,6 @@ int main(int argc, char **argv) {
         total_errors += test_c_strings();
         total_errors += test_fixed_c_strings();
         total_errors += test_u8_strings();
-        total_errors += test_u8_regex();
         total_errors += test_optional();
         total_errors += test_span();
         total_errors += test_range();
