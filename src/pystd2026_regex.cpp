@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2025 Jussi Pakkanen
 
-#include <pystd2026.hpp>
+#include <pystd2026_regex.hpp>
 #define PCRE2_CODE_UNIT_WIDTH 8
 #include <pcre2.h>
 

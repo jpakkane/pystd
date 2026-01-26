@@ -326,6 +326,8 @@ int test_u8_strings() {
     return failing_subtests;
 }
 
+#include <pystd2026_regex.hpp>
+
 int test_u8_regex_simple() {
     TEST_START;
     pystd2026::U8String text("abcabcabc");
