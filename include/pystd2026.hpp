@@ -645,7 +645,7 @@ public:
         if(!*this) {
             bootstrap_throw("Empty optional.");
         }
-        return ptr;
+        return *ptr;
     }
 
     T *operator->() {
@@ -662,18 +662,18 @@ public:
         return ptr;
     }
 
-    T &value() {
+    T *value() {
         if(!*this) {
             bootstrap_throw("Empty optional.");
         }
-        return *ptr;
+        return ptr;
     }
 
-    const T &value() const {
+    const T *value() const {
         if(!*this) {
             bootstrap_throw("Empty optional.");
         }
-        return *ptr;
+        return ptr;
     }
 
     const T &operator*() const {

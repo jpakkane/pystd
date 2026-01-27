@@ -19,10 +19,10 @@ int breakpoint_opportunity(int number) { return number; }
 int test_heapsort_int() {
     TEST_START;
     int failing_subtests = 0;
-    const size_t NUM_ENTRIES = 10;
-    int table[NUM_ENTRIES] = {6, 2, 1, 9, 3, 0, 4, 5, 7, 8};
+    const size_t NUM_ENTRIES = 20;
+    int table[NUM_ENTRIES] = {6, 2, 1, 9, 3, 16, 12, 11, 19, 13, 10, 14, 15, 17, 18, 0, 4, 5, 7, 8};
 
-    pystd2026::insertion_sort(table, table + 10);
+    pystd2026::heapsort(table, table + NUM_ENTRIES);
 
     for(size_t i = 0; i < NUM_ENTRIES; ++i) {
         ASSERT((int)i == table[i]);
