@@ -28,3 +28,8 @@ pystd2026_test_threading = executable('pystd2026test_threading', 'pystd2026test_
   dependencies: stdlib_dep)
 
 test('pystd2026_threading', pystd2026_test_threading)
+
+pystd2026_test_sorting = executable('pystd2026test_sorting', 'pystd2026test_sorting.cpp',
+  dependencies: stdlib_dep)
+
+test('pystd2026_sorting', pystd2026_test_sorting)
