@@ -2,6 +2,7 @@
 // Copyright 2026 Jussi Pakkanen
 
 #include <pystd2026_heapsort.hpp>
+#include <pystd2026_mergesort.hpp>
 #include <pystd_testconfig.hpp>
 
 int breakpoint_opportunity(int number) { return number; }
@@ -30,9 +31,52 @@ int test_heapsort_int() {
     return failing_subtests;
 }
 
+struct SortStruct {
+    int x;
+    int y;
+
+    // Y does not affect sort order. A stable sort
+    // should preserve the order of equal elements.
+    bool operator<(const SortStruct &o) const { return x < o.x; }
+
+    bool operator==(const SortStruct &o) const { return x == o.x; }
+};
+
+int test_mergesort() {
+    TEST_START;
+    pystd2026::Vector<SortStruct> items;
+    const size_t NUM_VALUES = 100;
+    const SortStruct last{100000, 0};
+    const SortStruct first{0, 100000};
+
+    items.emplace_back(last);
+    for(size_t i = 0; i < NUM_VALUES; ++i) {
+        items.emplace_back(NUM_VALUES - i, 1);
+    }
+    for(size_t i = 0; i < NUM_VALUES; ++i) {
+        items.emplace_back(NUM_VALUES - i, 0);
+    }
+    items.emplace_back(first);
+
+    pystd2026::mergesort(items.begin(), items.end());
+
+    for(size_t i = 0; i < items.size() - 1; ++i) {
+        ASSERT(items[i].x <= items[i + 1].x);
+    }
+
+    ASSERT(items.front() == first);
+    ASSERT(items.back() == last);
+    for(size_t i = 1; i < items.size() - 2; i += 2) {
+        ASSERT(items[i].x == items[i + 1].x);
+        ASSERT(items[i].y > items[i + 1].y);
+    }
+    return 0;
+}
+
 int test_heapsort() {
     int failing_subtests = 0;
     failing_subtests += test_heapsort_int();
+    failing_subtests += test_mergesort();
     return failing_subtests;
 }
 
