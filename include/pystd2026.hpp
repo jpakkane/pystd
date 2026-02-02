@@ -95,6 +95,18 @@ concept WellBehaved = requires(T a, T &b, T &&c) {
     requires !is_volatile_v<T>;
 };
 
+template<typename T>
+concept BasicIterator = pystd2026::WellBehaved<T> && requires(T a) {
+    ++a;
+    a++;
+    a + 5;
+    a - 5;
+    a += 5;
+    a -= 5;
+    *a;
+    // requires pystd2026::WellBehaved<pystd2026::remove_reference_t<decltype(*a)>>;
+};
+
 template<typename T1, typename T2> constexpr int maxval(const T1 &a, const T2 &b) {
     return a < b ? b : a;
 }
@@ -3131,7 +3143,7 @@ template<WellBehaved T> void swap(T &a, T &b) noexcept {
     }
 }
 
-template<typename It1, typename It2> It1 min_element(It1 start, It2 stop) noexcept {
+template<BasicIterator It1, BasicIterator It2> It1 min_element(It1 start, It2 stop) noexcept {
     if(start == stop) {
         return start;
     }
@@ -3145,7 +3157,7 @@ template<typename It1, typename It2> It1 min_element(It1 start, It2 stop) noexce
     return minloc;
 }
 
-template<typename It1, typename It2> void insertion_sort(It1 start, It2 end) {
+template<BasicIterator It1, BasicIterator It2> void insertion_sort(It1 start, It2 end) {
     const auto array_size = end - start;
     if(array_size < 2) {
         return;
@@ -3185,7 +3197,7 @@ template<typename T> void sort_relocatable(T *data, size_t bufsize) {
     qsort(data, bufsize, sizeof(T), ordering);
 }
 
-template<typename It, typename Value, typename Callable>
+template<BasicIterator It, typename Value, typename Callable>
 It lower_bound(It first, It last, const Value &value, const Callable &is_less) {
     It it{};
     auto count = last - first;
@@ -3203,26 +3215,28 @@ It lower_bound(It first, It last, const Value &value, const Callable &is_less) {
     return it;
 }
 
-template<typename It, typename Value> It lower_bound(It first, It last, const Value &value) {
+template<BasicIterator It, typename Value> It lower_bound(It first, It last, const Value &value) {
     return lower_bound(
         first, last, value, [](const Value &v1, const Value &v2) { return v1 < v2; });
 }
 
-template<class It, class Predicate> It find_if(It first, It last, const Predicate &&pred) {
+template<BasicIterator It, class Predicate> It find_if(It first, It last, const Predicate &&pred) {
     for(; first != last; ++first)
         if(pred(*first))
             return first;
     return last;
 }
 
-template<class It, class Predicate> It find_if_not(It first, It last, const Predicate &&pred) {
+template<BasicIterator It, class Predicate>
+It find_if_not(It first, It last, const Predicate &&pred) {
     for(; first != last; ++first)
         if(!pred(*first))
             return first;
     return last;
 }
 
-template<typename It, typename Predicate> It partition(It first, It last, const Predicate &&pred) {
+template<BasicIterator It, typename Predicate>
+It partition(It first, It last, const Predicate &&pred) {
     first = find_if_not(first, last, move(pred));
     if(first == last)
         return first;

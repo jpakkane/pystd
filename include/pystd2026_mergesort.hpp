@@ -7,7 +7,7 @@
 
 namespace pystd2026 {
 
-template<typename It1, typename It2>
+template<BasicIterator It1, BasicIterator It2>
 void merge_pass(It1 left_begin, It1 left_end, It1 right_begin, It2 right_end, It2 output) {
     while(true) {
         if(left_begin == left_end) {
@@ -38,7 +38,7 @@ void merge_pass(It1 left_begin, It1 left_end, It1 right_begin, It2 right_end, It
     }
 }
 
-template<WellBehaved It> void mergesort(It begin, It end) {
+template<BasicIterator It> void mergesort(It begin, It end) {
     const size_t INSERTION_SORT_LIMIT = 16;
     const size_t INPUT_SIZE = end - begin;
 

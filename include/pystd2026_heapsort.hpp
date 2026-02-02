@@ -7,7 +7,7 @@
 
 namespace pystd2026 {
 
-template<WellBehaved It> struct HeapInfo {
+template<BasicIterator It> struct HeapInfo {
     It begin;
     It end;
 
@@ -54,7 +54,7 @@ template<WellBehaved It> struct HeapInfo {
     }
 };
 
-template<WellBehaved It> void heapify(const HeapInfo<It> &hi, It loc) {
+template<BasicIterator It> void heapify(const HeapInfo<It> &hi, It loc) {
     pystd2026::Optional<It> left = hi.left_child(loc);
     auto right = hi.right_child(loc);
     It largest = loc;
@@ -71,14 +71,14 @@ template<WellBehaved It> void heapify(const HeapInfo<It> &hi, It loc) {
     }
 }
 
-template<WellBehaved It> void build_heap(const HeapInfo<It> &hi) {
+template<BasicIterator It> void build_heap(const HeapInfo<It> &hi) {
     int64_t i = hi.size() / 2 - 1;
     for(; i >= 0; --i) {
         heapify(hi, hi.begin + i);
     }
 }
 
-template<WellBehaved It> void heapsort(It begin, It end) {
+template<BasicIterator It> void heapsort(It begin, It end) {
     const size_t MIN_SIZE = 16;
     const HeapInfo original_heap{begin, end};
     if(original_heap.size() <= MIN_SIZE) {
