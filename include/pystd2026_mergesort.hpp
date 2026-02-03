@@ -53,8 +53,19 @@ template<BasicIterator It> void mergesort(It begin, It end) {
         buffer.push_back(Value{});
     }
 
-    // FIXME, first do insertion sort in INPUT_SIZE blocks.
-    size_t merge_size = 1;
+    // I did not measure, but for small sets insertion sort
+    // is the fastest way to go. This is also only one pass through
+    // the data rather than lg2(16) = 4 passes.
+    const size_t insertion_sort_counts = INPUT_SIZE / INSERTION_SORT_LIMIT;
+    for(size_t block_num = 0; block_num < insertion_sort_counts; ++block_num) {
+        pystd2026::insertion_sort(begin + block_num * INSERTION_SORT_LIMIT,
+                                  begin + (block_num + 1) * INSERTION_SORT_LIMIT);
+    }
+    if(INPUT_SIZE % INSERTION_SORT_LIMIT != 0) {
+        pystd2026::insertion_sort(begin + insertion_sort_counts * INSERTION_SORT_LIMIT, end);
+    }
+
+    size_t merge_size = INSERTION_SORT_LIMIT;
     while(merge_size < INPUT_SIZE) {
         for(size_t block_start = 0; block_start < INPUT_SIZE; block_start += 2 * merge_size) {
             auto output_location = buffer.begin() + block_start;
