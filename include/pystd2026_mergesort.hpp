@@ -38,6 +38,31 @@ void merge_pass(It1 left_begin, It1 left_end, It1 right_begin, It2 right_end, It
     }
 }
 
+// If merge_block_size is, say 4, it means that the underlying data is in
+// consecutive sorted blocks of size 4.
+template<BasicIterator It>
+void merge_with_block_size(It begin, It end, It output_start, size_t merge_block_size) {
+    const size_t INPUT_SIZE = end - begin;
+    for(size_t block_start = 0; block_start < INPUT_SIZE; block_start += 2 * merge_block_size) {
+        auto output_location = output_start + block_start;
+        auto left_begin = begin + block_start;
+        if(block_start + merge_block_size >= INPUT_SIZE) {
+            // There is no right block.
+            auto left_size = INPUT_SIZE - block_start;
+            auto left_end = left_begin + left_size;
+            merge_pass(left_begin, left_end, left_begin, left_begin, output_location);
+        } else {
+            auto left_end = left_begin + merge_block_size;
+            auto right_begin = left_end;
+            const auto right_block_size = block_start + 2 * merge_block_size >= INPUT_SIZE
+                                              ? INPUT_SIZE - (block_start + merge_block_size)
+                                              : merge_block_size;
+            auto right_end = right_begin + right_block_size;
+            merge_pass(left_begin, left_end, right_begin, right_end, output_location);
+        }
+    }
+}
+
 template<BasicIterator It> void mergesort(It begin, It end) {
     const size_t INSERTION_SORT_LIMIT = 16;
     const size_t INPUT_SIZE = end - begin;
@@ -67,24 +92,7 @@ template<BasicIterator It> void mergesort(It begin, It end) {
 
     size_t merge_size = INSERTION_SORT_LIMIT;
     while(merge_size < INPUT_SIZE) {
-        for(size_t block_start = 0; block_start < INPUT_SIZE; block_start += 2 * merge_size) {
-            auto output_location = buffer.begin() + block_start;
-            auto left_begin = begin + block_start;
-            if(block_start + merge_size >= INPUT_SIZE) {
-                // There is no right block.
-                auto left_size = INPUT_SIZE - block_start;
-                auto left_end = left_begin + left_size;
-                merge_pass(left_begin, left_end, left_begin, left_begin, output_location);
-            } else {
-                auto left_end = left_begin + merge_size;
-                auto right_begin = left_end;
-                const auto right_block_size = block_start + 2 * merge_size >= INPUT_SIZE
-                                                  ? INPUT_SIZE - (block_start + merge_size)
-                                                  : merge_size;
-                auto right_end = right_begin + right_block_size;
-                merge_pass(left_begin, left_end, right_begin, right_end, output_location);
-            }
-        }
+        merge_with_block_size(begin, end, buffer.begin(), merge_size);
         // FIXME
         auto moveback_out = begin;
         auto move_start = buffer.begin();
