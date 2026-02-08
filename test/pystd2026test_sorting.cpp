@@ -63,9 +63,11 @@ int test_mergesort() {
     pystd2026::mergesort(items.begin(), items.end());
     ASSERT(items.size() == TOTAL_SIZE);
 
+    /*
     for(size_t i = 0; i < items.size(); ++i) {
         printf("%d %d\n", items[i].x, items[i].y);
     }
+    */
 
     for(size_t i = 0; i < items.size() - 1; ++i) {
         ASSERT(items[i].x <= items[i + 1].x);
