@@ -32,8 +32,8 @@ int test_heapsort_int() {
 }
 
 struct SortStruct {
-    int x;
-    int y;
+    int x = -666;
+    int y = -666;
 
     // Y does not affect sort order. A stable sort
     // should preserve the order of equal elements.
@@ -48,6 +48,7 @@ int test_mergesort() {
     const size_t NUM_VALUES = 100;
     const SortStruct last{100000, 0};
     const SortStruct first{0, 100000};
+    const size_t TOTAL_SIZE = 202;
 
     items.emplace_back(last);
     for(size_t i = 0; i < NUM_VALUES; ++i) {
@@ -58,7 +59,13 @@ int test_mergesort() {
     }
     items.emplace_back(first);
 
+    ASSERT(items.size() == TOTAL_SIZE);
     pystd2026::mergesort(items.begin(), items.end());
+    ASSERT(items.size() == TOTAL_SIZE);
+
+    for(size_t i = 0; i < items.size(); ++i) {
+        printf("%d %d\n", items[i].x, items[i].y);
+    }
 
     for(size_t i = 0; i < items.size() - 1; ++i) {
         ASSERT(items[i].x <= items[i + 1].x);

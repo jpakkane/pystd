@@ -63,9 +63,18 @@ void merge_with_block_size(It begin, It end, It output_start, size_t merge_block
     }
 }
 
+template<BasicIterator It>
+void merge_two_nsorted_with_block_size(It first_begin,
+                                       It first_end,
+                                       It second_begin,
+                                       It second_end,
+                                       It output_start,
+                                       size_t merge_block_size) {}
+
 template<BasicIterator It> void mergesort(It begin, It end) {
     const size_t INSERTION_SORT_LIMIT = 16;
     const size_t INPUT_SIZE = end - begin;
+    const size_t BUFFER_SIZE = (INPUT_SIZE + 1) / 2;
 
     if(INPUT_SIZE <= 2 * INSERTION_SORT_LIMIT) {
         pystd2026::insertion_sort(begin, end);
@@ -73,13 +82,13 @@ template<BasicIterator It> void mergesort(It begin, It end) {
 
     using Value = pystd2026::remove_reference_t<decltype(*begin)>;
     pystd2026::Vector<Value> buffer;
-    buffer.reserve(INPUT_SIZE);
-    for(size_t i = 0; i < INPUT_SIZE; ++i) {
+    buffer.reserve(BUFFER_SIZE);
+    for(size_t i = 0; i < BUFFER_SIZE; ++i) {
         buffer.push_back(Value{});
     }
 
-    // I did not measure, but for small sets insertion sort
-    // is the fastest way to go. This is also only one pass through
+    // I did not measure, but for small sets insertion sort is usually
+    // the fastest way to go. This is also does only one pass through
     // the data rather than lg2(16) = 4 passes.
     const size_t insertion_sort_counts = INPUT_SIZE / INSERTION_SORT_LIMIT;
     for(size_t block_num = 0; block_num < insertion_sort_counts; ++block_num) {
@@ -91,19 +100,62 @@ template<BasicIterator It> void mergesort(It begin, It end) {
     }
 
     size_t merge_size = INSERTION_SORT_LIMIT;
-    while(merge_size < INPUT_SIZE) {
-        merge_with_block_size(begin, end, buffer.begin(), merge_size);
-        // FIXME
-        auto moveback_out = begin;
-        auto move_start = buffer.begin();
-        auto move_end = buffer.end();
-        while(move_start != move_end) {
-            *moveback_out = pystd2026::move(*move_start);
-            ++moveback_out;
-            ++move_start;
+
+    const auto left_begin = begin;
+    const auto left_end = left_begin + INPUT_SIZE / 2;
+    const auto right_begin = left_end;
+    const auto right_end = begin + INPUT_SIZE;
+
+    const auto buffer_begin = buffer.begin();
+    const auto buffer_end = buffer.end();
+
+    bool need_fixup_move = false;
+    while(true) {
+        // Split in two.
+        if(merge_size < BUFFER_SIZE) {
+            // Right part to scratch
+            merge_with_block_size(right_begin, right_end, buffer_begin, merge_size);
+            // buffer_end = buffer_begin + (right_end - right_begin);
+            //  Left part to right
+            merge_with_block_size(left_begin, left_end, right_begin, merge_size);
+        } else {
+            need_fixup_move = true;
+            break;
         }
         merge_size *= 2;
+        // Join anew.
+        if(merge_size < BUFFER_SIZE) {
+            // Right part to left
+            const auto active_elements_on_right = left_end - left_begin;
+            merge_with_block_size(
+                right_begin, right_begin + active_elements_on_right, left_begin, merge_size);
+            // Buffer part to right
+            merge_with_block_size(buffer_begin, buffer_end, right_begin, merge_size);
+        } else {
+            // Data is already in the correct place for the final step.
+            need_fixup_move = false;
+            break;
+        }
+        merge_size *= 2;
+        pystd2026::insertion_sort(begin, end);
+        return;
     }
+
+    size_t active_buffer_size = (size_t)-1;
+    if(need_fixup_move) {
+        active_buffer_size = left_end - left_begin;
+        auto src = begin;
+        auto dst = buffer.begin();
+        for(size_t i = 0; i < active_buffer_size; ++i) {
+            *dst = pystd2026::move(*src);
+            ++dst;
+            ++src;
+        }
+    } else {
+        active_buffer_size = right_end - right_begin;
+    }
+
+    merge_pass(buffer_begin, buffer_begin + active_buffer_size, right_begin, right_end, begin);
 }
 
 } // namespace pystd2026
