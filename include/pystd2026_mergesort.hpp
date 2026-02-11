@@ -7,8 +7,8 @@
 
 namespace pystd2026 {
 
-template<BasicIterator It1, BasicIterator It2>
-void merge_pass(It1 left_begin, It1 left_end, It1 right_begin, It2 right_end, It2 output) {
+template<BasicIterator It, BasicIterator ItOut>
+void merge_pass(It left_begin, It left_end, It right_begin, It right_end, ItOut output) {
     while(true) {
         if(left_begin == left_end) {
             while(right_begin != right_end) {
@@ -40,8 +40,8 @@ void merge_pass(It1 left_begin, It1 left_end, It1 right_begin, It2 right_end, It
 
 // If merge_block_size is, say 4, it means that the underlying data is in
 // consecutive sorted blocks of size 4.
-template<BasicIterator It>
-void merge_with_block_size(It begin, It end, It output_start, size_t merge_block_size) {
+template<BasicIterator It, BasicIterator OutIt>
+void merge_with_block_size(It begin, It end, OutIt output_start, size_t merge_block_size) {
     const size_t INPUT_SIZE = end - begin;
     for(size_t block_start = 0; block_start < INPUT_SIZE; block_start += 2 * merge_block_size) {
         auto output_location = output_start + block_start;
@@ -62,14 +62,6 @@ void merge_with_block_size(It begin, It end, It output_start, size_t merge_block
         }
     }
 }
-
-template<BasicIterator It>
-void merge_two_nsorted_with_block_size(It first_begin,
-                                       It first_end,
-                                       It second_begin,
-                                       It second_end,
-                                       It output_start,
-                                       size_t merge_block_size) {}
 
 template<BasicIterator It> void mergesort(It begin, It end) {
     const size_t INSERTION_SORT_LIMIT = 16;
