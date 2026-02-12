@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
-// Copyright 2025 Jussi Pakkanen
+// Copyright 2026 Jussi Pakkanen
 
 #include <stdio.h>
-#include <pystd2025.hpp>
+#include <pystd2026.hpp>
+#include <pystd2026_introsort.hpp>
 #include <assert.h>
 
 struct WordCount {
-    const pystd2025::U8String *str;
+    const pystd2026::U8String *str;
     size_t count;
 
     int operator<=>(const WordCount &o) const {
@@ -24,24 +25,24 @@ int file_main(int argc, char **argv) {
         return 0;
     }
     try {
-        pystd2025::HashMap<pystd2025::U8String, size_t> counts;
-        pystd2025::File f(argv[1], "r");
+        pystd2026::HashMap<pystd2026::U8String, size_t> counts;
+        pystd2026::File f(argv[1], "r");
         for(auto &&line : f) {
-            pystd2025::U8String u8line(move(line));
+            pystd2026::U8String u8line(move(line));
             auto words = u8line.split_ascii();
             for(const auto &w : words) {
                 ++counts[w];
             }
         }
-        pystd2025::Vector<WordCount> stats;
+        pystd2026::Vector<WordCount> stats;
         for(const auto item : counts) {
             stats.push_back(WordCount{item.key, *item.value});
         }
-        pystd2025::sort_relocatable<WordCount>(stats.data(), stats.size());
+        pystd2026::introsort(stats.begin(), stats.end());
         for(const auto &i : stats) {
             printf("%d %s\n", (int)i.count, i.str->c_str());
         }
-    } catch(const pystd2025::PyException &e) {
+    } catch(const pystd2026::PyException &e) {
         printf("%s\n", e.what().c_str());
         return 1;
     }
@@ -50,9 +51,9 @@ int file_main(int argc, char **argv) {
 }
 
 int hashmap_main(int, char **) {
-    pystd2025::HashMap<pystd2025::U8String, size_t> wordcounter;
-    pystd2025::U8String key1("key1");
-    pystd2025::U8String key2("key2");
+    pystd2026::HashMap<pystd2026::U8String, size_t> wordcounter;
+    pystd2026::U8String key1("key1");
+    pystd2026::U8String key2("key2");
 
     printf("Initial size: %d\n", (int)wordcounter.size());
     printf("Contains key1: %d\n", (int)wordcounter.contains(key1));
@@ -69,7 +70,7 @@ int hashmap_main(int, char **) {
 }
 
 int split_main(int, char **) {
-    pystd2025::U8String text("aa bb cc");
+    pystd2026::U8String text("aa bb cc");
     auto r = text.split_ascii();
     printf("Split array size: %d\n", (int)r.size());
     for(size_t i = 0; i < r.size(); ++i) {
