@@ -3,6 +3,7 @@
 
 #include <pystd2026_heapsort.hpp>
 #include <pystd2026_mergesort.hpp>
+#include <pystd2026_introsort.hpp>
 #include <pystd_testconfig.hpp>
 
 int breakpoint_opportunity(int number) { return number; }
@@ -82,17 +83,33 @@ int test_mergesort() {
     return 0;
 }
 
-int test_heapsort() {
+int test_introsort_int() {
+    TEST_START;
+    int failing_subtests = 0;
+    const size_t NUM_ENTRIES = 20;
+    int table[NUM_ENTRIES] = {6, 2, 1, 9, 3, 16, 12, 11, 19, 13, 10, 14, 15, 17, 18, 0, 4, 5, 7, 8};
+    pystd2026::Span<int> span(table, NUM_ENTRIES);
+
+    pystd2026::introsort(span);
+
+    for(size_t i = 0; i < NUM_ENTRIES; ++i) {
+        ASSERT((int)i == table[i]);
+    }
+    return failing_subtests;
+}
+
+int test_sort_algorithms() {
     int failing_subtests = 0;
     failing_subtests += test_heapsort_int();
     failing_subtests += test_mergesort();
+    failing_subtests += test_introsort_int();
     return failing_subtests;
 }
 
 int main(int argc, char **argv) {
     int total_errors = 0;
     try {
-        total_errors += test_heapsort();
+        total_errors += test_sort_algorithms();
     } catch(const pystd2026::PyException &e) {
         printf("Testing failed: %s\n", e.what().c_str());
         return 42;
