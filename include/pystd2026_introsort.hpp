@@ -24,9 +24,9 @@ template<BasicIterator It> It pick_qsort_pivot(It begin, It end) {
     return midpoint;
 }
 
-template<BasicIterator It>
-void do_introsort(It begin, It end, const size_t depth, const size_t MAX_ROUNDS) {
-    using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
+template<BasicIterator It, WellBehaved ValueType>
+void do_introsort(
+    It begin, It end, ValueType &scratch, const size_t depth, const size_t MAX_ROUNDS) {
     const size_t INSERTION_SORT_LIMIT = 16;
     const size_t num_elements = end - begin;
     const size_t degenerate_limit = num_elements / 8;
@@ -46,7 +46,7 @@ void do_introsort(It begin, It end, const size_t depth, const size_t MAX_ROUNDS)
     // Move pivot element outside the area to be partitioned
     // so that partition operations do not move it in memory.
     if(pivot_point != begin) {
-        pystd2026::swap(*pivot_point, *begin);
+        pystd2026::swap(*pivot_point, *begin, scratch);
     }
     auto begin_after_pivot = begin + 1;
 
@@ -54,7 +54,7 @@ void do_introsort(It begin, It end, const size_t depth, const size_t MAX_ROUNDS)
         begin_after_pivot, end, [begin](const ValueType &v) -> bool { return v < *begin; });
     auto last_value_point = split_point - 1;
     // After this, last_value_point is in its correct, sorted location.
-    pystd2026::swap(*begin, *last_value_point);
+    pystd2026::swap(*begin, *last_value_point, scratch);
 
     auto left_begin = begin;
     auto left_end = last_value_point;
@@ -69,8 +69,8 @@ void do_introsort(It begin, It end, const size_t depth, const size_t MAX_ROUNDS)
         pystd2026::heapsort(left_begin, left_end);
         pystd2026::heapsort(right_begin, right_end);
     } else {
-        do_introsort(left_begin, left_end, depth + 1, MAX_ROUNDS);
-        do_introsort(right_begin, right_end, depth + 1, MAX_ROUNDS);
+        do_introsort(left_begin, left_end, scratch, depth + 1, MAX_ROUNDS);
+        do_introsort(right_begin, right_end, scratch, depth + 1, MAX_ROUNDS);
     }
 }
 
@@ -93,7 +93,9 @@ template<BasicIterator It> void introsort(It begin, It end) {
     };
 
     const size_t MAX_ROUNDS = max_qsort_rounds(num_elements);
-    do_introsort(begin, end, 0, MAX_ROUNDS);
+    using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
+    ValueType scratch;
+    do_introsort(begin, end, scratch, 0, MAX_ROUNDS);
 }
 
 template<typename T> void introsort(pystd2026::Span<T> span) {

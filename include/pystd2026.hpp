@@ -3137,11 +3137,18 @@ It1 find_if(It1 start, It2 end, const Callable c) {
     return start;
 }
 
-template<WellBehaved T> void swap(T &a, T &b) noexcept {
+template<WellBehaved T> void swap(T &a, T &b, T &tmp) noexcept {
     if(&a != &b) {
-        T tmp{pystd2026::move(a)};
+        tmp = pystd2026::move(a);
         a = pystd2026::move(b);
         b = pystd2026::move(tmp);
+    }
+}
+
+template<WellBehaved T> void swap(T &a, T &b) noexcept {
+    if(&a != &b) {
+        T tmp;
+        pystd2026::swap(a, b, tmp);
     }
 }
 
