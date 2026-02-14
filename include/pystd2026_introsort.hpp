@@ -8,17 +8,18 @@
 
 namespace pystd2026 {
 
-template<BasicIterator It> It pick_qsort_pivot(It begin, It end) {
+template<BasicIterator It, WellBehaved ValueType>
+It pick_qsort_pivot(It begin, It end, ValueType &scratch) {
     auto midpoint = begin + (end - begin) / 2;
     auto last = end - 1;
     // Simple median of three.
     if(*midpoint < *begin) {
-        pystd2026::swap(*begin, *midpoint);
+        pystd2026::swap(*begin, *midpoint, scratch);
     }
     if(*last < *midpoint) {
-        pystd2026::swap(*midpoint, *last);
+        pystd2026::swap(*midpoint, *last, scratch);
         if(*midpoint < *begin) {
-            pystd2026::swap(*midpoint, *begin);
+            pystd2026::swap(*midpoint, *begin, scratch);
         }
     }
     return midpoint;
@@ -41,7 +42,7 @@ void do_introsort(
         return;
     }
 
-    auto pivot_point = pick_qsort_pivot(begin, end);
+    auto pivot_point = pick_qsort_pivot(begin, end, scratch);
 
     // Move pivot element outside the area to be partitioned
     // so that partition operations do not move it in memory.
