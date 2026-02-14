@@ -42,13 +42,21 @@ void do_introsort(It begin, It end, const size_t depth, const size_t MAX_ROUNDS)
 
     auto pivot_point = pick_qsort_pivot(begin, end);
 
-    // FIXME, makes a copy, so might be inefficient.
-    const ValueType pivot_value = *pivot_point;
+    // Move pivot element outside the area to be partitioned
+    // so that partition operations do not move it in memory.
+    if(pivot_point != begin) {
+        pystd2026::swap(*pivot_point, *begin);
+    }
 
+    auto begin_after_pivot = begin + 1;
     auto split_point = pystd2026::partition(
-        begin, end, [&pivot_value](const ValueType &v) -> bool { return v < pivot_value; });
+        begin_after_pivot, end, [&begin](const ValueType &v) -> bool { return v < *begin; });
+    auto last_value_point = split_point - 1;
+    // After this, last_value_point is in its correct, sorted location.
+    pystd2026::swap(*begin, *last_value_point);
+
     auto left_begin = begin;
-    auto left_end = split_point;
+    auto left_end = last_value_point;
     auto right_begin = split_point;
     auto right_end = end;
     const auto left_size = left_end - left_begin;
