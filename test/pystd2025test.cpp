@@ -323,6 +323,8 @@ int test_u8_strings() {
     return failing_subtests;
 }
 
+#ifdef PYSTD_HAS_REGEX
+
 int test_u8_regex_simple() {
     TEST_START;
     pystd2025::U8String text("abcabcabc");
@@ -344,6 +346,8 @@ int test_u8_regex() {
     failing_subtests += test_u8_regex_simple();
     return failing_subtests;
 }
+
+#endif
 
 int test_optional() {
     TEST_START;
@@ -1024,7 +1028,9 @@ int main(int argc, char **argv) {
         total_errors += test_c_strings();
         total_errors += test_fixed_c_strings();
         total_errors += test_u8_strings();
+#ifdef PYSTD_HAS_REGEX
         total_errors += test_u8_regex();
+#endif
         total_errors += test_optional();
         total_errors += test_span();
         total_errors += test_range();

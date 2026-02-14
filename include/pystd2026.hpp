@@ -9,6 +9,8 @@
 #include <stdarg.h>
 #include <string.h>
 
+#include <pystd_config.hpp>
+
 #ifndef __GLIBCXX__
 void *operator new(size_t, void *ptr) noexcept;
 #endif

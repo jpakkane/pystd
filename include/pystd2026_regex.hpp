@@ -5,6 +5,10 @@
 
 #include <pystd2026.hpp>
 
+#ifndef PYSTD_HAS_REGEX
+#error "Regex support not enabled in this build."
+#else
+
 namespace pystd2026 {
 
 class U8Regex {
@@ -48,5 +52,7 @@ private:
 };
 
 U8Match regex_search(const U8Regex &pattern, const U8String &text);
+
+#endif
 
 } // namespace pystd2026

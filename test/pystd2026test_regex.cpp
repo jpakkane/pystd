@@ -1,6 +1,19 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2025 Jussi Pakkanen
 
+#include <pystd_config.hpp>
+
+#ifndef PYSTD_HAS_REGEX
+
+#include <stdio.h>
+
+int main(int, char **) {
+    printf("Regex support not enabled.\n");
+    return 0;
+}
+
+#else
+
 #include <pystd2026_regex.hpp>
 #include <pystd_testconfig.hpp>
 
@@ -54,3 +67,5 @@ int main(int argc, char **argv) {
     }
     return total_errors;
 }
+
+#endif

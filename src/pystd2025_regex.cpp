@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2025 Jussi Pakkanen
 
+#include <pystd_config.hpp>
+
+#ifndef PYSTD_HAS_REGEX
+char linker_remove_me_regex25;
+#else
+
 #include <pystd2025.hpp>
 #define PCRE2_CODE_UNIT_WIDTH 8
 #include <pcre2.h>
@@ -86,3 +92,5 @@ U8Match regex_search(const U8Regex &pattern, const U8String &text) {
 }
 
 } // namespace pystd2025
+
+#endif
