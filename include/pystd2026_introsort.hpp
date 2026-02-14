@@ -99,7 +99,7 @@ template<BasicIterator It> void introsort(It begin, It end) {
     do_introsort(begin, end, scratch, 0, MAX_ROUNDS);
 }
 
-template<typename T> void introsort(pystd2026::Span<T> span) {
+template<WellBehaved T> void introsort(pystd2026::Span<T> span) {
     introsort(span.begin(), span.end());
 }
 
