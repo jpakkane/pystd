@@ -8,9 +8,9 @@ Design goals:
 - design-wise copy the Python standard library's APIs whenever
   possible
 - minimize build times
-- a single header includes everything
+- a single header for the most common things
 - KISS
-- do not sacrifice too much performance
+- needs to be performant, but not "super optimized" to the hilt
 - Can use existing C libraries like pcre but not C++ libraries
 
 ## API and ABI stability
@@ -36,4 +36,5 @@ Anyone who needs to interoperate with code using the old versions can
 
 ## Limitations
 
-Only tested with GCC on x86_64 Linux.
+Tested with GCC and Clang on Linux and macOS. Does not work with MSVC
+as it has not yet added support for pack indexing.
