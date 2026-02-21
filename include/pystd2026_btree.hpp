@@ -1014,7 +1014,7 @@ private:
         EntryLocation location;
 
         EntryLocation sentinel_location() const {
-            return EntryLocation{{(uint32_t)-1, true}, (uint32_t)-1};
+            return EntryLocation{{NULL_REF, true}, (uint32_t)-1};
         }
     };
 
