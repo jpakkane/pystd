@@ -468,6 +468,9 @@ public:
         return ptr[index];
     }
 
+    T &unsafe_at(size_t i) { return ptr[i]; }
+    const T &unsafe_at(size_t i) const { return ptr[i]; }
+
 private:
     T *ptr = nullptr;
     size_t array_size = 0;
@@ -735,6 +738,8 @@ public:
 
     char at(size_t i) const { return (*this)[i]; }
 
+    char unsafe_at(size_t i) const { return buf[i]; }
+
     BytesView subview(size_t loc, size_t size = -1) const {
         if(size == (size_t)-1) {
             if(loc > bufsize) {
@@ -798,6 +803,8 @@ public:
     void pop_front(size_t num = 1);
 
     char operator[](size_t i) const { return buf[i]; }
+
+    char unsafe_at(size_t i) const { return buf.unsafe_at(i); }
 
     Bytes &operator=(const Bytes &) noexcept;
 
@@ -1024,9 +1031,14 @@ public:
         return *objptr(i);
     }
 
+    // Only for compatibility, does the same as indexing.
     T &at(size_t i) { return (*this)[i]; }
 
     const T &at(size_t i) const { return (*this)[i]; }
+
+    T &unsafe_at(size_t i) { return *objptr(i); }
+
+    const T &unsafe_at(size_t i) const { return *objptr(i); }
 
     Vector<T> &operator=(Vector<T> &&o) noexcept {
         if(this != &o) {
@@ -1287,6 +1299,9 @@ public:
         return *objptr(i);
     }
 
+    T &unsafe_at(size_t i) { return *objptr(i); }
+    const T &unsafe_at(size_t i) const { return *objptr(i); }
+
     T *begin() const { return const_cast<T *>(objptr(0)); }
     T *end() const { return const_cast<T *>(objptr(num_entries)); }
 
@@ -1424,6 +1439,8 @@ public:
     size_t find(CStringView substr) const;
 
     char at(size_t index) const { return (*this)[index]; }
+
+    char unsafe_at(size_t index) const { return buf[index]; }
 
     const char *begin() const { return buf; }
 
