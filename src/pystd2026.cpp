@@ -514,6 +514,26 @@ CString::CString(Bytes incoming) {
     check_embedded_nuls();
 }
 
+ZStringView::ZStringView(const char *original, size_t original_size) noexcept {
+    if(original == nullptr) {
+        buf = nullptr;
+        bufsize = 0;
+    } else if(bufsize == (size_t)-1) {
+        buf = original;
+        bufsize = strlen(original);
+    } else {
+        buf = original;
+        bufsize = original_size;
+    }
+}
+
+ZStringView ZStringView::subview(size_t index) const {
+    if(index > bufsize) {
+        throw PyException("OoB subtring request in ZStringView.");
+    }
+    return ZStringView(buf + index, bufsize - index);
+}
+
 CString::CString(const CStringView &view) : CString(view.data(), view.size()) {}
 
 CString::CString(const char *txt, size_t txtsize) {
@@ -700,6 +720,14 @@ void CString::append(const char *str, size_t strsize) {
 void CString::append(const char *start, const char *stop) { append(start, stop - start); }
 
 CStringView CString::view() const { return CStringView{bytes.data(), bytes.size() - 1}; }
+
+ZStringView CString::zview() const {
+    // Contains the data up to the first zero byte, even
+    // if it is an embedded null.
+    return ZStringView{bytes.data()};
+}
+
+bool ZStringView::operator==(const char *text) const noexcept { return strcmp(buf, text) == 0; }
 
 char CString::back() const {
     if(bytes.size() < 2) {

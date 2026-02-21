@@ -1458,6 +1458,33 @@ private:
     size_t bufsize;
 };
 
+// Guaranteed to be null terminated.
+class ZStringView {
+public:
+    ZStringView() noexcept {};
+
+    // Size must not contain the null terminator.
+    // If the string has embedded zero bytes, the output is UB.
+    explicit ZStringView(const char *original, size_t original_size = (size_t)-1) noexcept;
+
+    CStringView view() { return CStringView(buf, bufsize); }
+
+    const char *c_str() const noexcept { return buf; }
+
+    size_t size() const noexcept { return bufsize; }
+
+    bool operator==(const char *text) const noexcept;
+    bool operator==(const ZStringView &other) const noexcept { return *this == other.c_str(); }
+
+    // Only the right half, because the result has to be
+    // null terminated.
+    ZStringView subview(size_t index) const;
+
+private:
+    const char *buf = nullptr;
+    size_t bufsize = 0;
+};
+
 typedef bool (*CStringViewCallback)(const CStringView &piece, void *ctx);
 
 // A string guaranteed to end with a zero terminator.
@@ -1477,6 +1504,7 @@ public:
     char *mutable_data() { return bytes.data(); }
 
     CStringView view() const;
+    ZStringView zview() const;
 
     void strip();
     // CString stripped() const;
