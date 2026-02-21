@@ -5,7 +5,7 @@
 
 #include <pystd2026.hpp>
 
-#ifndef PYSTD_HAS_REGEX
+#ifndef PYSTD2026_HAS_REGEX
 #error "Regex support not enabled in this build."
 #else
 

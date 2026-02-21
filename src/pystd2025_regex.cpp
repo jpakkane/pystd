@@ -3,7 +3,7 @@
 
 #include <pystd_config.hpp>
 
-#ifndef PYSTD_HAS_REGEX
+#ifndef PYSTD2025_HAS_REGEX
 char linker_remove_me_regex25;
 #else
 

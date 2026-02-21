@@ -12,9 +12,6 @@ endif
 
 pcre_dep = dependency('libpcre2-8', required: false)
 
-cdata = configuration_data()
-cdata.set('PYSTD_HAS_REGEX', pcre_dep.found())
-
 subdir('include')
 subdir('src')
 

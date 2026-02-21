@@ -150,4 +150,6 @@ template<BasicIterator It> void mergesort(It begin, It end) {
     merge_pass(buffer_begin, buffer_begin + active_buffer_size, right_begin, right_end, begin);
 }
 
+template<WellBehaved T> void mergesort(Span<T> array) { mergesort(array.begin(), array.end()); }
+
 } // namespace pystd2026

@@ -3203,13 +3203,8 @@ template<typename It1, typename It2> void insertion_sort(It1 start, It2 end) {
     }
 }
 
-template<typename T> void sort_relocatable(T *data, size_t bufsize) {
-    auto ordering = [](const void *v1, const void *v2) -> int {
-        auto d1 = (T *)v1;
-        auto d2 = (T *)v2;
-        return *d1 <=> *d2;
-    };
-    qsort(data, bufsize, sizeof(T), ordering);
+template<WellBehaved T> void insertion_sort(Span<T> array) {
+    insertion_sort(array.begin(), array.end());
 }
 
 template<typename It, typename Value, typename Callable>

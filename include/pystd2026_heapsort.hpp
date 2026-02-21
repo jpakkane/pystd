@@ -80,10 +80,10 @@ template<BasicIterator It> void build_heap(const HeapInfo<It> &hi) {
 
 template<BasicIterator It> void heapsort(It begin, It end) {
     const size_t MIN_SIZE = 16;
-    const HeapInfo original_heap{begin, end};
-    if(original_heap.size() <= MIN_SIZE) {
+    if((size_t)(end - begin) <= MIN_SIZE) {
         pystd2026::insertion_sort(begin, end);
     }
+    const HeapInfo original_heap{begin, end};
 
     build_heap(original_heap);
     // original_heap.validate_heap();
@@ -93,6 +93,10 @@ template<BasicIterator It> void heapsort(It begin, It end) {
         heapify(shrunk_heap, begin);
     }
     pystd2026::insertion_sort(begin, begin + MIN_SIZE + 1);
+}
+
+template<WellBehaved T> void heapsort(pystd2026::Span<T> span) {
+    heapsort(span.begin(), span.end());
 }
 
 } // namespace pystd2026

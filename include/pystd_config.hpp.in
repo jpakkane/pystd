@@ -3,4 +3,6 @@
 
 #pragma once
 
-#mesondefine PYSTD_HAS_REGEX
+#mesondefine PYSTD2025_HAS_REGEX
+
+#mesondefine PYSTD2026_HAS_REGEX
