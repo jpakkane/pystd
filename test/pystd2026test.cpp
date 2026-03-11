@@ -78,6 +78,37 @@ int test_cstring_casing() {
     return 0;
 }
 
+int test_cstringview_natural_order() {
+    TEST_START;
+    pystd2026::CStringView str1("abc");
+    pystd2026::CStringView str2("def");
+
+    pystd2026::CStringView num1("1");
+    pystd2026::CStringView num2("2");
+
+    pystd2026::CStringView zeronum1("01");
+    pystd2026::CStringView zeronum2("02");
+
+    ASSERT(str1.natural_order(str2) < 0);
+    ASSERT(str1.natural_order(str1) == 0);
+    ASSERT(str2.natural_order(str1) > 0);
+
+    ASSERT(num1.natural_order(num2) < 0);
+    // FIXME: maybe numbers with leading zeros should be sorted before ones without?
+    ASSERT(num1.natural_order(zeronum1) == 0);
+    ASSERT(num1.natural_order(zeronum2) < 0);
+    ASSERT(zeronum1.natural_order(zeronum2) < 0);
+    ASSERT(zeronum2.natural_order(zeronum1) > 0);
+    ASSERT(zeronum2.natural_order(zeronum2) == 0);
+
+    pystd2026::CStringView textnum1("abc10");
+    pystd2026::CStringView textnum2("abc2");
+
+    ASSERT(textnum1.natural_order(textnum2) > 0);
+    ASSERT(textnum2.natural_order(textnum1) < 0);
+    return 0;
+}
+
 int test_c_strings() {
     TEST_START;
     int failing_subtests = 0;
@@ -85,6 +116,7 @@ int test_c_strings() {
     failing_subtests += test_cstring_split();
     failing_subtests += test_cstring_splice();
     failing_subtests += test_cstring_casing();
+    failing_subtests += test_cstringview_natural_order();
     return failing_subtests;
 }
 

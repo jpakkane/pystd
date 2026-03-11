@@ -1453,6 +1453,8 @@ public:
     CString upper() const noexcept;
     CString lower() const noexcept;
 
+    int natural_order(const CStringView &o) const;
+
 private:
     const char *buf;
     size_t bufsize;

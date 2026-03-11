@@ -508,6 +508,58 @@ CString CStringView::lower() const noexcept {
     return result;
 }
 
+int CStringView::natural_order(const CStringView &o) const {
+    const char *left = buf;
+    const char *right = o.buf;
+    size_t i_left = 0;
+    size_t i_right = 0;
+    while(true) {
+        const bool left_exhausted = i_left == bufsize;
+        const bool right_exhausted = i_right == o.bufsize;
+        if(left_exhausted) {
+            if(right_exhausted) {
+                return 0;
+            }
+            return -1;
+        }
+        if(right_exhausted) {
+            return 1;
+        }
+        char *left_end;
+        char *right_end;
+        const auto left_int = strtoul(left + i_left, &left_end, 10);
+        const auto right_int = strtoul(right + i_left, &right_end, 10);
+        const bool left_has_num = (left + i_left) != left_end;
+        const bool right_has_num = (right + i_right) != right_end;
+
+        if(left_has_num) {
+            if(right_has_num) {
+                if(left_int < right_int) {
+                    return -1;
+                }
+                if(left_int > right_int) {
+                    return 1;
+                }
+                i_left += left_end - (left + i_left);
+                i_right += right_end - (right + i_right);
+            } else {
+                return -1;
+            }
+        } else if(right_has_num) {
+            return 1;
+        } else {
+            if(left[i_left] < right[i_right]) {
+                return -1;
+            }
+            if(left[i_left] > right[i_right]) {
+                return 1;
+            }
+            ++i_left;
+            ++i_right;
+        }
+    }
+}
+
 CString::CString(Bytes incoming) {
     bytes = move(incoming);
     bytes.append('\0');
