@@ -82,6 +82,7 @@ template<BasicIterator It> void heapsort(It begin, It end) {
     const size_t MIN_SIZE = 16;
     if((size_t)(end - begin) <= MIN_SIZE) {
         pystd2026::insertion_sort(begin, end);
+        return;
     }
     const HeapInfo original_heap{begin, end};
 
