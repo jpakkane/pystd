@@ -43,6 +43,39 @@ template<class T> constexpr remove_reference_t<T> &&move(T &&t) noexcept {
     return static_cast<typename remove_reference<T>::type &&>(t);
 }
 
+template<class T> struct remove_cv {
+    typedef T type;
+};
+template<class T> struct remove_cv<const T> {
+    typedef T type;
+};
+template<class T> struct remove_cv<volatile T> {
+    typedef T type;
+};
+template<class T> struct remove_cv<const volatile T> {
+    typedef T type;
+};
+
+template<class T> struct remove_const {
+    typedef T type;
+};
+template<class T> struct remove_const<const T> {
+    typedef T type;
+};
+
+template<class T> using remove_cv_t = typename remove_cv<T>::type;
+
+template<class T> using remove_const_t = typename remove_const<T>::type;
+
+template<class T> struct remove_volatile {
+    typedef T type;
+};
+template<class T> struct remove_volatile<volatile T> {
+    typedef T type;
+};
+
+template<class T> using remove_volatile_t = typename remove_volatile<T>::type;
+
 struct true_type {
     static constexpr bool value = true;
 };
@@ -52,7 +85,6 @@ struct false_type {
 };
 
 template<typename U, typename V> struct is_same : false_type {};
-
 template<typename U> struct is_same<U, U> : true_type {};
 
 template<typename U, typename V> constexpr bool is_same_v = is_same<U, V>::value;
@@ -67,6 +99,27 @@ template<class T> constexpr bool is_volatile_v = is_volatile<T>::value;
 
 template<class T> struct is_lvalue_reference : pystd2026::false_type {};
 template<class T> struct is_lvalue_reference<T &> : pystd2026::true_type {};
+
+template<class T> struct is_floating_point : pystd2026::false_type {};
+template<> struct is_floating_point<remove_cv_t<float>> : pystd2026::true_type {};
+template<> struct is_floating_point<remove_cv_t<double>> : pystd2026::true_type {};
+
+template<class T> constexpr bool is_floating_point_v = is_floating_point<T>::value;
+
+template<class T> struct is_integral : pystd2026::false_type {};
+template<> struct is_integral<remove_cv_t<bool>> : pystd2026::true_type {};
+template<> struct is_integral<remove_cv_t<char>> : pystd2026::true_type {};
+template<> struct is_integral<remove_cv_t<short>> : pystd2026::true_type {};
+template<> struct is_integral<remove_cv_t<int>> : pystd2026::true_type {};
+template<> struct is_integral<remove_cv_t<long>> : pystd2026::true_type {};
+template<> struct is_integral<remove_cv_t<long long>> : pystd2026::true_type {};
+template<> struct is_integral<remove_cv_t<unsigned char>> : pystd2026::true_type {};
+template<> struct is_integral<remove_cv_t<unsigned short>> : pystd2026::true_type {};
+template<> struct is_integral<remove_cv_t<unsigned int>> : pystd2026::true_type {};
+template<> struct is_integral<remove_cv_t<unsigned long>> : pystd2026::true_type {};
+template<> struct is_integral<remove_cv_t<unsigned long long>> : pystd2026::true_type {};
+
+template<class T> constexpr bool is_integral_v = is_integral<T>::value;
 
 template<typename T>
 constexpr T &&forward(typename pystd2026::remove_reference<T>::type &t) noexcept {
@@ -3185,17 +3238,31 @@ It1 find_if(It1 start, It2 end, const Callable c) {
 }
 
 template<WellBehaved T> void swap(T &a, T &b, T &tmp) noexcept {
-    if(&a != &b) {
-        tmp = pystd2026::move(a);
-        a = pystd2026::move(b);
-        b = pystd2026::move(tmp);
+    if constexpr(pystd2026::is_integral_v<T> || pystd2026::is_floating_point_v<T>) {
+        // Use a stack variable instead to avoid pointer dereference.
+        T private_tmp = a;
+        a = b;
+        b = private_tmp;
+    } else {
+        if(&a != &b) {
+            tmp = pystd2026::move(a);
+            a = pystd2026::move(b);
+            b = pystd2026::move(tmp);
+        }
     }
 }
 
 template<WellBehaved T> void swap(T &a, T &b) noexcept {
-    if(&a != &b) {
-        T tmp;
-        pystd2026::swap(a, b, tmp);
+    if constexpr(pystd2026::is_integral_v<T> || pystd2026::is_floating_point_v<T>) {
+        // Use a stack variable instead to avoid pointer dereference.
+        T private_tmp = a;
+        a = b;
+        b = private_tmp;
+    } else {
+        if(&a != &b) {
+            T tmp;
+            pystd2026::swap(a, b, tmp);
+        }
     }
 }
 
