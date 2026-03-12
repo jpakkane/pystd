@@ -3311,15 +3311,6 @@ template<BasicIterator It1, BasicIterator It2> void insertion_sort(It1 start, It
     }
 }
 
-template<typename T> void sort_relocatable(T *data, size_t bufsize) {
-    auto ordering = [](const void *v1, const void *v2) -> int {
-        auto d1 = (T *)v1;
-        auto d2 = (T *)v2;
-        return *d1 <=> *d2;
-    };
-    qsort(data, bufsize, sizeof(T), ordering);
-}
-
 template<BasicIterator It, typename Value, typename Callable>
 It lower_bound(It first, It last, const Value &value, const Callable &is_less) {
     It it{};
