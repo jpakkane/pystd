@@ -121,6 +121,15 @@ template<> struct is_integral<remove_cv_t<unsigned long long>> : pystd2026::true
 
 template<class T> constexpr bool is_integral_v = is_integral<T>::value;
 
+template<class T> struct is_unsigned : pystd2026::false_type {};
+template<> struct is_unsigned<remove_cv_t<unsigned char>> : pystd2026::true_type {};
+template<> struct is_unsigned<remove_cv_t<unsigned short>> : pystd2026::true_type {};
+template<> struct is_unsigned<remove_cv_t<unsigned int>> : pystd2026::true_type {};
+template<> struct is_unsigned<remove_cv_t<unsigned long>> : pystd2026::true_type {};
+template<> struct is_unsigned<remove_cv_t<unsigned long long>> : pystd2026::true_type {};
+
+template<class T> constexpr bool is_unsigned_v = is_unsigned<T>::value;
+
 template<typename T>
 constexpr T &&forward(typename pystd2026::remove_reference<T>::type &t) noexcept {
     return static_cast<T &&>(t);
@@ -2048,6 +2057,9 @@ template<typename Key, typename Value> class HashMapIterator;
 template<WellBehaved Key, WellBehaved Value, WellBehaved HashAlgo = SimpleHash>
 class HashMap final {
 public:
+    static_assert(!pystd2026::is_floating_point_v<pystd2026::remove_cv_t<Key>>,
+                  "Floats can not be used as map keys as that is highly unreliable.");
+
     friend class HashMapIterator<Key, Value>;
     HashMap() noexcept {
         salt = (size_t)this;
@@ -2370,6 +2382,9 @@ struct HashInsertResult {
 };
 
 template<WellBehaved Key, WellBehaved HashAlgo = SimpleHash> class HashSet final {
+
+    static_assert(!pystd2026::is_floating_point_v<pystd2026::remove_cv_t<Key>>,
+                  "Floats can not be used as set keys as that is highly unreliable.");
 
 public:
     HashInsertResult insert(const Key &key) {
@@ -3375,5 +3390,26 @@ struct UnicodeConversionResult {
 
 UnicodeConversionResult uppercase_unicode(uint32_t codepoint);
 UnicodeConversionResult lowercase_unicode(uint32_t codepoint);
+
+// The C++ standard mandates that spaceship comparing
+// builtin types returns a std::something, which we don't
+// have.
+template<typename T> struct spaceship_compare {
+    int operator()(const T &a, const T &b) {
+        static_assert(!pystd2026::is_floating_point_v<T>,
+                      "Floating point types do not form a strong ordering.");
+        if constexpr(pystd2026::is_integral_v<T>) {
+            if(a < b) {
+                return -1;
+            }
+            if(b < a) {
+                return 1;
+            }
+            return 0;
+        } else {
+            return a <=> b;
+        }
+    }
+};
 
 } // namespace pystd2026
