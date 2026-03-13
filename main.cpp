@@ -17,6 +17,8 @@ struct WordCount {
         }
         return (int64_t)o.str->size_bytes() - (int64_t)str->size_bytes();
     }
+
+    bool operator==(const WordCount &o) const { return (*this <=> o) == 0; }
 };
 
 int file_main(int argc, char **argv) {

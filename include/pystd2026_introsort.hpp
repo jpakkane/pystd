@@ -61,6 +61,16 @@ void do_introsort(
     auto left_end = last_value_point;
     auto right_begin = split_point;
     auto right_end = end;
+
+    // Equal values adjacent to the pivot are also in their correct locations.
+    // Shrink areas so they are not touched any more.
+    while(left_end > left_begin && (*(left_end - 1) == *last_value_point)) {
+        --left_end;
+    }
+    while(right_begin < right_end && (*right_begin == *last_value_point)) {
+        ++right_begin;
+    }
+
     const size_t left_size = left_end - left_begin;
     const size_t right_size = right_end - right_begin;
     // Did we pick a bad pivot?
