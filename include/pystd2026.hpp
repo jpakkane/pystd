@@ -3415,12 +3415,28 @@ template<typename T> struct spaceship_compare {
 int total_order_compare(float a, float b);
 int total_order_compare(double a, double b);
 
-// Handle NaNs.
+// Handles NaNs, but is slower.
 template<typename T> struct spaceship_float_total_order_compare {
     int operator()(const T a, const T b) {
         static_assert(pystd2026::is_floating_point_v<pystd2026::remove_cv_t<T>>,
                       "This type is unly usable with floating point types.");
         return total_order_compare(a, b);
+    }
+};
+
+// Assumes NaNs do not exist in input data. If they do,
+// behaviour is undefined.
+template<typename T> struct spaceship_float_ignore_nan_compare {
+    int operator()(const T a, const T b) {
+        static_assert(pystd2026::is_floating_point_v<pystd2026::remove_cv_t<T>>,
+                      "This type is unly usable with floating point types.");
+        if(a < b) {
+            return -1;
+        }
+        if(b < a) {
+            return 1;
+        }
+        return 1;
     }
 };
 
