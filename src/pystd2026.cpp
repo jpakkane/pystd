@@ -1340,7 +1340,7 @@ UnicodeConversionResult lowercase_unicode(uint32_t codepoint) {
     return r;
 }
 
-int total_order_compare(float a, float b) {
+int total_order_compare(float a, float b) noexcept {
     const auto isnan_a = isnan(a);
     const auto isnan_b = isnan(b);
     if(isnan_a) {
@@ -1361,7 +1361,7 @@ int total_order_compare(float a, float b) {
     return 0;
 }
 
-int total_order_compare(double a, double b) {
+int total_order_compare(double a, double b) noexcept {
     const auto isnan_a = isnan(a);
     const auto isnan_b = isnan(b);
     if(isnan_a) {

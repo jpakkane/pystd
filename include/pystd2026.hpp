@@ -3394,7 +3394,7 @@ UnicodeConversionResult lowercase_unicode(uint32_t codepoint);
 // The C++ standard mandates that spaceship comparing
 // builtin types returns a std::something, which we don't
 // have.
-template<typename T> struct SpaceshipCompare {
+template<typename T> struct Spaceship {
     int operator()(const T &a, const T &b) {
         static_assert(!pystd2026::is_floating_point_v<pystd2026::remove_cv_t<T>>,
                       "Floating point types do not form a strong ordering.");
@@ -3412,12 +3412,12 @@ template<typename T> struct SpaceshipCompare {
     }
 };
 
-int total_order_compare(float a, float b);
-int total_order_compare(double a, double b);
+int total_order_compare(float a, float b) noexcept;
+int total_order_compare(double a, double b) noexcept;
 
 // Handles NaNs, but is slower.
-template<typename T> struct SpaceshipFloatTotalOrderCompare {
-    int operator()(const T a, const T b) {
+template<typename T> struct SpaceshipFloatTotalOrder {
+    int operator()(const T a, const T b) const noexcept {
         static_assert(pystd2026::is_floating_point_v<pystd2026::remove_cv_t<T>>,
                       "This type is unly usable with floating point types.");
         return total_order_compare(a, b);
@@ -3426,8 +3426,8 @@ template<typename T> struct SpaceshipFloatTotalOrderCompare {
 
 // Assumes NaNs do not exist in input data. If they do,
 // behaviour is undefined.
-template<typename T> struct SpaceshipFloatIgnoreNanCompare {
-    int operator()(const T a, const T b) {
+template<typename T> struct SpaceshipFloatIgnoreNan {
+    int operator()(const T a, const T b) const noexcept {
         static_assert(pystd2026::is_floating_point_v<pystd2026::remove_cv_t<T>>,
                       "This type is unly usable with floating point types.");
         if(a < b) {
