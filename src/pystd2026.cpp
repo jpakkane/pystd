@@ -1272,6 +1272,22 @@ int64_t clamp(int64_t val, int64_t lower, int64_t upper) {
     return val;
 }
 
+struct UnicodeCharComparator {
+    int compare(const UnicodeConversionSingleChar &trial, uint32_t cp) const noexcept {
+        return DefaultComparator<uint32_t>{}.compare(trial.from_codepoint, cp);
+    }
+    bool equal(const UnicodeConversionSingleChar &trial, uint32_t cp) const noexcept {
+        return trial.from_codepoint == cp;
+    }
+
+    int compare(const UnicodeConversionMultiChar &trial, uint32_t cp) const noexcept {
+        return DefaultComparator<uint32_t>{}.compare(trial.codepoint, cp);
+    }
+    bool equal(const UnicodeConversionMultiChar &trial, uint32_t cp) const noexcept {
+        return trial.codepoint == cp;
+    }
+};
+
 UnicodeConversionResult uppercase_unicode(uint32_t codepoint) {
     if(codepoint < 128) {
         UnicodeConversionResult r;
@@ -1279,11 +1295,10 @@ UnicodeConversionResult uppercase_unicode(uint32_t codepoint) {
         r.codepoints[0] = toupper(codepoint);
         return r;
     }
-    auto mit = lower_bound(
-        uppercasing_multi,
-        uppercasing_multi + NUM_UPPERCASING_MULTICHAR_ENTRIES,
-        codepoint,
-        [](const UnicodeConversionMultiChar &trial, uint32_t cp) { return trial.codepoint < cp; });
+    auto mit = lower_bound(uppercasing_multi,
+                           uppercasing_multi + NUM_UPPERCASING_MULTICHAR_ENTRIES,
+                           codepoint,
+                           UnicodeCharComparator{});
     if(mit != uppercasing_multi + NUM_UPPERCASING_MULTICHAR_ENTRIES) {
         if(mit->codepoint == codepoint) {
             return mit->converted;
@@ -1295,9 +1310,7 @@ UnicodeConversionResult uppercase_unicode(uint32_t codepoint) {
     auto sit = lower_bound(uppercasing_single,
                            uppercasing_single + NUM_UPPERCASING_SINGLECHAR_ENTRIES,
                            codepoint,
-                           [](const UnicodeConversionSingleChar &trial, uint32_t cp) {
-                               return trial.from_codepoint < cp;
-                           });
+                           UnicodeCharComparator{});
     if(sit != uppercasing_single + NUM_UPPERCASING_SINGLECHAR_ENTRIES) {
         if(sit->from_codepoint == codepoint) {
             r.codepoints[0] = sit->to_codepoint;
@@ -1323,12 +1336,11 @@ UnicodeConversionResult lowercase_unicode(uint32_t codepoint) {
     }
     UnicodeConversionResult r;
     memset(&r, 0, sizeof(UnicodeConversionResult));
+
     auto sit = lower_bound(lowercasing_single,
                            lowercasing_single + NUM_LOWERCASING_SINGLECHAR_ENTRIES,
                            codepoint,
-                           [](const UnicodeConversionSingleChar &trial, uint32_t cp) {
-                               return trial.from_codepoint < cp;
-                           });
+                           UnicodeCharComparator{});
     if(sit != lowercasing_single + NUM_LOWERCASING_SINGLECHAR_ENTRIES) {
         if(sit->from_codepoint == codepoint) {
             r.codepoints[0] = sit->to_codepoint;

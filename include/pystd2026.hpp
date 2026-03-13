@@ -3281,29 +3281,6 @@ template<WellBehaved T> void swap(T &a, T &b) noexcept {
     }
 }
 
-template<BasicIterator It, typename Value, typename Callable>
-It lower_bound(It first, It last, const Value &value, const Callable &is_less) {
-    It it{};
-    auto count = last - first;
-    while(count > 0) {
-        it = first;
-        auto step = count / 2;
-        it += step;
-        if(is_less(*it, value)) {
-            first = ++it;
-            count -= step + 1;
-        } else {
-            count = step;
-        }
-    }
-    return it;
-}
-
-template<BasicIterator It, typename Value> It lower_bound(It first, It last, const Value &value) {
-    return lower_bound(
-        first, last, value, [](const Value &v1, const Value &v2) { return v1 < v2; });
-}
-
 template<BasicIterator It, class Predicate> It find_if(It first, It last, const Predicate &pred) {
     for(; first != last; ++first)
         if(pred(*first))
@@ -3403,6 +3380,29 @@ template<typename T> struct FloatIgnoreNanComparator {
 
     bool equal(const T a, const T b) const noexcept { return a == b; }
 };
+
+template<BasicIterator It, typename Value, typename Comparator>
+It lower_bound(It first, It last, const Value &value, const Comparator &cmp) {
+    It it{};
+    auto count = last - first;
+    while(count > 0) {
+        it = first;
+        auto step = count / 2;
+        it += step;
+        if(cmp.compare(*it, value) < 0) {
+            first = ++it;
+            count -= step + 1;
+        } else {
+            count = step;
+        }
+    }
+    return it;
+}
+
+template<BasicIterator It, typename Value> It lower_bound(It first, It last, const Value &value) {
+    using ValueType = pystd2026::remove_reference_t<decltype(*first)>;
+    return lower_bound(first, last, value, DefaultComparator<ValueType>{});
+}
 
 template<BasicIterator It1, BasicIterator It2, typename Comparator>
 It1 min_element(It1 start, It2 stop, const Comparator &cmp) noexcept {
