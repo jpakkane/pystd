@@ -3281,20 +3281,6 @@ template<WellBehaved T> void swap(T &a, T &b) noexcept {
     }
 }
 
-template<BasicIterator It1, BasicIterator It2> It1 min_element(It1 start, It2 stop) noexcept {
-    if(start == stop) {
-        return start;
-    }
-    It1 minloc = start;
-    while(start != stop) {
-        if(*start < *minloc) {
-            minloc = start;
-        }
-        ++start;
-    }
-    return minloc;
-}
-
 template<BasicIterator It, typename Value, typename Callable>
 It lower_bound(It first, It last, const Value &value, const Callable &is_less) {
     It it{};
@@ -3318,7 +3304,7 @@ template<BasicIterator It, typename Value> It lower_bound(It first, It last, con
         first, last, value, [](const Value &v1, const Value &v2) { return v1 < v2; });
 }
 
-template<BasicIterator It, class Predicate> It find_if(It first, It last, const Predicate &&pred) {
+template<BasicIterator It, class Predicate> It find_if(It first, It last, const Predicate &pred) {
     for(; first != last; ++first)
         if(pred(*first))
             return first;
@@ -3326,7 +3312,7 @@ template<BasicIterator It, class Predicate> It find_if(It first, It last, const 
 }
 
 template<BasicIterator It, class Predicate>
-It find_if_not(It first, It last, const Predicate &&pred) {
+It find_if_not(It first, It last, const Predicate &pred) {
     for(; first != last; ++first)
         if(!pred(*first))
             return first;
@@ -3334,7 +3320,7 @@ It find_if_not(It first, It last, const Predicate &&pred) {
 }
 
 template<BasicIterator It, typename Predicate>
-It partition(It first, It last, const Predicate &&pred) {
+It partition(It first, It last, const Predicate &pred) {
     first = find_if_not(first, last, move(pred));
     if(first == last)
         return first;
@@ -3419,7 +3405,27 @@ template<typename T> struct FloatIgnoreNanComparator {
 };
 
 template<BasicIterator It1, BasicIterator It2, typename Comparator>
-void insertion_sort(It1 start, It2 end, const Comparator &&cmp) {
+It1 min_element(It1 start, It2 stop, const Comparator &cmp) noexcept {
+    if(start == stop) {
+        return start;
+    }
+    It1 minloc = start;
+    while(start != stop) {
+        if(cmp.compare(*start, *minloc) < 0) {
+            minloc = start;
+        }
+        ++start;
+    }
+    return minloc;
+}
+
+template<BasicIterator It1, BasicIterator It2> It1 min_element(It1 start, It2 stop) noexcept {
+    using ValueType = pystd2026::remove_reference_t<decltype(*start)>;
+    return pystd2026::min_element(start, stop, DefaultComparator<ValueType>{});
+}
+
+template<BasicIterator It1, BasicIterator It2, typename Comparator>
+void insertion_sort(It1 start, It2 end, const Comparator &cmp) {
     const auto array_size = end - start;
     if(array_size < 2) {
         return;
@@ -3433,7 +3439,7 @@ void insertion_sort(It1 start, It2 end, const Comparator &&cmp) {
         }
         return;
     }
-    auto min_loc = min_element(start, end);
+    auto min_loc = min_element(start, end, cmp);
     swap(*min_loc, *start);
     ++start;
     ++start;
