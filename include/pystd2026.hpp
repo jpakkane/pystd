@@ -3396,7 +3396,7 @@ UnicodeConversionResult lowercase_unicode(uint32_t codepoint);
 // have.
 template<typename T> struct spaceship_compare {
     int operator()(const T &a, const T &b) {
-        static_assert(!pystd2026::is_floating_point_v<T>,
+        static_assert(!pystd2026::is_floating_point_v<pystd2026::remove_cv_t<T>>,
                       "Floating point types do not form a strong ordering.");
         if constexpr(pystd2026::is_integral_v<T>) {
             if(a < b) {
@@ -3409,6 +3409,18 @@ template<typename T> struct spaceship_compare {
         } else {
             return a <=> b;
         }
+    }
+};
+
+int total_order_compare(float a, float b);
+int total_order_compare(double a, double b);
+
+// Handle NaNs.
+template<typename T> struct spaceship_float_total_order_compare {
+    int operator()(const T a, const T b) {
+        static_assert(pystd2026::is_floating_point_v<pystd2026::remove_cv_t<T>>,
+                      "This type is unly usable with floating point types.");
+        return total_order_compare(a, b);
     }
 };
 

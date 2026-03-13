@@ -1340,4 +1340,46 @@ UnicodeConversionResult lowercase_unicode(uint32_t codepoint) {
     return r;
 }
 
+int total_order_compare(float a, float b) {
+    const auto isnan_a = isnan(a);
+    const auto isnan_b = isnan(b);
+    if(isnan_a) {
+        if(isnan_b) {
+            return 0;
+        }
+        return 1;
+    }
+    if(isnan_b) {
+        return -1;
+    }
+    if(a < b) {
+        return -1;
+    }
+    if(b < a) {
+        return 1;
+    }
+    return 0;
+}
+
+int total_order_compare(double a, double b) {
+    const auto isnan_a = isnan(a);
+    const auto isnan_b = isnan(b);
+    if(isnan_a) {
+        if(isnan_b) {
+            return 0;
+        }
+        return 1;
+    }
+    if(isnan_b) {
+        return -1;
+    }
+    if(a < b) {
+        return -1;
+    }
+    if(b < a) {
+        return 1;
+    }
+    return 0;
+}
+
 } // namespace pystd2026
