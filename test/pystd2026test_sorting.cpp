@@ -38,9 +38,13 @@ struct SortStruct {
 
     // Y does not affect sort order. A stable sort
     // should preserve the order of equal elements.
-    bool operator<(const SortStruct &o) const { return x < o.x; }
+    int operator<=>(const SortStruct &o) const noexcept {
+        return pystd2026::DefaultComparator<int>{}.compare(x, o.x);
+    }
 
-    bool operator==(const SortStruct &o) const { return x == o.x; }
+    bool operator<(const SortStruct &o) const noexcept { return x < o.x; }
+
+    bool operator==(const SortStruct &o) const noexcept { return x == o.x; }
 };
 
 int test_mergesort() {

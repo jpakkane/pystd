@@ -3295,37 +3295,6 @@ template<BasicIterator It1, BasicIterator It2> It1 min_element(It1 start, It2 st
     return minloc;
 }
 
-template<BasicIterator It1, BasicIterator It2> void insertion_sort(It1 start, It2 end) {
-    const auto array_size = end - start;
-    if(array_size < 2) {
-        return;
-    }
-    if(array_size == 2) {
-        auto first = start;
-        auto second = first;
-        ++second;
-        if(!(*first < *second)) {
-            swap(*first, *second);
-        }
-        return;
-    }
-    auto min_loc = min_element(start, end);
-    swap(*min_loc, *start);
-    ++start;
-    ++start;
-    while(start != end) {
-        It1 current = start;
-        auto previous = current;
-        --previous;
-        while(*current < *previous) {
-            swap(*previous, *current);
-            --previous;
-            --current;
-        }
-        ++start;
-    }
-}
-
 template<BasicIterator It, typename Value, typename Callable>
 It lower_bound(It first, It last, const Value &value, const Callable &is_less) {
     It it{};
@@ -3394,8 +3363,8 @@ UnicodeConversionResult lowercase_unicode(uint32_t codepoint);
 // The C++ standard mandates that spaceship comparing
 // builtin types returns a std::something, which we don't
 // have.
-template<typename T> struct Spaceship {
-    int operator()(const T &a, const T &b) {
+template<typename T> struct DefaultComparator {
+    int compare(const T &a, const T &b) const noexcept {
         static_assert(!pystd2026::is_floating_point_v<pystd2026::remove_cv_t<T>>,
                       "Floating point types do not form a strong ordering.");
         if constexpr(pystd2026::is_integral_v<T>) {
@@ -3410,24 +3379,31 @@ template<typename T> struct Spaceship {
             return a <=> b;
         }
     }
+
+    bool equal(const T &a, const T &b) const noexcept { return a == b; }
 };
 
 int total_order_compare(float a, float b) noexcept;
 int total_order_compare(double a, double b) noexcept;
 
+bool total_order_equal(float a, float b) noexcept;
+bool total_order_equal(double a, double b) noexcept;
+
 // Handles NaNs, but is slower.
-template<typename T> struct SpaceshipFloatTotalOrder {
-    int operator()(const T a, const T b) const noexcept {
+template<typename T> struct FloatTotalOrderComparator {
+    int compare(const T a, const T b) const noexcept {
         static_assert(pystd2026::is_floating_point_v<pystd2026::remove_cv_t<T>>,
                       "This type is unly usable with floating point types.");
         return total_order_compare(a, b);
     }
+
+    bool equal(const T a, const T b) const noexcept { return a == b; }
 };
 
 // Assumes NaNs do not exist in input data. If they do,
 // behaviour is undefined.
-template<typename T> struct SpaceshipFloatIgnoreNan {
-    int operator()(const T a, const T b) const noexcept {
+template<typename T> struct FloatIgnoreNanComparator {
+    int compare(const T a, const T b) const noexcept {
         static_assert(pystd2026::is_floating_point_v<pystd2026::remove_cv_t<T>>,
                       "This type is unly usable with floating point types.");
         if(a < b) {
@@ -3438,6 +3414,45 @@ template<typename T> struct SpaceshipFloatIgnoreNan {
         }
         return 1;
     }
+
+    bool equal(const T a, const T b) const noexcept { return a == b; }
 };
+
+template<BasicIterator It1, BasicIterator It2, typename Comparator>
+void insertion_sort(It1 start, It2 end, const Comparator &&cmp) {
+    const auto array_size = end - start;
+    if(array_size < 2) {
+        return;
+    }
+    if(array_size == 2) {
+        auto first = start;
+        auto second = first;
+        ++second;
+        if(cmp.compare(*first, *second) > 0) {
+            swap(*first, *second);
+        }
+        return;
+    }
+    auto min_loc = min_element(start, end);
+    swap(*min_loc, *start);
+    ++start;
+    ++start;
+    while(start != end) {
+        It1 current = start;
+        auto previous = current;
+        --previous;
+        while(cmp.compare(*current, *previous) < 0) {
+            swap(*previous, *current);
+            --previous;
+            --current;
+        }
+        ++start;
+    }
+}
+
+template<BasicIterator It1, BasicIterator It2> void insertion_sort(It1 start, It2 end) {
+    using ValueType = pystd2026::remove_reference_t<decltype(*start)>;
+    pystd2026::insertion_sort(start, end, DefaultComparator<ValueType>{});
+}
 
 } // namespace pystd2026

@@ -1382,4 +1382,34 @@ int total_order_compare(double a, double b) noexcept {
     return 0;
 }
 
+bool total_order_equal(float a, float b) noexcept {
+    const auto isnan_a = isnan(a);
+    const auto isnan_b = isnan(b);
+    if(isnan_a) {
+        if(isnan_b) {
+            return 1;
+        }
+        return 0;
+    }
+    if(isnan_b) {
+        return 0;
+    }
+    return a == b;
+}
+
+bool total_order_equal(double a, double b) noexcept {
+    const auto isnan_a = isnan(a);
+    const auto isnan_b = isnan(b);
+    if(isnan_a) {
+        if(isnan_b) {
+            return 1;
+        }
+        return 0;
+    }
+    if(isnan_b) {
+        return 0;
+    }
+    return a == b;
+}
+
 } // namespace pystd2026
