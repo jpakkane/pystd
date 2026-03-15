@@ -42,8 +42,6 @@ struct SortStruct {
         return pystd2026::DefaultComparator<int>{}.compare(x, o.x);
     }
 
-    bool operator<(const SortStruct &o) const noexcept { return x < o.x; }
-
     bool operator==(const SortStruct &o) const noexcept { return x == o.x; }
 };
 
