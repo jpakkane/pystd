@@ -25,20 +25,24 @@ It pick_qsort_pivot(It begin, It end, ValueType &scratch) {
     return midpoint;
 }
 
-template<BasicIterator It, WellBehaved ValueType>
-void do_introsort(
-    It begin, It end, ValueType &scratch, const size_t depth, const size_t MAX_ROUNDS) {
+template<BasicIterator It, WellBehaved ValueType, typename Comparator>
+void do_introsort(It begin,
+                  It end,
+                  ValueType &scratch,
+                  const size_t depth,
+                  const size_t MAX_ROUNDS,
+                  const Comparator &cmp) {
     const size_t INSERTION_SORT_LIMIT = 16;
     const size_t num_elements = end - begin;
     const size_t degenerate_limit = num_elements / 8;
 
     if(num_elements <= INSERTION_SORT_LIMIT) {
-        pystd2026::insertion_sort(begin, end);
+        pystd2026::insertion_sort(begin, end, cmp);
         return;
     }
 
     if(depth >= MAX_ROUNDS) {
-        pystd2026::heapsort(begin, end);
+        pystd2026::heapsort(begin, end, cmp);
         return;
     }
 
@@ -51,8 +55,10 @@ void do_introsort(
     }
     auto begin_after_pivot = begin + 1;
 
-    auto split_point = pystd2026::partition(
-        begin_after_pivot, end, [begin](const ValueType &v) -> bool { return v < *begin; });
+    auto split_point =
+        pystd2026::partition(begin_after_pivot, end, [begin, &cmp](const ValueType &v) -> bool {
+            return cmp.compare(v, *begin) < 0;
+        });
     auto last_value_point = split_point - 1;
     // After this, last_value_point is in its correct, sorted location.
     pystd2026::swap(*begin, *last_value_point, scratch);
@@ -77,20 +83,21 @@ void do_introsort(
     // If yes, fall back to heap sort.
     // FIXME to do something smarter.
     if(left_size < degenerate_limit || right_size < degenerate_limit) {
-        pystd2026::heapsort(left_begin, left_end);
-        pystd2026::heapsort(right_begin, right_end);
+        pystd2026::heapsort(left_begin, left_end, cmp);
+        pystd2026::heapsort(right_begin, right_end, cmp);
     } else {
-        do_introsort(left_begin, left_end, scratch, depth + 1, MAX_ROUNDS);
-        do_introsort(right_begin, right_end, scratch, depth + 1, MAX_ROUNDS);
+        do_introsort(left_begin, left_end, scratch, depth + 1, MAX_ROUNDS, cmp);
+        do_introsort(right_begin, right_end, scratch, depth + 1, MAX_ROUNDS, cmp);
     }
 }
 
-template<BasicIterator It> void introsort(It begin, It end) {
+template<BasicIterator It, typename Comparator>
+void introsort(It begin, It end, const Comparator &cmp) {
     const size_t INSERTION_SORT_LIMIT = 16;
     const size_t num_elements = end - begin;
 
     if(num_elements <= INSERTION_SORT_LIMIT) {
-        pystd2026::insertion_sort(begin, end);
+        pystd2026::insertion_sort(begin, end, cmp);
         return;
     }
 
@@ -106,7 +113,12 @@ template<BasicIterator It> void introsort(It begin, It end) {
     const size_t MAX_ROUNDS = max_qsort_rounds(num_elements);
     using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
     ValueType scratch;
-    do_introsort(begin, end, scratch, 0, MAX_ROUNDS);
+    do_introsort(begin, end, scratch, 0, MAX_ROUNDS, cmp);
+}
+
+template<BasicIterator It> void introsort(It begin, It end) {
+    using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
+    introsort(begin, end, DefaultComparator<ValueType>{});
 }
 
 template<WellBehaved T> void introsort(pystd2026::Span<T> span) {
