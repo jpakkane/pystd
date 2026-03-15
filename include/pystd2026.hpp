@@ -2324,6 +2324,23 @@ template<typename T> struct DefaultComparator {
     bool equal(const T &a, const T &b) const noexcept { return a == b; }
 };
 
+// Helper for types that don't have the starship operator.
+template<typename T> struct OnlyLessComparator {
+    int compare(const T &a, const T &b) const noexcept {
+        static_assert(!pystd2026::is_floating_point_v<pystd2026::remove_cv_t<T>>,
+                      "Floating point types do not form a strong ordering.");
+        if(a < b) {
+            return -1;
+        }
+        if(b < a) {
+            return 1;
+        }
+        return 0;
+    }
+
+    bool equal(const T &a, const T &b) const noexcept { return a == b; }
+};
+
 int total_order_compare(float a, float b) noexcept;
 int total_order_compare(double a, double b) noexcept;
 
