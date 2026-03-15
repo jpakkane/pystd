@@ -1143,9 +1143,9 @@ public:
     T *begin() const { return const_cast<T *>(objptr(0)); }
     T *end() const { return const_cast<T *>(objptr(num_entries)); }
 
-    void reserve(size_t new_size) {
-        if(new_size > size()) {
-            resize_to(new_size);
+    void reserve(size_t new_capacity) {
+        if(new_capacity > capacity()) {
+            resize_capacity_to(new_capacity);
         }
     }
 
@@ -1168,7 +1168,7 @@ private:
 
     bool is_ptr_within(const T *ptr) const { return ptr >= begin() && ptr < end(); }
 
-    void resize_to(size_t new_capacity) {
+    void resize_capacity_to(size_t new_capacity) {
         const size_t MIN_CAPACITY = 16;
         if(new_capacity < num_entries) {
             bootstrap_throw("Shrinking too small.");

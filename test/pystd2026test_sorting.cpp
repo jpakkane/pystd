@@ -53,6 +53,7 @@ int test_mergesort() {
     const SortStruct first{0, 100000};
     const size_t TOTAL_SIZE = 202;
 
+    items.reserve(TOTAL_SIZE);
     items.emplace_back(last);
     for(size_t i = 0; i < NUM_VALUES; ++i) {
         items.emplace_back(NUM_VALUES - i, 1);
