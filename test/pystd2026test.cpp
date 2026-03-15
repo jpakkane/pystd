@@ -4,7 +4,7 @@
 // Include this to ensure that mixing pystd headers works.
 #include <pystd2025.hpp>
 
-#include <pystd2026.hpp>
+#include <pystd2026_hashtable.hpp>
 #include <pystd2026_variant.hpp>
 #include <pystd_testconfig.hpp>
 #include <string.h>

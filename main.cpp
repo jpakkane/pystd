@@ -2,7 +2,7 @@
 // Copyright 2026 Jussi Pakkanen
 
 #include <stdio.h>
-#include <pystd2026.hpp>
+#include <pystd2026_hashtable.hpp>
 #include <pystd2026_introsort.hpp>
 #include <assert.h>
 
