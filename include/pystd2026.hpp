@@ -100,33 +100,40 @@ template<class T> constexpr bool is_volatile_v = is_volatile<T>::value;
 template<class T> struct is_lvalue_reference : pystd2026::false_type {};
 template<class T> struct is_lvalue_reference<T &> : pystd2026::true_type {};
 
-template<class T> struct is_floating_point : pystd2026::false_type {};
-template<> struct is_floating_point<remove_cv_t<float>> : pystd2026::true_type {};
-template<> struct is_floating_point<remove_cv_t<double>> : pystd2026::true_type {};
+template<class T> struct is_floating_point_base : pystd2026::false_type {};
+template<> struct is_floating_point_base<float> : pystd2026::true_type {};
+template<> struct is_floating_point_base<double> : pystd2026::true_type {};
+
+template<typename T>
+struct is_floating_point : is_floating_point_base<remove_cv_t<remove_reference_t<T>>> {};
 
 template<class T> constexpr bool is_floating_point_v = is_floating_point<T>::value;
 
-template<class T> struct is_integral : pystd2026::false_type {};
-template<> struct is_integral<bool> : pystd2026::true_type {};
-template<> struct is_integral<char> : pystd2026::true_type {};
-template<> struct is_integral<short> : pystd2026::true_type {};
-template<> struct is_integral<int> : pystd2026::true_type {};
-template<> struct is_integral<long> : pystd2026::true_type {};
-template<> struct is_integral<long long> : pystd2026::true_type {};
-template<> struct is_integral<unsigned char> : pystd2026::true_type {};
-template<> struct is_integral<unsigned short> : pystd2026::true_type {};
-template<> struct is_integral<unsigned int> : pystd2026::true_type {};
-template<> struct is_integral<unsigned long> : pystd2026::true_type {};
-template<> struct is_integral<unsigned long long> : pystd2026::true_type {};
+template<class T> struct is_integral_base : pystd2026::false_type {};
+template<> struct is_integral_base<bool> : pystd2026::true_type {};
+template<> struct is_integral_base<char> : pystd2026::true_type {};
+template<> struct is_integral_base<short> : pystd2026::true_type {};
+template<> struct is_integral_base<int> : pystd2026::true_type {};
+template<> struct is_integral_base<long> : pystd2026::true_type {};
+template<> struct is_integral_base<long long> : pystd2026::true_type {};
+template<> struct is_integral_base<unsigned char> : pystd2026::true_type {};
+template<> struct is_integral_base<unsigned short> : pystd2026::true_type {};
+template<> struct is_integral_base<unsigned int> : pystd2026::true_type {};
+template<> struct is_integral_base<unsigned long> : pystd2026::true_type {};
+template<> struct is_integral_base<unsigned long long> : pystd2026::true_type {};
+
+template<typename T> struct is_integral : is_integral_base<remove_cv_t<remove_reference_t<T>>> {};
 
 template<class T> constexpr bool is_integral_v = is_integral<T>::value;
 
-template<class T> struct is_unsigned : pystd2026::false_type {};
-template<> struct is_unsigned<unsigned char> : pystd2026::true_type {};
-template<> struct is_unsigned<unsigned short> : pystd2026::true_type {};
-template<> struct is_unsigned<unsigned int> : pystd2026::true_type {};
-template<> struct is_unsigned<unsigned long> : pystd2026::true_type {};
-template<> struct is_unsigned<unsigned long long> : pystd2026::true_type {};
+template<class T> struct is_unsigned_base : pystd2026::false_type {};
+template<> struct is_unsigned_base<unsigned char> : pystd2026::true_type {};
+template<> struct is_unsigned_base<unsigned short> : pystd2026::true_type {};
+template<> struct is_unsigned_base<unsigned int> : pystd2026::true_type {};
+template<> struct is_unsigned_base<unsigned long> : pystd2026::true_type {};
+template<> struct is_unsigned_base<unsigned long long> : pystd2026::true_type {};
+
+template<typename T> struct is_unsigned : is_unsigned_base<remove_cv_t<remove_reference_t<T>>> {};
 
 template<class T> constexpr bool is_unsigned_v = is_unsigned<T>::value;
 
@@ -2308,7 +2315,7 @@ template<typename T> struct DefaultComparator {
     int compare(const T &a, const T &b) const noexcept {
         static_assert(!pystd2026::is_floating_point_v<pystd2026::remove_cv_t<T>>,
                       "Floating point types do not form a strong ordering.");
-        if constexpr(pystd2026::is_integral_v<pystd2026::remove_reference_t<T>>) {
+        if constexpr(pystd2026::is_integral_v<T>) {
             if(a < b) {
                 return -1;
             }
