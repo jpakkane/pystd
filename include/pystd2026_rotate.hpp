@@ -30,16 +30,13 @@ It rotate(It begin, It middle, It end, const Comparator &cmp) {
         auto new_middle = new_begin + LEFT_SIZE;
         auto new_end = end;
         pystd2026::rotate(new_begin, new_middle, new_end, cmp);
-        return begin + RIGHT_SIZE;
     } else if(RIGHT_SIZE < LEFT_SIZE) {
         auto new_begin = begin + RIGHT_SIZE;
         auto new_middle = middle;
         auto new_end = end;
         pystd2026::rotate(new_begin, new_middle, new_end, cmp);
-        return new_begin;
-    } else {
-        return begin + NUM_SWAPS;
     }
+    return begin + RIGHT_SIZE;
 }
 
 template<BasicIterator It> It rotate(It begin, It middle, It end) {
