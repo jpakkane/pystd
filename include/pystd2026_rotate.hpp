@@ -7,8 +7,7 @@
 
 namespace pystd2026 {
 
-template<BasicIterator It, typename Comparator>
-It rotate(It begin, It middle, It end, const Comparator &cmp) {
+template<BasicIterator It> It rotate(It begin, It middle, It end) {
     using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
     ValueType scratch;
     const auto LEFT_SIZE = middle - begin;
@@ -29,19 +28,19 @@ It rotate(It begin, It middle, It end, const Comparator &cmp) {
         auto new_begin = begin + LEFT_SIZE;
         auto new_middle = new_begin + LEFT_SIZE;
         auto new_end = end;
-        pystd2026::rotate(new_begin, new_middle, new_end, cmp);
+        pystd2026::rotate(new_begin, new_middle, new_end);
     } else if(RIGHT_SIZE < LEFT_SIZE) {
         auto new_begin = begin + RIGHT_SIZE;
         auto new_middle = middle;
         auto new_end = end;
-        pystd2026::rotate(new_begin, new_middle, new_end, cmp);
+        pystd2026::rotate(new_begin, new_middle, new_end);
     }
     return begin + RIGHT_SIZE;
 }
 
-template<BasicIterator It> It rotate(It begin, It middle, It end) {
-    using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
-    return pystd2026::rotate(begin, middle, end, DefaultComparator<ValueType>{});
+template<WellBehaved T>
+auto rotate(pystd2026::Span<T> span, size_t middle) -> decltype(span.begin()) {
+    return pystd2026::rotate(span.begin(), span.begin() + middle, span.end());
 }
 
 } // namespace pystd2026

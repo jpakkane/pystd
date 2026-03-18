@@ -752,15 +752,14 @@ int test_rotate() {
     int arr1[10] = {7, 8, 9, 0, 1, 2, 3, 4, 5, 6};
     int arr2[10] = {4, 5, 6, 7, 8, 9, 0, 1, 2, 3};
     int arr3[10] = {5, 6, 7, 8, 9, 0, 1, 2, 3, 4};
-    pystd2026::DefaultComparator<int> cmp;
-    auto ppoint = pystd2026::rotate(arr1, arr1 + 3, arr1 + 10, cmp);
+    auto ppoint = pystd2026::rotate(arr1, arr1 + 3, arr1 + 10);
 
     ASSERT(*ppoint == 7);
 
     for(int i = 0; i < 10; ++i) {
         ASSERT(arr1[i] == i);
     }
-    auto ppoint2 = pystd2026::rotate(arr2, arr2 + 6, arr2 + 10, cmp);
+    auto ppoint2 = pystd2026::rotate(arr2, arr2 + 6, arr2 + 10);
 
     ASSERT(*ppoint2 == 4);
 
@@ -768,7 +767,8 @@ int test_rotate() {
         ASSERT(arr2[i] == i);
     }
 
-    auto ppoint3 = pystd2026::rotate(arr3, arr3 + 5, arr3 + 10);
+    pystd2026::Span<int> sp3{arr3, 10};
+    auto ppoint3 = pystd2026::rotate(sp3, 5);
 
     ASSERT(*ppoint3 == 5);
 
