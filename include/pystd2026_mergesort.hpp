@@ -70,6 +70,13 @@ void mergesort(It begin, It end, const Comparator &cmp) {
     const size_t INSERTION_SORT_LIMIT = 16;
     const size_t INPUT_SIZE = end - begin;
     const size_t BUFFER_SIZE = (INPUT_SIZE + 1) / 2;
+    const size_t RIGHT_SIZE = BUFFER_SIZE;
+    const size_t LEFT_SIZE = INPUT_SIZE - RIGHT_SIZE;
+    constexpr bool do_validations = true;
+
+    if(!(LEFT_SIZE == RIGHT_SIZE || (LEFT_SIZE + 1) == RIGHT_SIZE)) {
+        internal_failure("Array computation fail.");
+    }
 
     if(INPUT_SIZE <= 2 * INSERTION_SORT_LIMIT) {
         pystd2026::insertion_sort(begin, end, cmp);
@@ -81,7 +88,7 @@ void mergesort(It begin, It end, const Comparator &cmp) {
     for(size_t i = 0; i < BUFFER_SIZE; ++i) {
         buffer.push_back(Value{});
     }
-
+#if 0
     // I did not measure, but for small sets insertion sort is usually
     // the fastest way to go. This is also does only one pass through
     // the data rather than lg2(16) = 4 passes.
@@ -96,14 +103,21 @@ void mergesort(It begin, It end, const Comparator &cmp) {
     }
 
     size_t merge_size = INSERTION_SORT_LIMIT;
-
+#else
+    size_t merge_size = 1;
+#endif
     const auto left_begin = begin;
-    const auto left_end = left_begin + INPUT_SIZE / 2;
+    const auto left_end = left_begin + LEFT_SIZE;
     const auto right_begin = left_end;
     const auto right_end = begin + INPUT_SIZE;
 
     const auto buffer_begin = buffer.begin();
     const auto buffer_end = buffer.end();
+
+    // If the number of data points is odd, we need to store the
+    // temporary data in the buffer as "right aligned", otherwise
+    // merging to the left half might overflow to the right half.
+    const auto right_as_buffer_begin = LEFT_SIZE == RIGHT_SIZE ? right_begin : right_begin + 1;
 
     bool need_fixup_move = false;
     while(true) {
@@ -113,7 +127,7 @@ void mergesort(It begin, It end, const Comparator &cmp) {
             merge_with_block_size(right_begin, right_end, buffer_begin, merge_size, cmp);
             // buffer_end = buffer_begin + (right_end - right_begin);
             //  Left part to right
-            merge_with_block_size(left_begin, left_end, right_begin, merge_size, cmp);
+            merge_with_block_size(left_begin, left_end, right_as_buffer_begin, merge_size, cmp);
         } else {
             need_fixup_move = true;
             break;
@@ -122,9 +136,7 @@ void mergesort(It begin, It end, const Comparator &cmp) {
         // Join anew.
         if(merge_size < BUFFER_SIZE) {
             // Right part to left
-            const auto active_elements_on_right = left_end - left_begin;
-            merge_with_block_size(
-                right_begin, right_begin + active_elements_on_right, left_begin, merge_size, cmp);
+            merge_with_block_size(right_as_buffer_begin, right_end, left_begin, merge_size, cmp);
             // Buffer part to right
             merge_with_block_size(buffer_begin, buffer_end, right_begin, merge_size, cmp);
         } else {
@@ -133,13 +145,11 @@ void mergesort(It begin, It end, const Comparator &cmp) {
             break;
         }
         merge_size *= 2;
-        pystd2026::insertion_sort(begin, end, cmp);
-        return;
     }
 
     size_t active_buffer_size = (size_t)-1;
     if(need_fixup_move) {
-        active_buffer_size = left_end - left_begin;
+        active_buffer_size = LEFT_SIZE;
         auto src = begin;
         auto dst = buffer.begin();
         for(size_t i = 0; i < active_buffer_size; ++i) {
@@ -148,10 +158,28 @@ void mergesort(It begin, It end, const Comparator &cmp) {
             ++src;
         }
     } else {
-        active_buffer_size = right_end - right_begin;
+        active_buffer_size = RIGHT_SIZE;
     }
 
-    merge_pass(buffer_begin, buffer_begin + active_buffer_size, right_begin, right_end, begin, cmp);
+    if constexpr(do_validations) {
+        if(!pystd2026::is_sorted(right_as_buffer_begin, right_end, cmp)) {
+            internal_failure("Right buffer is not sorted before final step.");
+        }
+        if(!pystd2026::is_sorted(buffer_begin, buffer_begin + active_buffer_size, cmp)) {
+            internal_failure("Scratch buffer is not sorted before final step.");
+        }
+    }
+    merge_pass(right_as_buffer_begin,
+               right_end,
+               buffer_begin,
+               buffer_begin + active_buffer_size,
+               begin,
+               cmp);
+    if constexpr(do_validations) {
+        if(!pystd2026::is_sorted(begin, end, cmp)) {
+            internal_failure("Merge sorting failed.");
+        }
+    }
 }
 
 template<BasicIterator It> void mergesort(It begin, It end) {

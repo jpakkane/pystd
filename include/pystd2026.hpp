@@ -2427,6 +2427,22 @@ template<BasicIterator It1, BasicIterator It2> It1 min_element(It1 start, It2 st
 }
 
 template<BasicIterator It1, BasicIterator It2, typename Comparator>
+bool is_sorted(It1 start, It2 end, const Comparator &cmp) {
+    if(start == end) {
+        return true;
+    }
+    auto i = start;
+    auto previous = i;
+    ++i;
+    for(; i != end; ++i, ++previous) {
+        if(cmp.compare(*previous, *i) > 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
+template<BasicIterator It1, BasicIterator It2, typename Comparator>
 void insertion_sort(It1 start, It2 end, const Comparator &cmp) {
     const auto array_size = end - start;
     if(array_size < 2) {
