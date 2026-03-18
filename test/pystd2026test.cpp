@@ -6,6 +6,7 @@
 
 #include <pystd2026_hashtable.hpp>
 #include <pystd2026_variant.hpp>
+#include <pystd2026_rotate.hpp>
 #include <pystd_testconfig.hpp>
 #include <string.h>
 
@@ -746,33 +747,36 @@ void sort_init(pystd2026::Vector<int> &buf) {
     buf.push_back(0);
 }
 
-int test_sort1() {
+int test_rotate() {
     TEST_START;
-    pystd2026::Vector<int> buf;
-    pystd2026::Vector<int> result;
+    int arr1[10] = {7, 8, 9, 0, 1, 2, 3, 4, 5, 6};
+    int arr2[10] = {4, 5, 6, 7, 8, 9, 0, 1, 2, 3};
+    int arr3[10] = {5, 6, 7, 8, 9, 0, 1, 2, 3, 4};
+    pystd2026::DefaultComparator<int> cmp;
+    auto ppoint = pystd2026::rotate(arr1, arr1 + 3, arr1 + 10, cmp);
 
-    result.push_back(0);
-    result.push_back(1);
-    result.push_back(2);
-    result.push_back(3);
+    ASSERT(*ppoint == 7);
 
-    sort_init(buf);
-    ASSERT(buf != result);
+    for(int i = 0; i < 10; ++i) {
+        ASSERT(arr1[i] == i);
+    }
+    auto ppoint2 = pystd2026::rotate(arr2, arr2 + 6, arr2 + 10, cmp);
 
-    pystd2026::insertion_sort(buf.begin(), buf.end());
-    ASSERT(buf == result);
+    ASSERT(*ppoint2 == 4);
 
-    pystd2026::insertion_sort(buf.begin(), buf.end());
-    ASSERT(buf == result);
+    for(int i = 0; i < 10; ++i) {
+        ASSERT(arr2[i] == i);
+    }
+
+    auto ppoint3 = pystd2026::rotate(arr3, arr3 + 5, arr3 + 10);
+
+    ASSERT(*ppoint3 == 5);
+
+    for(int i = 0; i < 10; ++i) {
+        ASSERT(arr3[i] == i);
+    }
 
     return 0;
-}
-
-int test_sort() {
-    printf("Testing sort.\n");
-    int failing_subtests = 0;
-    failing_subtests += test_sort1();
-    return failing_subtests;
 }
 
 enum class ErrorCode : int32_t {
@@ -837,9 +841,10 @@ int test_partition1() {
     return 0;
 }
 
-int test_partition() {
-    printf("Testing partition.\n");
+int test_algorithms() {
+    printf("Testing sort.\n");
     int failing_subtests = 0;
+    failing_subtests += test_rotate();
     failing_subtests += test_partition1();
     return failing_subtests;
 }
@@ -945,9 +950,8 @@ int main(int argc, char **argv) {
         total_errors += test_hashset();
         total_errors += test_variant();
         total_errors += test_format();
-        total_errors += test_sort();
+        total_errors += test_algorithms();
         total_errors += test_fixedvector();
-        total_errors += test_partition();
         total_errors += test_unicode();
         total_errors += test_std_mixing();
     } catch(const pystd2026::PyException &e) {
