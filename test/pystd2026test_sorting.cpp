@@ -45,19 +45,17 @@ struct SortStruct {
     bool operator==(const SortStruct &o) const noexcept { return x == o.x; }
 };
 
-int test_mergesort_int() {
-    TEST_START;
+int test_mergesort_int(const int TOTAL_SIZE) {
     pystd2026::Vector<int> items;
-    const int TOTAL_SIZE = 33;
 
     items.reserve(TOTAL_SIZE);
     for(int i = 0; i < TOTAL_SIZE; ++i) {
         items.emplace_back(TOTAL_SIZE - i - 1);
     }
 
-    ASSERT(items.size() == TOTAL_SIZE);
+    ASSERT((int)items.size() == TOTAL_SIZE);
     pystd2026::mergesort(items.begin(), items.end());
-    ASSERT(items.size() == TOTAL_SIZE);
+    ASSERT((int)items.size() == TOTAL_SIZE);
 
     for(size_t i = 0; i < items.size(); ++i) {
         printf("%d ", items[i]);
@@ -68,7 +66,16 @@ int test_mergesort_int() {
         const auto val = items[i];
         ASSERT(val == i);
     }
+    return 0;
+}
 
+int test_mergesort_int() {
+    TEST_START;
+    for(int i = 32; i < 203; ++i) {
+        if(test_mergesort_int(i) != 0) {
+            return 1;
+        }
+    }
     return 0;
 }
 
