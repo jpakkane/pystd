@@ -99,8 +99,7 @@ void do_introsort(It begin,
     const size_t left_size = left_end - left_begin;
     const size_t right_size = right_end - right_begin;
     // Did we pick a bad pivot?
-    // If yes, fall back to heap sort.
-    // FIXME to do something smarter.
+    // Check if we need to fall back to heapsort.
     if(left_size < degenerate_limit || right_size < degenerate_limit) {
         if(degenerate_depth > 0) {
             pystd2026::heapsort(left_begin, left_end, cmp);

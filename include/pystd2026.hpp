@@ -2283,19 +2283,37 @@ It find_if_not(It first, It last, const Predicate &pred) {
 
 template<BasicIterator It, typename Predicate>
 It partition(It first, It last, const Predicate &pred) {
-    first = find_if_not(first, last, move(pred));
+    using ValueType = pystd2026::remove_reference_t<decltype(*first)>;
+    ValueType scratch;
+
     if(first == last)
         return first;
 
-    It i = first;
-    ++i;
-    for(; i != last; ++i) {
-        if(pred(*i)) {
-            swap(*i, *first);
-            ++first;
-        }
+    auto lo = pystd2026::find_if_not(first, last, pred);
+    if(lo == last) {
+        return last;
     }
-    return first;
+    auto hi = last - 1;
+    while(hi > lo && !pred(*hi)) {
+        --hi;
+    }
+    if(hi <= lo) {
+        return hi;
+    }
+
+    pystd2026::swap(*lo, *hi, scratch);
+    while(true) {
+        do {
+            ++lo;
+        } while(pred(*lo));
+        do {
+            --hi;
+        } while(!pred(*hi));
+        if(hi <= lo) {
+            return lo;
+        }
+        pystd2026::swap(*lo, *hi, scratch);
+    }
 }
 
 double clamp(double val, double lower, double upper);

@@ -180,7 +180,9 @@ void mergesort(It begin, It end, const Comparator &cmp) {
 
     size_t active_buffer_size = (size_t)-1;
     if(need_fixup_move) {
-        debug_printf(begin, end, "Before fixup move.");
+        if constexpr(do_debug_prints) {
+            debug_printf(begin, end, "Before fixup move.");
+        }
         active_buffer_size = LEFT_SIZE;
         auto src = begin;
         auto dst = buffer_begin;
@@ -189,8 +191,11 @@ void mergesort(It begin, It end, const Comparator &cmp) {
             ++dst;
             ++src;
         }
-        debug_printf(buffer_begin, buffer_begin + active_buffer_size, "Buffer after fixup move.");
-        debug_printf(right_begin, right_begin + RIGHT_SIZE, "Right after fixup move.");
+        if constexpr(do_debug_prints) {
+            debug_printf(
+                buffer_begin, buffer_begin + active_buffer_size, "Buffer after fixup move.");
+            debug_printf(right_begin, right_begin + RIGHT_SIZE, "Right after fixup move.");
+        }
     } else {
         active_buffer_size = RIGHT_SIZE;
     }

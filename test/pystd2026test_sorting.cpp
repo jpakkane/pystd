@@ -56,12 +56,12 @@ int test_mergesort_int(const int TOTAL_SIZE) {
     ASSERT((int)items.size() == TOTAL_SIZE);
     pystd2026::mergesort(items.begin(), items.end());
     ASSERT((int)items.size() == TOTAL_SIZE);
-
+    /*
     for(size_t i = 0; i < items.size(); ++i) {
         printf("%d ", items[i]);
     }
     printf("\n");
-
+    */
     for(int i = 0; i < TOTAL_SIZE; ++i) {
         const auto val = items[i];
         ASSERT(val == i);
