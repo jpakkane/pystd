@@ -88,10 +88,8 @@ void do_introsort(It begin,
     auto right_end = end;
 
     // Equal values adjacent to the pivot are also in their correct locations.
-    // Shrink areas so they are not touched any more.
-    while(left_end > left_begin && (*(left_end - 1) == *last_value_point)) {
-        --left_end;
-    }
+    // They are all in the right half as the sort critarion was <.
+    // Gobble up as many as we can.
     while(right_begin < right_end && (*right_begin == *last_value_point)) {
         ++right_begin;
     }
