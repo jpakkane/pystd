@@ -2462,6 +2462,7 @@ bool is_sorted(It1 start, It2 end, const Comparator &cmp) {
 
 template<BasicIterator It1, BasicIterator It2, typename Comparator>
 void insertion_sort(It1 start, It2 end, const Comparator &cmp) {
+    using ValueType = pystd2026::remove_reference_t<decltype(*start)>;
     const auto array_size = end - start;
     if(array_size < 2) {
         return;
@@ -2475,6 +2476,7 @@ void insertion_sort(It1 start, It2 end, const Comparator &cmp) {
         }
         return;
     }
+    ValueType scratch;
     auto min_loc = min_element(start, end, cmp);
     swap(*min_loc, *start);
     ++start;
@@ -2484,7 +2486,7 @@ void insertion_sort(It1 start, It2 end, const Comparator &cmp) {
         auto previous = current;
         --previous;
         while(cmp.compare(*current, *previous) < 0) {
-            swap(*previous, *current);
+            swap(*previous, *current, scratch);
             --previous;
             --current;
         }
