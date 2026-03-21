@@ -26,20 +26,35 @@ It pick_qsort_pivot_median3(It begin, It end, ValueType &scratch, const Comparat
 }
 
 template<BasicIterator It, WellBehaved ValueType, typename Comparator>
-It pick_qsort_pivot_median5(It begin, It end, ValueType &scratch, const Comparator &cmp) {
-    const auto step = (end - begin) / 5;
-    auto m1 = begin + step;
-    auto m2 = m1 + step;
-    auto m3 = m2 + step;
-    auto last = end - 1;
-    pystd2026::swap(*m1, *(begin + 1), scratch);
-    pystd2026::swap(*m2, *(begin + 2), scratch);
-    pystd2026::swap(*m3, *(begin + 3), scratch);
-    pystd2026::swap(*last, *(begin + 4), scratch);
+It pick_qsort_pivot_median(
+    It begin, It end, ValueType &scratch, const size_t NUM_MEDIAN_POINTS, const Comparator &cmp) {
+    const auto step = (end - begin) / NUM_MEDIAN_POINTS;
+    size_t picker = step;
+    for(size_t i = 1; i < NUM_MEDIAN_POINTS; ++i) {
+        pystd2026::swap(*(begin + step), *(begin + i), scratch);
+        picker += step;
+    }
 
     // Optimally nth element.
-    pystd2026::insertion_sort(begin, begin + 5, cmp);
-    return begin + 2;
+    pystd2026::insertion_sort(begin, begin + NUM_MEDIAN_POINTS, cmp);
+    return begin + NUM_MEDIAN_POINTS / 2;
+}
+
+// Converting this into a lambda inside do_introsort makes it _a lot_ slower.
+inline size_t qsort_median_count(const size_t DATA_SIZE, const size_t degenerate_depth) {
+    if(DATA_SIZE < 100) {
+        return degenerate_depth == 0 ? 3 : 5;
+    }
+    if(DATA_SIZE < 1000) {
+        return degenerate_depth == 0 ? 7 : 9;
+    }
+    if(DATA_SIZE < 10000) {
+        return degenerate_depth == 0 ? 11 : 13;
+    }
+    if(DATA_SIZE < 100000) {
+        return degenerate_depth == 0 ? 15 : 17;
+    }
+    return degenerate_depth == 0 ? 19 : 21;
 }
 
 template<BasicIterator It, WellBehaved ValueType, typename Comparator>
@@ -64,8 +79,11 @@ void do_introsort(It begin,
         return;
     }
 
-    auto pivot_point = degenerate_depth == 0 ? pick_qsort_pivot_median3(begin, end, scratch, cmp)
-                                             : pick_qsort_pivot_median5(begin, end, scratch, cmp);
+    const auto median_size = qsort_median_count(num_elements, degenerate_depth);
+
+    auto pivot_point = median_size <= 3
+                           ? pick_qsort_pivot_median3(begin, end, scratch, cmp)
+                           : pick_qsort_pivot_median(begin, end, scratch, median_size, cmp);
 
     // Move pivot element outside the area to be partitioned
     // so that partition operations do not move it in memory.
