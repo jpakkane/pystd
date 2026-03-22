@@ -856,6 +856,16 @@ bool ValidatedU8Iterator::operator==(const ValidatedU8Iterator &o) const { retur
 
 bool ValidatedU8Iterator::operator!=(const ValidatedU8Iterator &o) const { return !(*this == o); }
 
+int ValidatedU8Iterator::operator<=>(const ValidatedU8Iterator &o) const {
+    if(buf < o.buf) {
+        return -1;
+    }
+    if(buf > o.buf) {
+        return 1;
+    }
+    return 0;
+}
+
 uint32_t ValidatedU8ReverseIterator::operator*() {
     compute_char_info();
     return char_info.codepoint;
@@ -909,6 +919,15 @@ void ValidatedU8ReverseIterator::compute_char_info() {
     }
 };
 
+U8StringView::U8StringView(const char *buf_, size_t bufsize) {
+    const unsigned char *buf = (const unsigned char *)buf_;
+    if(!is_valid_utf8(buf_, bufsize)) {
+        throw PyException("String is not valid UTF-8.");
+    }
+    start.buf = buf;
+    stop.buf = buf + bufsize;
+}
+
 CStringView U8StringView::raw_view() const {
     return CStringView{(const char *)start.byte_location(),
                        (size_t)(stop.byte_location() - start.byte_location())};
@@ -920,7 +939,7 @@ bool U8StringView::overlaps(const U8StringView &o) const {
     return cv1.overlaps(cv2);
 }
 
-bool U8StringView::operator==(const char *txt) const {
+bool U8StringView::operator==(const char *txt) const noexcept {
     const unsigned char *data_start = start.byte_location();
     const unsigned char *data_end = stop.byte_location();
     size_t i = 0;
@@ -936,6 +955,18 @@ bool U8StringView::operator==(const char *txt) const {
         }
         ++i;
     }
+}
+
+bool U8StringView::operator==(const U8StringView &o) const noexcept {
+    if(this == &o) {
+        return true;
+    }
+    if(size_bytes() != o.size_bytes()) {
+        return false;
+    }
+    CStringView v1(data(), size_bytes());
+    CStringView v2(o.data(), o.size_bytes());
+    return v1 == v2;
 }
 
 U8String U8StringView::upper() const {
@@ -964,6 +995,25 @@ U8String U8StringView::lower() const {
         }
     }
     return result;
+}
+
+U8StringSplitClosure_temp U8StringView::split_ascii() { return U8StringSplitClosure_temp{*this}; }
+
+Optional<U8StringView> U8StringSplitClosure_temp::next() {
+    if(current >= original.end()) {
+        return {};
+    }
+    while(current < original.end() && is_ascii_whitespace(*current)) {
+        ++current;
+    }
+    if(current == original.end()) {
+        return {};
+    }
+    auto word_start = current;
+    while(current < original.end() && !is_ascii_whitespace(*current)) {
+        ++current;
+    }
+    return U8StringView(word_start, current);
 }
 
 U8String::U8String(Bytes incoming) {

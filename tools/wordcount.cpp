@@ -7,7 +7,7 @@
 #include <assert.h>
 
 struct WordCount {
-    const pystd2026::U8String *str;
+    pystd2026::U8StringView word;
     size_t count;
 
     int operator<=>(const WordCount &o) const {
@@ -15,7 +15,7 @@ struct WordCount {
         if(diff != 0) {
             return diff;
         }
-        return (int64_t)o.str->size_bytes() - (int64_t)str->size_bytes();
+        return (int64_t)o.word.size_bytes() - (int64_t)word.size_bytes();
     }
 
     bool operator==(const WordCount &o) const { return (*this <=> o) == 0; }
@@ -27,22 +27,29 @@ int file_main(int argc, char **argv) {
         return 0;
     }
     try {
-        pystd2026::HashMap<pystd2026::U8String, size_t> counts;
-        pystd2026::File f(argv[1], "r");
-        for(auto &&line : f) {
-            pystd2026::U8String u8line(move(line));
-            auto words = u8line.split_ascii();
-            for(const auto &w : words) {
-                ++counts[w];
-            }
+        pystd2026::HashMap<pystd2026::U8StringView, size_t> counts;
+        pystd2026::Optional<pystd2026::MMapping> mmap_o = pystd2026::mmap_file(argv[1]);
+        if(!mmap_o) {
+            printf("Could not open input file.\n");
+            return 1;
+        }
+        auto &mmap = *mmap_o;
+        auto bytes = mmap.view();
+        auto file_as_u8 = pystd2026::U8StringView(bytes.data(), bytes.size_bytes());
+
+        for(auto &&word : pystd2026::Loopsume(file_as_u8.split_ascii())) {
+            ++counts[word];
         }
         pystd2026::Vector<WordCount> stats;
+        stats.reserve(counts.size());
         for(const auto item : counts) {
-            stats.push_back(WordCount{item.key, *item.value});
+            stats.push_back(WordCount{*item.key, *item.value});
         }
         pystd2026::introsort(stats.begin(), stats.end());
+        pystd2026::U8String tmp; // C formatting demands a null terminator.
         for(const auto &i : stats) {
-            printf("%d %s\n", (int)i.count, i.str->c_str());
+            tmp = i.word;
+            printf("%d %s\n", (int)i.count, tmp.c_str());
         }
     } catch(const pystd2026::PyException &e) {
         printf("%s\n", e.what().c_str());

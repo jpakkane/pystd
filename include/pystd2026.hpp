@@ -831,6 +831,8 @@ public:
 
     const char *end() const { return buf + bufsize; }
 
+    template<typename Hasher> void feed_hash(Hasher &h) const { h.feed_bytes(buf, bufsize); }
+
 private:
     const char *buf;
     size_t bufsize;
@@ -1429,11 +1431,16 @@ public:
 
     bool operator==(const ValidatedU8Iterator &o) const;
     bool operator!=(const ValidatedU8Iterator &o) const;
+    int operator<=>(const ValidatedU8Iterator &o) const;
+
+    ValidatedU8Iterator &operator=(ValidatedU8Iterator &&o) noexcept = default;
 
     struct CharInfo {
         uint32_t codepoint;
         uint32_t byte_count;
     };
+
+    const char *data() const { return (const char *)buf; }
 
 private:
     explicit ValidatedU8Iterator(const unsigned char *utf8_string)
@@ -1488,6 +1495,7 @@ public:
     CStringView(const char *start, const char *stop);
     CStringView(const char *str, size_t length);
     explicit CStringView(const CString &str) noexcept;
+    explicit CStringView(BytesView bv) : CStringView(bv.data(), bv.size_bytes()) {}
 
     bool operator==(const char *str) const;
     bool operator==(CStringView o) const;
@@ -1527,6 +1535,11 @@ public:
     CString lower() const noexcept;
 
     int natural_order(const CStringView &o) const;
+
+    template<typename Hasher> void feed_hash(Hasher &h) const {
+        BytesView bv(data(), size());
+        bv.feed_hash(h);
+    }
 
 private:
     const char *buf;
@@ -1807,9 +1820,18 @@ private:
 
 class U8String;
 
+class U8StringSplitClosure_temp;
+
 class U8StringView {
 public:
-    U8StringView() {}
+    friend class U8StringSplitClosure_temp;
+
+    U8StringView() noexcept {}
+
+    U8StringView(const U8StringView &o) noexcept = default;
+    U8StringView(U8StringView &&o) noexcept = default;
+
+    U8StringView(const char *buf, size_t bufsize);
 
     U8StringView(const ValidatedU8Iterator &start_, const ValidatedU8Iterator &end_)
         : start{start_}, stop{end_} {
@@ -1821,14 +1843,28 @@ public:
         }
     }
     CStringView raw_view() const;
+    template<typename Hasher> void feed_hash(Hasher &h) const {
+        CStringView cv(data(), size_bytes());
+        cv.feed_hash(h);
+    }
 
     bool overlaps(const U8StringView &o) const;
-    bool operator==(const char *) const;
+    bool operator==(const char *) const noexcept;
+    bool operator==(const U8StringView &o) const noexcept;
 
+    U8StringView &operator=(U8StringView &&o) noexcept {
+        if(this != &o) {
+            start = pystd2026::move(o.start);
+            stop = pystd2026::move(o.stop);
+        }
+        return *this;
+    }
     U8String upper() const;
     U8String lower() const;
 
     size_t size_bytes() const noexcept { return stop.buf - start.buf; }
+
+    const char *data() const noexcept { return (const char *)start.buf; }
 
     ValidatedU8Iterator begin() const { return start; };
     ValidatedU8Iterator end() const { return stop; };
@@ -1836,9 +1872,29 @@ public:
     ValidatedU8Iterator cbegin() const { return start; };
     ValidatedU8Iterator cend() const { return stop; };
 
+    U8StringSplitClosure_temp split_ascii();
+
 private:
     ValidatedU8Iterator start;
     ValidatedU8Iterator stop;
+};
+
+// Currently handles only whitespace splitting.
+
+class U8StringSplitClosure_temp {
+public:
+    U8StringSplitClosure_temp() noexcept : original{}, current{original.start} {};
+    explicit U8StringSplitClosure_temp(U8StringView original_string) noexcept
+        : original{pystd2026::move(original_string)}, current{original.start} {}
+
+    U8StringSplitClosure_temp(U8StringSplitClosure_temp &&o) noexcept = default;
+
+    U8StringSplitClosure_temp &operator=(U8StringSplitClosure_temp &&o) noexcept = default;
+    Optional<U8StringView> next();
+
+private:
+    U8StringView original;
+    ValidatedU8Iterator current;
 };
 
 typedef bool (*U8StringViewCallback)(const U8StringView &piece, void *ctx);
@@ -1886,6 +1942,8 @@ public:
             cstring = move(o.cstring);
         }
     }
+
+    void operator=(const U8StringView &o) noexcept { cstring = CString(o.data(), o.size_bytes()); }
 
     bool operator==(const U8String &o) const { return cstring == o.cstring; }
     bool operator<(const U8String &o) const { return cstring < o.cstring; }
@@ -2009,6 +2067,10 @@ private:
 
 template<typename Hasher> struct HashFeeder<Hasher, U8String> {
     void operator()(Hasher &h, const U8String &u8) noexcept { u8.feed_hash(h); }
+};
+
+template<typename Hasher> struct HashFeeder<Hasher, U8StringView> {
+    void operator()(Hasher &h, const U8StringView &u8) noexcept { u8.feed_hash(h); }
 };
 
 class File;
