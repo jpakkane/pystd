@@ -15,8 +15,5 @@ pcre_dep = dependency('libpcre2-8', required: false)
 subdir('include')
 subdir('src')
 
-executable('pystd', 'main.cpp',
-  dependencies: stdlib_dep)
-
 subdir('test')
 subdir('tools')

@@ -1,3 +1,6 @@
+executable('wordcount', 'wordcount.cpp',
+  dependencies: stdlib_dep)
+
 executable('argparse', 'argparse.cpp',
   dependencies: stdlib_dep)
 
