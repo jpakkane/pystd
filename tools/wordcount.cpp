@@ -37,7 +37,7 @@ int file_main(int argc, char **argv) {
         auto bytes = mmap.view();
         auto file_as_u8 = pystd2026::U8StringView(bytes.data(), bytes.size_bytes());
 
-        for(auto &&word : pystd2026::Loopsume(file_as_u8.split_ascii())) {
+        for(const auto &word : pystd2026::Loopsume(file_as_u8.split_ascii())) {
             ++counts[word];
         }
         pystd2026::Vector<WordCount> stats;
@@ -46,10 +46,8 @@ int file_main(int argc, char **argv) {
             stats.push_back(WordCount{*item.key, *item.value});
         }
         pystd2026::introsort(stats.begin(), stats.end());
-        pystd2026::U8String tmp; // C formatting demands a null terminator.
         for(const auto &i : stats) {
-            tmp = i.word;
-            printf("%d %s\n", (int)i.count, tmp.c_str());
+            printf("%d %.*s\n", (int)i.count, (int)i.word.size_bytes(), i.word.data());
         }
     } catch(const pystd2026::PyException &e) {
         printf("%s\n", e.what().c_str());
@@ -58,42 +56,6 @@ int file_main(int argc, char **argv) {
 
     return 0;
 }
-
-int hashmap_main(int, char **) {
-    pystd2026::HashMap<pystd2026::U8String, size_t> wordcounter;
-    pystd2026::U8String key1("key1");
-    pystd2026::U8String key2("key2");
-
-    printf("Initial size: %d\n", (int)wordcounter.size());
-    printf("Contains key1: %d\n", (int)wordcounter.contains(key1));
-    printf("Contains key2: %d\n", (int)wordcounter.contains(key2));
-
-    printf("Inserting key1.\n");
-    wordcounter.insert(key1, 66);
-    printf("Size: %d\n", (int)wordcounter.size());
-    printf("Contains key1: %d\n", (int)wordcounter.contains(key1));
-    printf("Value of key1: %d\n", (int)*wordcounter.lookup(key1));
-    printf("Contains key2: %d\n", (int)wordcounter.contains(key2));
-
-    return 0;
-}
-
-int split_main(int, char **) {
-    pystd2026::U8String text("aa bb cc");
-    auto r = text.split_ascii();
-    printf("Split array size: %d\n", (int)r.size());
-    for(size_t i = 0; i < r.size(); ++i) {
-        printf(" %s\n", r[i].c_str());
-    }
-    return 0;
-}
-
 int main(int argc, char **argv) {
-    if(false) {
-        return hashmap_main(argc, argv);
-    } else if(false) {
-        return split_main(argc, argv);
-    } else {
-        return file_main(argc, argv);
-    }
+    return file_main(argc, argv);
 }
