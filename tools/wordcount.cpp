@@ -42,7 +42,7 @@ int file_main(int argc, char **argv) {
         }
         pystd2026::Vector<WordCount> stats;
         stats.reserve(counts.size());
-        for(const auto item : counts) {
+        for(const auto &item : counts) {
             stats.push_back(WordCount{*item.key, *item.value});
         }
         pystd2026::introsort(stats.begin(), stats.end());
