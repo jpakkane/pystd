@@ -7,6 +7,7 @@
 #include <pystd2026_hashtable.hpp>
 #include <pystd2026_variant.hpp>
 #include <pystd2026_rotate.hpp>
+#include <pystd2026_stablepartition.hpp>
 #include <pystd_testconfig.hpp>
 #include <string.h>
 
@@ -841,11 +842,46 @@ int test_partition1() {
     return 0;
 }
 
+struct StableItem {
+    bool is_true;
+    size_t x;
+};
+
+int test_stable_partition() {
+    TEST_START;
+    pystd2026::Vector<StableItem> items;
+
+    items.emplace_back(false, 5);
+    items.emplace_back(true, 9);
+    items.emplace_back(false, 4);
+    items.emplace_back(false, 3);
+    items.emplace_back(true, 8);
+    items.emplace_back(false, 2);
+    items.emplace_back(false, 1);
+    items.emplace_back(true, 7);
+    items.emplace_back(true, 6);
+    items.emplace_back(false, 0);
+
+    auto partition_point = pystd2026::stable_partition(
+        items.begin(), items.end(), [](const StableItem &i) { return i.is_true; });
+    for(auto it = items.begin(); it != partition_point; ++it) {
+        ASSERT(it->is_true);
+    }
+    for(auto it = partition_point; it != items.end(); ++it) {
+        ASSERT(!it->is_true);
+    }
+    for(size_t i = 0; i < items.size(); ++i) {
+        ASSERT(items[i].x == items.size() - i - 1);
+    }
+    return 0;
+}
+
 int test_algorithms() {
     printf("Testing sort.\n");
     int failing_subtests = 0;
     failing_subtests += test_rotate();
     failing_subtests += test_partition1();
+    failing_subtests += test_stable_partition();
     return failing_subtests;
 }
 
