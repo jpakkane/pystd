@@ -113,7 +113,7 @@ uint32_t unpack_one(const unsigned char *valid_utf8, const UtfDecodeStep &par) {
     return unpacked;
 }
 
-ValidatedU8Iterator::CharInfo extract_one_codepoint(const unsigned char *buf) {
+ValidU8Iterator::CharInfo extract_one_codepoint(const unsigned char *buf) {
     UtfDecodeStep par;
     // clang-format off
     const uint32_t twobyte_header_mask    = 0b11100000;
@@ -125,7 +125,7 @@ ValidatedU8Iterator::CharInfo extract_one_codepoint(const unsigned char *buf) {
     // clang-format on
     const uint32_t code = uint32_t((unsigned char)buf[0]);
     if(code < 0x80) {
-        return ValidatedU8Iterator::CharInfo{code, 1};
+        return ValidU8Iterator::CharInfo{code, 1};
     } else if((code & twobyte_header_mask) == twobyte_header_value) {
         par.byte1_data_mask = 0b11111;
         par.num_subsequent_bytes = 1;
@@ -138,7 +138,7 @@ ValidatedU8Iterator::CharInfo extract_one_codepoint(const unsigned char *buf) {
     } else {
         abort();
     }
-    return ValidatedU8Iterator::CharInfo{unpack_one(buf, par), 1 + par.num_subsequent_bytes};
+    return ValidU8Iterator::CharInfo{unpack_one(buf, par), 1 + par.num_subsequent_bytes};
 }
 
 } // namespace
@@ -821,26 +821,26 @@ bool CString::view_points_to_this(const CStringView &v) const {
     return bytes.is_ptr_within(v.data());
 }
 
-uint32_t ValidatedU8Iterator::operator*() {
+uint32_t ValidU8Iterator::operator*() {
     compute_char_info();
     return char_info.codepoint;
 }
 
-ValidatedU8Iterator &ValidatedU8Iterator::operator++() {
+ValidU8Iterator &ValidU8Iterator::operator++() {
     compute_char_info();
     buf += char_info.byte_count;
     has_char_info = false;
     return *this;
 }
 
-ValidatedU8Iterator ValidatedU8Iterator::operator++(int) {
+ValidU8Iterator ValidU8Iterator::operator++(int) {
     compute_char_info();
-    ValidatedU8Iterator rval{*this};
+    ValidU8Iterator rval{*this};
     ++(*this);
     return rval;
 }
 
-ValidatedU8Iterator &ValidatedU8Iterator::operator--() {
+ValidU8Iterator &ValidU8Iterator::operator--() {
     // FIXME, it is possible to decrement past the beginning.
     const uint8_t CONTINUATION_MASK = 0b11000000;
     const uint8_t CONTINUATION_VALUE = 0b10000000;
@@ -852,11 +852,11 @@ ValidatedU8Iterator &ValidatedU8Iterator::operator--() {
     return *this;
 }
 
-bool ValidatedU8Iterator::operator==(const ValidatedU8Iterator &o) const { return buf == o.buf; }
+bool ValidU8Iterator::operator==(const ValidU8Iterator &o) const { return buf == o.buf; }
 
-bool ValidatedU8Iterator::operator!=(const ValidatedU8Iterator &o) const { return !(*this == o); }
+bool ValidU8Iterator::operator!=(const ValidU8Iterator &o) const { return !(*this == o); }
 
-int ValidatedU8Iterator::operator<=>(const ValidatedU8Iterator &o) const {
+int ValidU8Iterator::operator<=>(const ValidU8Iterator &o) const {
     if(buf < o.buf) {
         return -1;
     }
@@ -866,32 +866,32 @@ int ValidatedU8Iterator::operator<=>(const ValidatedU8Iterator &o) const {
     return 0;
 }
 
-uint32_t ValidatedU8ReverseIterator::operator*() {
+uint32_t ValidU8ReverseIterator::operator*() {
     compute_char_info();
     return char_info.codepoint;
 }
 
-ValidatedU8ReverseIterator &ValidatedU8ReverseIterator::operator++() {
+ValidU8ReverseIterator &ValidU8ReverseIterator::operator++() {
     go_backwards();
     return *this;
 }
 
-ValidatedU8ReverseIterator ValidatedU8ReverseIterator::operator++(int) {
+ValidU8ReverseIterator ValidU8ReverseIterator::operator++(int) {
     compute_char_info();
-    ValidatedU8ReverseIterator rval{*this};
+    ValidU8ReverseIterator rval{*this};
     ++(*this);
     return rval;
 }
 
-bool ValidatedU8ReverseIterator::operator==(const ValidatedU8ReverseIterator &o) const {
+bool ValidU8ReverseIterator::operator==(const ValidU8ReverseIterator &o) const {
     return original_str == o.original_str && offset == o.offset;
 }
 
-bool ValidatedU8ReverseIterator::operator!=(const ValidatedU8ReverseIterator &o) const {
+bool ValidU8ReverseIterator::operator!=(const ValidU8ReverseIterator &o) const {
     return !(*this == o);
 }
 
-void ValidatedU8ReverseIterator::go_backwards() {
+void ValidU8ReverseIterator::go_backwards() {
     const uint8_t CONTINUATION_MASK = 0b11000000;
     const uint8_t CONTINUATION_VALUE = 0b10000000;
     if(offset < 0) {
@@ -909,7 +909,7 @@ void ValidatedU8ReverseIterator::go_backwards() {
     }
 }
 
-void ValidatedU8ReverseIterator::compute_char_info() {
+void ValidU8ReverseIterator::compute_char_info() {
     if(has_char_info) {
         return;
     }
@@ -1063,8 +1063,8 @@ template<> Vector<U8String> U8String::split_ascii() const {
 }
 
 void U8String::split(U8StringViewCallback cb, IsSplittingCharacter is_split_char, void *ctx) const {
-    ValidatedU8Iterator i = cbegin();
-    const ValidatedU8Iterator end = cend();
+    ValidU8Iterator i = cbegin();
+    const ValidU8Iterator end = cend();
     while(i != end) {
         while(i != end && is_split_char(*i)) {
             ++i;
@@ -1084,7 +1084,7 @@ void U8String::split(U8StringViewCallback cb, IsSplittingCharacter is_split_char
     }
 }
 
-void U8String::insert(const ValidatedU8Iterator &it, U8StringView view) {
+void U8String::insert(const ValidU8Iterator &it, U8StringView view) {
     cstring.insert(it.byte_location() - (const unsigned char *)cstring.data(), view.raw_view());
 }
 
@@ -1149,7 +1149,7 @@ bool U8String::overlaps(const U8StringView &o) const {
     return v1.overlaps(o);
 }
 
-void ValidatedU8Iterator::compute_char_info() {
+void ValidU8Iterator::compute_char_info() {
     if(has_char_info) {
         return;
     }

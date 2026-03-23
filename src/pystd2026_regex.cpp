@@ -67,8 +67,8 @@ U8StringView U8Match::group(size_t group_num) const {
 
     const size_t match_start = group_vector[2 * group_num];
     const size_t match_end = group_vector[2 * group_num + 1];
-    return U8StringView{ValidatedU8Iterator{(const unsigned char *)original->c_str() + match_start},
-                        ValidatedU8Iterator{(const unsigned char *)original->c_str() + match_end}};
+    return U8StringView{ValidU8Iterator{(const unsigned char *)original->c_str() + match_start},
+                        ValidU8Iterator{(const unsigned char *)original->c_str() + match_end}};
 }
 
 U8Match regex_search(const U8Regex &pattern, const U8String &text) {

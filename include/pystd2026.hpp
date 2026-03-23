@@ -1411,29 +1411,29 @@ private:
 
 // Iterates over the code points of a valid UTF 8 string.
 // If the string used is not valid UTF-8, result is undefined.
-class ValidatedU8Iterator {
+class ValidU8Iterator {
 public:
     friend class U8String;
     friend class U8Match;
     friend class U8StringView;
 
-    ValidatedU8Iterator() noexcept = default;
+    ValidU8Iterator() noexcept = default;
 
-    ValidatedU8Iterator(const ValidatedU8Iterator &) = default;
-    ValidatedU8Iterator(ValidatedU8Iterator &&) = default;
+    ValidU8Iterator(const ValidU8Iterator &) = default;
+    ValidU8Iterator(ValidU8Iterator &&) = default;
 
     uint32_t operator*();
 
-    ValidatedU8Iterator &operator++();
-    ValidatedU8Iterator operator++(int);
+    ValidU8Iterator &operator++();
+    ValidU8Iterator operator++(int);
 
-    ValidatedU8Iterator &operator--();
+    ValidU8Iterator &operator--();
 
-    bool operator==(const ValidatedU8Iterator &o) const;
-    bool operator!=(const ValidatedU8Iterator &o) const;
-    int operator<=>(const ValidatedU8Iterator &o) const;
+    bool operator==(const ValidU8Iterator &o) const;
+    bool operator!=(const ValidU8Iterator &o) const;
+    int operator<=>(const ValidU8Iterator &o) const;
 
-    ValidatedU8Iterator &operator=(ValidatedU8Iterator &&o) noexcept = default;
+    ValidU8Iterator &operator=(ValidU8Iterator &&o) noexcept = default;
 
     struct CharInfo {
         uint32_t codepoint;
@@ -1443,7 +1443,7 @@ public:
     const char *data() const { return (const char *)buf; }
 
 private:
-    explicit ValidatedU8Iterator(const unsigned char *utf8_string)
+    explicit ValidU8Iterator(const unsigned char *utf8_string)
         : buf{utf8_string}, has_char_info{false} {}
 
     void compute_char_info();
@@ -1455,23 +1455,23 @@ private:
     bool has_char_info = false;
 };
 
-class ValidatedU8ReverseIterator {
+class ValidU8ReverseIterator {
 public:
     friend class U8String;
 
-    ValidatedU8ReverseIterator(const ValidatedU8ReverseIterator &) = default;
-    ValidatedU8ReverseIterator(ValidatedU8ReverseIterator &&) = default;
+    ValidU8ReverseIterator(const ValidU8ReverseIterator &) = default;
+    ValidU8ReverseIterator(ValidU8ReverseIterator &&) = default;
 
     uint32_t operator*();
 
-    ValidatedU8ReverseIterator &operator++();
-    ValidatedU8ReverseIterator operator++(int);
+    ValidU8ReverseIterator &operator++();
+    ValidU8ReverseIterator operator++(int);
 
-    bool operator==(const ValidatedU8ReverseIterator &o) const;
-    bool operator!=(const ValidatedU8ReverseIterator &o) const;
+    bool operator==(const ValidU8ReverseIterator &o) const;
+    bool operator!=(const ValidU8ReverseIterator &o) const;
 
 private:
-    explicit ValidatedU8ReverseIterator(const unsigned char *utf8_string, int64_t offset)
+    explicit ValidU8ReverseIterator(const unsigned char *utf8_string, int64_t offset)
         : original_str{utf8_string}, offset{offset}, has_char_info{false} {
         go_backwards();
     }
@@ -1481,7 +1481,7 @@ private:
 
     const unsigned char *original_str;
     int64_t offset; // Need to represent -1;
-    ValidatedU8Iterator::CharInfo char_info;
+    ValidU8Iterator::CharInfo char_info;
     bool has_char_info;
 };
 
@@ -1833,7 +1833,7 @@ public:
 
     U8StringView(const char *buf, size_t bufsize);
 
-    U8StringView(const ValidatedU8Iterator &start_, const ValidatedU8Iterator &end_)
+    U8StringView(const ValidU8Iterator &start_, const ValidU8Iterator &end_)
         : start{start_}, stop{end_} {
         if(((bool)start.buf) ^ ((bool)stop.buf)) {
             bootstrap_throw("Mixed nullptr range to U8StringView.");
@@ -1866,17 +1866,17 @@ public:
 
     const char *data() const noexcept { return (const char *)start.buf; }
 
-    ValidatedU8Iterator begin() const { return start; };
-    ValidatedU8Iterator end() const { return stop; };
+    ValidU8Iterator begin() const { return start; };
+    ValidU8Iterator end() const { return stop; };
 
-    ValidatedU8Iterator cbegin() const { return start; };
-    ValidatedU8Iterator cend() const { return stop; };
+    ValidU8Iterator cbegin() const { return start; };
+    ValidU8Iterator cend() const { return stop; };
 
     U8StringSplitClosure_temp split_ascii();
 
 private:
-    ValidatedU8Iterator start;
-    ValidatedU8Iterator stop;
+    ValidU8Iterator start;
+    ValidU8Iterator stop;
 };
 
 // Currently handles only whitespace splitting.
@@ -1894,7 +1894,7 @@ public:
 
 private:
     U8StringView original;
-    ValidatedU8Iterator current;
+    ValidU8Iterator current;
 };
 
 typedef bool (*U8StringViewCallback)(const U8StringView &piece, void *ctx);
@@ -1963,23 +1963,23 @@ public:
 
     void split(U8StringViewCallback cb, IsSplittingCharacter is_split_char, void *ctx) const;
 
-    ValidatedU8Iterator cbegin() const {
-        return ValidatedU8Iterator((const unsigned char *)cstring.data());
+    ValidU8Iterator cbegin() const {
+        return ValidU8Iterator((const unsigned char *)cstring.data());
     }
 
-    ValidatedU8Iterator cend() const {
-        return ValidatedU8Iterator((const unsigned char *)cstring.data() + size_bytes());
+    ValidU8Iterator cend() const {
+        return ValidU8Iterator((const unsigned char *)cstring.data() + size_bytes());
     }
 
-    ValidatedU8ReverseIterator crbegin() const {
-        return ValidatedU8ReverseIterator((const unsigned char *)cstring.data(), size_bytes());
+    ValidU8ReverseIterator crbegin() const {
+        return ValidU8ReverseIterator((const unsigned char *)cstring.data(), size_bytes());
     }
 
-    ValidatedU8ReverseIterator crend() const {
-        return ValidatedU8ReverseIterator((const unsigned char *)cstring.data(), -1);
+    ValidU8ReverseIterator crend() const {
+        return ValidU8ReverseIterator((const unsigned char *)cstring.data(), -1);
     }
 
-    void insert(const ValidatedU8Iterator &it, U8StringView view);
+    void insert(const ValidU8Iterator &it, U8StringView view);
 
     void remove(U8StringView view);
     void pop_front() noexcept;
