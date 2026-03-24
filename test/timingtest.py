@@ -27,15 +27,16 @@ def test_unixy():
     sourcedir = mi['directories']['source']
     build_to_src = os.path.relpath(sourcedir, builddir)
 
+    compile_cmd = cpp + std_flags + ['-Iinclude',
+                                     '-I' + os.path.join(build_to_src, 'include'),
+                                     '-c',
+                                     '-o',
+                                     '/dev/null',
+                                     os.path.join(build_to_src, 'test/timingtest.cpp')]
+
     fastest_time = 100
     num_tries = 5
     for i in range(num_tries):
-        compile_cmd = cpp + std_flags + ['-Iinclude',
-                                         '-I' + os.path.join(build_to_src, 'include'),
-                                         '-c',
-                                         '-o',
-                                         '/dev/null',
-                                         os.path.join(build_to_src, 'test/timingtest.cpp')]
         starttime = time.time()
         pc = subprocess.run(compile_cmd)
         endtime = time.time()
