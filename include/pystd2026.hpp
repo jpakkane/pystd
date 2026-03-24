@@ -2522,9 +2522,30 @@ bool is_sorted(It1 start, It2 end, const Comparator &cmp) {
     return true;
 }
 
+// Before start there is an element that is smaller or equal to all
+// elements within the range.
+//
+// If that is not the case, behaviour is undefined.
+template<BasicIterator It1, BasicIterator It2, typename Comparator>
+void insertion_sort_has_sentinel(It1 start, It2 end, const Comparator &cmp) {
+    using ValueType = pystd2026::remove_reference_t<decltype(*start)>;
+    ValueType scratch;
+    ++start;
+    while(start != end) {
+        It1 current = start;
+        auto previous = current;
+        --previous;
+        while(cmp.compare(*current, *previous) < 0) {
+            swap(*previous, *current, scratch);
+            --previous;
+            --current;
+        }
+        ++start;
+    }
+}
+
 template<BasicIterator It1, BasicIterator It2, typename Comparator>
 void insertion_sort(It1 start, It2 end, const Comparator &cmp) {
-    using ValueType = pystd2026::remove_reference_t<decltype(*start)>;
     const auto array_size = end - start;
     if(array_size < 2) {
         return;
@@ -2538,22 +2559,10 @@ void insertion_sort(It1 start, It2 end, const Comparator &cmp) {
         }
         return;
     }
-    ValueType scratch;
     auto min_loc = min_element(start, end, cmp);
     swap(*min_loc, *start);
     ++start;
-    ++start;
-    while(start != end) {
-        It1 current = start;
-        auto previous = current;
-        --previous;
-        while(cmp.compare(*current, *previous) < 0) {
-            swap(*previous, *current, scratch);
-            --previous;
-            --current;
-        }
-        ++start;
-    }
+    insertion_sort_has_sentinel(start, end, cmp);
 }
 
 template<BasicIterator It1, BasicIterator It2> void insertion_sort(It1 start, It2 end) {
