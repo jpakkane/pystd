@@ -76,6 +76,9 @@ template<class T> struct remove_volatile<volatile T> {
 
 template<class T> using remove_volatile_t = typename remove_volatile<T>::type;
 
+template<class T> using remove_cvref = remove_cv<remove_reference_t<T>>;
+template<class T> using remove_cvref_t = typename remove_cvref<T>::type;
+
 struct true_type {
     static constexpr bool value = true;
 };
