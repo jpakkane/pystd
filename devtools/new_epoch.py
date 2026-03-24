@@ -15,9 +15,9 @@ def create_epoch(old_year, new_year):
     copy_files('src', old_year, new_year)
     copy_files('test', old_year, new_year)
 
-
 if __name__ == '__main__':
     today = datetime.date.today()
     old_year = str(today.year - 1)
     new_year = str(today.year)
     create_epoch(old_year, new_year)
+    print('Remember to fix timintest.cpp by hand.')

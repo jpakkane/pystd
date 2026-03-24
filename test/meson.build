@@ -33,3 +33,5 @@ pystd2026_test_sorting = executable('pystd2026test_sorting', 'pystd2026test_sort
   dependencies: stdlib_dep)
 
 test('pystd2026_sorting', pystd2026_test_sorting)
+
+test('timing', find_program('timingtest.py'))
