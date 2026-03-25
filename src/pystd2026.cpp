@@ -560,6 +560,27 @@ int CStringView::natural_order(const CStringView &o) const {
     }
 }
 
+void CStringView::split(CStringViewCallback cb, void *ctx) const {
+    size_t i = 0;
+    while(i < size()) {
+        while(i < size() && is_ascii_whitespace(buf[i])) {
+            ++i;
+        }
+        if(i == size()) {
+            break;
+        }
+        const auto string_start = i;
+        ++i;
+        while(i < size() && (!is_ascii_whitespace(buf[i]))) {
+            ++i;
+        }
+        CStringView piece{buf + string_start, i - string_start};
+        if(!cb(piece, ctx)) {
+            break;
+        }
+    }
+}
+
 CString::CString(Bytes incoming) {
     bytes = move(incoming);
     bytes.append('\0');
@@ -671,27 +692,6 @@ template<> Vector<CString> CString::split_by(char c) const {
     split_by(c, cb_lambda, static_cast<void *>(&arr));
 
     return arr;
-}
-
-void CString::split(CStringViewCallback cb, void *ctx) const {
-    size_t i = 0;
-    while(i < size()) {
-        while(i < size() && is_ascii_whitespace(bytes[i])) {
-            ++i;
-        }
-        if(i == size()) {
-            break;
-        }
-        const auto string_start = i;
-        ++i;
-        while(i < size() && (!is_ascii_whitespace(bytes[i]))) {
-            ++i;
-        }
-        CStringView piece{c_str() + string_start, i - string_start};
-        if(!cb(piece, ctx)) {
-            break;
-        }
-    }
 }
 
 void CString::split_by(char c, CStringViewCallback cb, void *ctx) const {

@@ -911,8 +911,8 @@ public:
     bool operator<(const Bytes &o) const {
         const auto num_its = bufsize < o.bufsize ? bufsize : o.bufsize;
         for(size_t i = 0; i < num_its; ++i) {
-            const auto &c1 = buf[i];
-            const auto &c2 = o.buf[i];
+            const auto &c1 = (unsigned char)buf[i];
+            const auto &c2 = (unsigned char)o.buf[i];
             if(c1 < c2) {
                 return true;
             }
@@ -926,8 +926,8 @@ public:
     int operator<=>(const Bytes &o) const {
         const auto num_its = bufsize < o.bufsize ? bufsize : o.bufsize;
         for(size_t i = 0; i < num_its; ++i) {
-            const auto &c1 = buf[i];
-            const auto &c2 = o.buf[i];
+            const auto &c1 = (unsigned char)buf[i];
+            const auto &c2 = (unsigned char)o.buf[i];
             if(c1 < c2) {
                 return -1;
             }
@@ -1509,6 +1509,9 @@ private:
     bool has_char_info;
 };
 
+class CStringView;
+typedef bool (*CStringViewCallback)(const CStringView &piece, void *ctx);
+
 class CString;
 // No embedded null chars
 // NOT guaranteed to be null terminated.
@@ -1560,6 +1563,8 @@ public:
 
     int natural_order(const CStringView &o) const;
 
+    void split(CStringViewCallback cb, void *ctx) const;
+
     template<typename Hasher> void feed_hash(Hasher &h) const {
         BytesView bv(data(), size());
         bv.feed_hash(h);
@@ -1596,8 +1601,6 @@ private:
     const char *buf = nullptr;
     size_t bufsize = 0;
 };
-
-typedef bool (*CStringViewCallback)(const CStringView &piece, void *ctx);
 
 // A string guaranteed to end with a zero terminator.
 class CString {
@@ -1661,7 +1664,9 @@ public:
 
     template<typename T = CString> Vector<T> split_by(char c) const;
 
-    void split(CStringViewCallback cb, void *ctx) const;
+    void split(CStringViewCallback cb, void *ctx) const {
+        view().split(cb, ctx);
+    }
 
     void split_by(char c, CStringViewCallback cb, void *ctx) const;
 
