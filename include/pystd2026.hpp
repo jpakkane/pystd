@@ -1177,7 +1177,11 @@ public:
     T *end() const { return const_cast<T *>(objptr(num_entries)); }
 
     void reserve(size_t new_capacity) {
-        if(new_capacity > capacity()) {
+        const auto current_capacity = capacity();
+        if(new_capacity > current_capacity) {
+            while(new_capacity < current_capacity * 2) {
+                new_capacity *= 2;
+            }
             resize_capacity_to(new_capacity);
         }
     }
@@ -1664,9 +1668,7 @@ public:
 
     template<typename T = CString> Vector<T> split_by(char c) const;
 
-    void split(CStringViewCallback cb, void *ctx) const {
-        view().split(cb, ctx);
-    }
+    void split(CStringViewCallback cb, void *ctx) const { view().split(cb, ctx); }
 
     void split_by(char c, CStringViewCallback cb, void *ctx) const;
 

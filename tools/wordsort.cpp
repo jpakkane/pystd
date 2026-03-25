@@ -20,9 +20,9 @@ int file_main(int argc, char **argv) {
         auto bytes = mmap_o->view();
         pystd2026::CStringView file_view(bytes);
 
-        //words.reserve(30000);
-        auto adder = [] (const pystd2026::CStringView &piece, void *ctx) -> bool {
-            auto *words = reinterpret_cast<pystd2026::Vector<pystd2026::CString>*>(ctx);
+        // words.reserve(30000);
+        auto adder = [](const pystd2026::CStringView &piece, void *ctx) -> bool {
+            auto *words = reinterpret_cast<pystd2026::Vector<pystd2026::CString> *>(ctx);
             words->emplace_back(piece);
             return true;
         };
