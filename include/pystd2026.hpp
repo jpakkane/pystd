@@ -923,6 +923,27 @@ public:
         return bufsize < o.bufsize;
     }
 
+    int operator<=>(const Bytes &o) const {
+        const auto num_its = bufsize < o.bufsize ? bufsize : o.bufsize;
+        for(size_t i = 0; i < num_its; ++i) {
+            const auto &c1 = buf[i];
+            const auto &c2 = o.buf[i];
+            if(c1 < c2) {
+                return -1;
+            }
+            if(c1 > c2) {
+                return 1;
+            }
+        }
+        if(bufsize < o.bufsize) {
+            return -1;
+        }
+        if(bufsize > o.bufsize) {
+            return 1;
+        }
+        return 0;
+    }
+
     template<typename Hasher> void feed_hash(Hasher &h) const { h.feed_bytes(buf.get(), bufsize); }
 
     bool is_ptr_within(const char *ptr) const {
@@ -1617,8 +1638,7 @@ public:
     }
 
     bool operator==(const CString &o) const { return bytes == o.bytes; }
-    bool operator<(const CString &o) const { return bytes < o.bytes; }
-    // Fixme: add <=>
+    int operator<=>(const CString &o) const { return bytes <=> o.bytes; }
 
     bool operator==(const char *str) const;
     bool operator==(const CStringView &o) const;
@@ -1948,9 +1968,9 @@ public:
 
     void operator=(const U8StringView &o) noexcept { cstring = CString(o.data(), o.size_bytes()); }
 
+    // FIXME. These currently do ASCIIbetical sorting. Fix to do codepoints instead.
     bool operator==(const U8String &o) const { return cstring == o.cstring; }
-    bool operator<(const U8String &o) const { return cstring < o.cstring; }
-    // Fixme: add <=>
+    int operator<=>(const U8String &o) const { return cstring <=> o.cstring; }
 
     bool operator==(const char *str) const;
 
@@ -2495,6 +2515,7 @@ It1 min_element(It1 start, It2 stop, const Comparator &cmp) noexcept {
         return start;
     }
     It1 minloc = start;
+    ++start;
     while(start != stop) {
         if(cmp.compare(*start, *minloc) < 0) {
             minloc = start;
