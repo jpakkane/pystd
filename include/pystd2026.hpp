@@ -2472,7 +2472,7 @@ template<typename T> struct FloatTotalOrderComparator {
         return total_order_compare(a, b);
     }
 
-    bool equal(const T a, const T b) const noexcept { return a == b; }
+    bool equal(const T a, const T b) const noexcept { return total_order_equal(a, b); }
 };
 
 // Assumes NaNs do not exist in input data. If they do,
