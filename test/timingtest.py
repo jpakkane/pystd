@@ -7,7 +7,8 @@
 
 import os, sys, subprocess, shutil, json, time
 
-MAX_RUNTIME = 0.1
+# GCC gets by in 0.1 seconds, but clang needs more.
+MAX_RUNTIME = 0.15
 
 def get_std(options):
     for o in options:
@@ -27,7 +28,8 @@ def test_unixy():
     sourcedir = mi['directories']['source']
     build_to_src = os.path.relpath(sourcedir, builddir)
 
-    compile_cmd = cpp + std_flags + ['-Iinclude',
+    compile_cmd = cpp + std_flags + ['-nostdinc++',
+                                     '-Iinclude',
                                      '-I' + os.path.join(build_to_src, 'include'),
                                      '-c',
                                      '-o',
