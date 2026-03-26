@@ -22,11 +22,11 @@ enum class ArgumentAction : uint8_t {
 };
 
 struct Argument {
+    CString name;
     char short_arg = 0;
     uint32_t nargs = 1;
     CString long_arg;
     U8String help;
-    CString name;
     ArgumentType type = ArgumentType::String;
     Optional<ArgumentValue> default_value;
     ArgumentAction aaction = ArgumentAction::Store;

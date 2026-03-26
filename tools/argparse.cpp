@@ -6,48 +6,34 @@
 int main(int argc, const char **argv) {
     pystd2026::ArgParse parser(pystd2026::U8String("Test application for command line parser."));
 
-    pystd2026::Argument foo;
-    foo.long_arg = "--foo";
-    foo.name = "foo";
-    foo.help = pystd2026::U8String("The foo value to use.");
-    parser.add_argument(foo);
+    parser.add_argument({.name{"foo"}, .long_arg{"--foo"}, .help{"The foo value to use."}});
+    parser.add_argument({.name{"bar"}, .long_arg{"--bar"}, .help{"The bar to barnicate."}});
 
-    pystd2026::Argument bar;
-    bar.long_arg = "--bar";
-    bar.name = "bar";
-    bar.help = pystd2026::U8String("The bar to barnicate.");
-    parser.add_argument(bar);
+    parser.add_argument({.name{"size"},
+                         .long_arg{"--size"},
+                         .type = pystd2026::ArgumentType::Integer,
+                         .minval{0},
+                         .maxval{9}});
 
-    pystd2026::Argument intval;
-    intval.long_arg = "--size";
-    intval.name = "size";
-    intval.type = pystd2026::ArgumentType::Integer;
-    intval.minval = 0;
-    intval.maxval = 9;
-    parser.add_argument(intval);
-
-    pystd2026::Argument include;
-    include.long_arg = "--include";
-    include.short_arg = 'I';
-    include.name = "include";
-    include.type = pystd2026::ArgumentType::StringArray;
-    include.aaction = pystd2026::ArgumentAction::AppendArray;
     pystd2026::Vector<pystd2026::CString> default_array;
     default_array.emplace_back("one");
     default_array.emplace_back("two");
-    include.default_value = pystd2026::move(default_array);
 
-    parser.add_argument(include);
+    parser.add_argument({.name{"include"},
+                         .short_arg = 'I',
+                         .long_arg{"--include"},
+                         .type = pystd2026::ArgumentType::StringArray,
+                         .default_value{pystd2026::move(default_array)},
+                         .aaction = pystd2026::ArgumentAction::AppendArray});
 
-    pystd2026::Argument verbose;
-    verbose.name = "verbose";
-    verbose.short_arg = 'v';
-    verbose.help = pystd2026::U8String("Verbose mode");
-    verbose.type = pystd2026::ArgumentType::Boolean;
-    verbose.aaction = pystd2026::ArgumentAction::StoreTrue;
-    verbose.default_value = false;
-
-    parser.add_argument(verbose);
+    parser.add_argument({
+        .name{"verbose"},
+        .short_arg = 'v',
+        .help{"Verbose mode"},
+        .type = pystd2026::ArgumentType::Boolean,
+        .default_value{false},
+        .aaction = pystd2026::ArgumentAction::StoreTrue,
+    });
 
     auto res_opt = parser.parse_args(argc, argv);
     auto &result = res_opt.value();
