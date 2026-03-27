@@ -141,15 +141,16 @@ int test_radixsort() {
 #include <pystd2026_introsort.hpp>
 
     int failing_subtests = 0;
-    const uint32_t NUM_ENTRIES = 20;
-    uint32_t table[NUM_ENTRIES] = {6,  2,  1,  9,  3,  16, 12, 11, 19, 13,
-                                   10, 14, 15, 17, 18, 0,  4,  5,  7,  8};
+    const uint32_t NUM_ENTRIES = 21;
+    uint32_t table[NUM_ENTRIES] = {0xFFFFFFFF, 6,  2,  1,  9,  3, 16, 12, 11, 19, 13,
+                                   10,         14, 15, 17, 18, 0, 4,  5,  7,  8};
 
     pystd2026::radix_sort(table, table + NUM_ENTRIES);
 
-    for(uint32_t i = 0; i < NUM_ENTRIES; ++i) {
+    for(uint32_t i = 0; i < NUM_ENTRIES - 1; ++i) {
         ASSERT(i == table[i]);
     }
+    ASSERT(table[NUM_ENTRIES - 1] == 0xFFFFFFFF);
     return failing_subtests;
 }
 
