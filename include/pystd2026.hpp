@@ -2532,6 +2532,22 @@ It1 min_element(It1 start, It2 stop, const Comparator &cmp) noexcept {
     return minloc;
 }
 
+template<BasicIterator It1, BasicIterator It2, typename Comparator>
+It1 max_element(It1 start, It2 stop, const Comparator &cmp) noexcept {
+    if(start == stop) {
+        return start;
+    }
+    It1 maxloc = start;
+    ++start;
+    while(start != stop) {
+        if(cmp.compare(*start, *maxloc) > 0) {
+            maxloc = start;
+        }
+        ++start;
+    }
+    return maxloc;
+}
+
 template<BasicIterator It1, BasicIterator It2> It1 min_element(It1 start, It2 stop) noexcept {
     using ValueType = pystd2026::remove_reference_t<decltype(*start)>;
     return pystd2026::min_element(start, stop, DefaultComparator<ValueType>{});

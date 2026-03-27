@@ -25,6 +25,7 @@ template<BasicIterator It> void do_radix_sort(It begin, It end, const size_t rou
 
 template<BasicIterator It> void radix_sort(It begin, It end) {
     using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
+    const auto num_bits = sizeof(ValueType) * 8;
     static_assert(pystd2026::is_unsigned_v<ValueType>,
                   "Radix sort currently only supports unsigned integers. Patches welcome.");
     const ssize_t INSERTION_SORT_LIMIT = 16;
@@ -32,7 +33,19 @@ template<BasicIterator It> void radix_sort(It begin, It end) {
         return pystd2026::insertion_sort(begin, end);
     }
 
-    do_radix_sort(begin, end, 0);
+    ValueType max_val = *pystd2026::max_element(begin, end, DefaultComparator<ValueType>{});
+    size_t highest_bit = 0;
+    while(max_val > 0) {
+        max_val /= 2;
+        ++highest_bit;
+    }
+    const auto start_at_round = num_bits - highest_bit;
+
+    do_radix_sort(begin, end, start_at_round);
+}
+
+template<WellBehaved ValueType> void radix_sort(pystd2026::Span<ValueType> sp) {
+    radix_sort(sp.begin(), sp.end());
 }
 
 } // namespace pystd2026
