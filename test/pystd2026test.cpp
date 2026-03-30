@@ -8,6 +8,7 @@
 #include <pystd2026_variant.hpp>
 #include <pystd2026_rotate.hpp>
 #include <pystd2026_stablepartition.hpp>
+#include <pystd2026_nth_element.hpp>
 #include <pystd_testconfig.hpp>
 #include <string.h>
 
@@ -876,12 +877,32 @@ int test_stable_partition() {
     return 0;
 }
 
+int test_nth_element_small() {
+    TEST_START;
+    const size_t NUM_ENTRIES = 20;
+    int table[NUM_ENTRIES] = {6, 2, 1, 9, 3, 16, 12, 11, 19, 13, 10, 14, 15, 17, 18, 0, 4, 5, 7, 8};
+
+    int *begin = table;
+    int *end = begin + NUM_ENTRIES;
+
+    auto nth_point = pystd2026::nth_element_small(begin, end, 7);
+    ASSERT(*nth_point == 7);
+    for(auto it = begin; it != nth_point; ++it) {
+        ASSERT(*it < *nth_point);
+    }
+    for(auto it = nth_point + 1; it != end; ++it) {
+        ASSERT(*it > *nth_point);
+    }
+    return 0;
+}
+
 int test_algorithms() {
     printf("Testing sort.\n");
     int failing_subtests = 0;
     failing_subtests += test_rotate();
     failing_subtests += test_partition1();
     failing_subtests += test_stable_partition();
+    failing_subtests += test_nth_element_small();
     return failing_subtests;
 }
 
