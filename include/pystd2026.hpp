@@ -2341,7 +2341,7 @@ It1 find_if(It1 start, It2 end, const Callable c) {
 template<WellBehaved T> void swap(T &a, T &b, T &tmp) noexcept {
     if constexpr(pystd2026::is_integral_v<T> || pystd2026::is_floating_point_v<T>) {
         // Use a stack variable instead to avoid pointer dereference.
-        T private_tmp = a;
+        T private_tmp{a};
         a = b;
         b = private_tmp;
     } else {
@@ -2356,7 +2356,7 @@ template<WellBehaved T> void swap(T &a, T &b, T &tmp) noexcept {
 template<WellBehaved T> void swap(T &a, T &b) noexcept {
     if constexpr(pystd2026::is_integral_v<T> || pystd2026::is_floating_point_v<T>) {
         // Use a stack variable instead to avoid pointer dereference.
-        T private_tmp = a;
+        T private_tmp{a};
         a = b;
         b = private_tmp;
     } else {

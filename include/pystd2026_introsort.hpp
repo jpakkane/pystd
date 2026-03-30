@@ -8,34 +8,34 @@
 
 namespace pystd2026 {
 
-template<BasicIterator It, WellBehaved ValueType, typename Comparator>
-It pick_qsort_pivot_median3(It begin, It end, ValueType &scratch, const Comparator &cmp) {
+template<BasicIterator It, typename Comparator>
+It pick_qsort_pivot_median3(It begin, It end, const Comparator &cmp) {
     auto midpoint = begin + (end - begin) / 2;
     auto last = end - 1;
     // Simple median of three.
     if(cmp.compare(*midpoint, *begin) < 0) {
-        pystd2026::swap(*begin, *midpoint, scratch);
+        pystd2026::swap(*begin, *midpoint);
     }
     if(cmp.compare(*last, *midpoint) < 0) {
-        pystd2026::swap(*midpoint, *last, scratch);
+        pystd2026::swap(*midpoint, *last);
         if(cmp.compare(*midpoint, *begin) < 0) {
-            pystd2026::swap(*midpoint, *begin, scratch);
+            pystd2026::swap(*midpoint, *begin);
         }
     }
     return midpoint;
 }
 
-template<BasicIterator It, WellBehaved ValueType, typename Comparator>
+template<BasicIterator It, typename Comparator>
 It pick_qsort_pivot_median(
-    It begin, It end, ValueType &scratch, const size_t NUM_MEDIAN_POINTS, const Comparator &cmp) {
+    It begin, It end, const size_t NUM_MEDIAN_POINTS, const Comparator &cmp) {
     const auto step = (end - begin) / NUM_MEDIAN_POINTS;
     size_t picker = step;
     for(size_t i = 1; i < NUM_MEDIAN_POINTS; ++i) {
-        pystd2026::swap(*(begin + step), *(begin + i), scratch);
+        pystd2026::swap(*(begin + step), *(begin + i));
         picker += step;
     }
 
-    // Optimally nth element.
+    // Ideally this should be nth_element_small, but it ran slower.
     pystd2026::insertion_sort(begin, begin + NUM_MEDIAN_POINTS, cmp);
     return begin + NUM_MEDIAN_POINTS / 2;
 }
@@ -57,14 +57,14 @@ inline size_t qsort_median_count(const size_t DATA_SIZE, const size_t degenerate
     return degenerate_depth == 0 ? 19 : 21;
 }
 
-template<BasicIterator It, WellBehaved ValueType, typename Comparator>
+template<BasicIterator It, typename Comparator>
 void do_introsort(It begin,
                   It end,
-                  ValueType &scratch,
                   const size_t depth,
                   const size_t degenerate_depth,
                   const size_t MAX_ROUNDS,
                   const Comparator &cmp) {
+    using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
     const size_t INSERTION_SORT_LIMIT = 16;
     const size_t num_elements = end - begin;
     const size_t degenerate_limit = num_elements / 8;
@@ -82,13 +82,13 @@ void do_introsort(It begin,
     const auto median_size = qsort_median_count(num_elements, degenerate_depth);
 
     auto pivot_point = median_size <= 3
-                           ? pick_qsort_pivot_median3(begin, end, scratch, cmp)
-                           : pick_qsort_pivot_median(begin, end, scratch, median_size, cmp);
+                           ? pick_qsort_pivot_median3(begin, end, cmp)
+                           : pick_qsort_pivot_median(begin, end, median_size, cmp);
 
     // Move pivot element outside the area to be partitioned
     // so that partition operations do not move it in memory.
     if(pivot_point != begin) {
-        pystd2026::swap(*pivot_point, *begin, scratch);
+        pystd2026::swap(*pivot_point, *begin);
     }
     auto begin_after_pivot = begin + 1;
 
@@ -98,7 +98,7 @@ void do_introsort(It begin,
         });
     auto last_value_point = split_point - 1;
     // After this, last_value_point is in its correct, sorted location.
-    pystd2026::swap(*begin, *last_value_point, scratch);
+    pystd2026::swap(*begin, *last_value_point);
 
     auto left_begin = begin;
     auto left_end = last_value_point;
@@ -122,13 +122,13 @@ void do_introsort(It begin,
             pystd2026::heapsort(right_begin, right_end, cmp);
         } else {
             do_introsort(
-                left_begin, left_end, scratch, depth + 1, degenerate_depth + 1, MAX_ROUNDS, cmp);
+                left_begin, left_end, depth + 1, degenerate_depth + 1, MAX_ROUNDS, cmp);
             do_introsort(
-                right_begin, right_end, scratch, depth + 1, degenerate_depth + 1, MAX_ROUNDS, cmp);
+                right_begin, right_end, depth + 1, degenerate_depth + 1, MAX_ROUNDS, cmp);
         }
     } else {
-        do_introsort(left_begin, left_end, scratch, depth + 1, 0, MAX_ROUNDS, cmp);
-        do_introsort(right_begin, right_end, scratch, depth + 1, 0, MAX_ROUNDS, cmp);
+        do_introsort(left_begin, left_end, depth + 1, 0, MAX_ROUNDS, cmp);
+        do_introsort(right_begin, right_end, depth + 1, 0, MAX_ROUNDS, cmp);
     }
 }
 
@@ -152,9 +152,7 @@ void introsort(It begin, It end, const Comparator &cmp) {
     };
 
     const size_t MAX_ROUNDS = max_qsort_rounds(num_elements);
-    using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
-    ValueType scratch;
-    do_introsort(begin, end, scratch, 0, 0, MAX_ROUNDS, cmp);
+    do_introsort(begin, end, 0, 0, MAX_ROUNDS, cmp);
 }
 
 template<BasicIterator It> void introsort(It begin, It end) {
