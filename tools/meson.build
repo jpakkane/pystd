@@ -15,3 +15,6 @@ executable('stablesorttest', 'stablesorttest.cpp',
 
 executable('wordsort', 'wordsort.cpp',
   dependencies: stdlib_dep)
+
+executable('radixsorttest', 'radixsorttest.cpp',
+  dependencies: stdlib_dep)
