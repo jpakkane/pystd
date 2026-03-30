@@ -1186,6 +1186,15 @@ public:
         }
     }
 
+    void append_with_default(size_t num_copies) {
+        reserve(size() + num_copies);
+        T *obj = objptr(size());
+        for(size_t i = 0; i < num_copies; ++i) {
+            new(obj) T{};
+        }
+        num_entries += num_copies;
+    }
+
 private:
     T *objptr(size_t i) noexcept { return reinterpret_cast<T *>(rawptr(i)); }
     const T *objptr(size_t i) const noexcept { return reinterpret_cast<const T *>(rawptr(i)); }

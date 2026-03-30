@@ -15,10 +15,7 @@ int main() {
     printf("Sorting %d numbers.\n", (int)NUM_ENTRIES);
 
     pystd2026::Vector<size_t> nums;
-    nums.reserve(NUM_ENTRIES);
-    for(size_t i = 0; i < NUM_ENTRIES; ++i) {
-        nums.push_back(0);
-    }
+    nums.append_with_default(NUM_ENTRIES);
     const auto ignore = fread(nums.data(), sizeof(size_t), NUM_ENTRIES, f);
     (void)ignore;
     fclose(f);
