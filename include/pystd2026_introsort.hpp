@@ -26,8 +26,10 @@ It pick_qsort_pivot_median3(It begin, It end, const Comparator &cmp) {
 }
 
 template<BasicIterator It, typename Comparator>
-It pick_qsort_pivot_median(
-    It begin, It end, const size_t NUM_MEDIAN_POINTS, const Comparator &cmp) {
+It pick_qsort_pivot_median(It begin,
+                           It end,
+                           const size_t NUM_MEDIAN_POINTS,
+                           const Comparator &cmp) {
     const auto step = (end - begin) / NUM_MEDIAN_POINTS;
     size_t picker = step;
     for(size_t i = 1; i < NUM_MEDIAN_POINTS; ++i) {
@@ -81,9 +83,8 @@ void do_introsort(It begin,
 
     const auto median_size = qsort_median_count(num_elements, degenerate_depth);
 
-    auto pivot_point = median_size <= 3
-                           ? pick_qsort_pivot_median3(begin, end, cmp)
-                           : pick_qsort_pivot_median(begin, end, median_size, cmp);
+    auto pivot_point = median_size <= 3 ? pick_qsort_pivot_median3(begin, end, cmp)
+                                        : pick_qsort_pivot_median(begin, end, median_size, cmp);
 
     // Move pivot element outside the area to be partitioned
     // so that partition operations do not move it in memory.
@@ -121,10 +122,8 @@ void do_introsort(It begin,
             pystd2026::heapsort(left_begin, left_end, cmp);
             pystd2026::heapsort(right_begin, right_end, cmp);
         } else {
-            do_introsort(
-                left_begin, left_end, depth + 1, degenerate_depth + 1, MAX_ROUNDS, cmp);
-            do_introsort(
-                right_begin, right_end, depth + 1, degenerate_depth + 1, MAX_ROUNDS, cmp);
+            do_introsort(left_begin, left_end, depth + 1, degenerate_depth + 1, MAX_ROUNDS, cmp);
+            do_introsort(right_begin, right_end, depth + 1, degenerate_depth + 1, MAX_ROUNDS, cmp);
         }
     } else {
         do_introsort(left_begin, left_end, depth + 1, 0, MAX_ROUNDS, cmp);

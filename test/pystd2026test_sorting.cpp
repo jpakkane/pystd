@@ -5,6 +5,7 @@
 #include <pystd2026_mergesort.hpp>
 #include <pystd2026_introsort.hpp>
 #include <pystd2026_radixsort.hpp>
+#include <pystd2026_bucketsort.hpp>
 #include <pystd_testconfig.hpp>
 
 int breakpoint_opportunity(int number) { return number; }
@@ -138,7 +139,6 @@ int test_introsort_int() {
 
 int test_radixsort() {
     TEST_START;
-#include <pystd2026_introsort.hpp>
 
     int failing_subtests = 0;
     const uint32_t NUM_ENTRIES = 21;
@@ -154,6 +154,23 @@ int test_radixsort() {
     return failing_subtests;
 }
 
+int test_bucketsort() {
+    TEST_START;
+
+    int failing_subtests = 0;
+    const uint32_t NUM_ENTRIES = 21;
+    uint32_t table[NUM_ENTRIES] = {0xFFFFFFFF, 6,  2,  1,  9,  3, 16, 12, 11, 19, 13,
+                                   10,         14, 15, 17, 18, 0, 4,  5,  7,  8};
+
+    pystd2026::bucketsort(table, table + NUM_ENTRIES);
+
+    for(uint32_t i = 0; i < NUM_ENTRIES - 1; ++i) {
+        ASSERT(i == table[i]);
+    }
+    ASSERT(table[NUM_ENTRIES - 1] == 0xFFFFFFFF);
+    return failing_subtests;
+}
+
 int test_sort_algorithms() {
     int failing_subtests = 0;
     failing_subtests += test_heapsort_int();
@@ -161,6 +178,7 @@ int test_sort_algorithms() {
     failing_subtests += test_mergesort();
     failing_subtests += test_introsort_int();
     failing_subtests += test_radixsort();
+    failing_subtests += test_bucketsort();
     return failing_subtests;
 }
 
