@@ -24,7 +24,7 @@ void shell_sort_single_iteration(It begin, It end, const size_t gap, const Compa
 
 template<BasicIterator It, typename Comparator>
 void shell_sort(It begin, It end, const Comparator &cmp) {
-    const auto buf_size = end - begin;
+    const size_t buf_size = end - begin;
 
     if(buf_size < 4)
         goto shsort_final;
@@ -40,8 +40,17 @@ void shell_sort(It begin, It end, const Comparator &cmp) {
         goto shsort132;
     if(buf_size < 701)
         goto shsort301;
-
-    // FIXME, handle bigger array sizes.
+    if(buf_size > 701 * 2.25) {
+        size_t biggap = 701 * 2.25;
+        while(biggap < buf_size) {
+            biggap = 2.25 * biggap;
+        }
+        biggap = biggap / 2.25;
+        do {
+            pystd2026::shell_sort_single_iteration(begin, end, biggap, cmp);
+            biggap = biggap / 2.25;
+        } while(biggap > 800);
+    }
 
     pystd2026::shell_sort_single_iteration(begin, end, 701, cmp);
 shsort301:
@@ -58,8 +67,7 @@ shsort4:
     pystd2026::shell_sort_single_iteration(begin, end, 4, cmp);
 
 shsort_final:
-    pystd2026::shell_sort_single_iteration(begin, end, 1, cmp);
-    // pystd2026::insertion_sort(begin, end, cmp);
+    pystd2026::insertion_sort(begin, end, cmp);
 }
 
 template<BasicIterator It> void shell_sort(It begin, It end) {
