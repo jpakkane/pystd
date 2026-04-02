@@ -1,0 +1,70 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Jussi Pakkanen
+
+#pragma once
+
+#include <pystd2026.hpp>
+
+namespace pystd2026 {
+
+template<BasicIterator It, typename Comparator>
+void shell_sort_single_iteration(It begin, It end, const size_t gap, const Comparator &cmp) {
+    using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
+    const size_t buf_size = end - begin;
+    ValueType scratch;
+    for(size_t i = gap; i < buf_size; ++i) {
+        size_t j = i;
+        scratch = pystd2026::move(*(begin + i));
+        for(; (j >= gap) && (*(begin + j - gap) > scratch); j -= gap) {
+            *(begin + j) = pystd2026::move(*(begin + j - gap));
+        }
+        *(begin + j) = pystd2026::move(scratch);
+    }
+}
+
+template<BasicIterator It, typename Comparator>
+void shell_sort(It begin, It end, const Comparator &cmp) {
+    const auto buf_size = end - begin;
+
+    if(buf_size < 4)
+        goto shsort_final;
+    if(buf_size < 10)
+        goto shsort4;
+    if(buf_size < 23)
+        goto shsort10;
+    if(buf_size < 57)
+        goto shsort23;
+    if(buf_size < 132)
+        goto shsort57;
+    if(buf_size < 301)
+        goto shsort132;
+    if(buf_size < 701)
+        goto shsort301;
+
+    // FIXME, handle bigger array sizes.
+
+    pystd2026::shell_sort_single_iteration(begin, end, 701, cmp);
+shsort301:
+    pystd2026::shell_sort_single_iteration(begin, end, 301, cmp);
+shsort132:
+    pystd2026::shell_sort_single_iteration(begin, end, 132, cmp);
+shsort57:
+    pystd2026::shell_sort_single_iteration(begin, end, 57, cmp);
+shsort23:
+    pystd2026::shell_sort_single_iteration(begin, end, 23, cmp);
+shsort10:
+    pystd2026::shell_sort_single_iteration(begin, end, 10, cmp);
+shsort4:
+    pystd2026::shell_sort_single_iteration(begin, end, 4, cmp);
+
+shsort_final:
+    pystd2026::shell_sort_single_iteration(begin, end, 1, cmp);
+    // pystd2026::insertion_sort(begin, end, cmp);
+}
+
+template<BasicIterator It> void shell_sort(It begin, It end) {
+    using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
+    shell_sort(begin, end, DefaultComparator<ValueType>{});
+}
+
+} // namespace pystd2026
