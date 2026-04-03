@@ -2578,11 +2578,13 @@ bool is_sorted(It1 start, It2 end, const Comparator &cmp) {
     return true;
 }
 
-template<BasicIterator It1, WellBehaved ValueType, typename Comparator>
-void linear_insert_has_sentinel(It1 last_element, ValueType &scratch, const Comparator &cmp) {
+template<BasicIterator It1, typename Comparator>
+void linear_insert_has_sentinel(It1 last_element, const Comparator &cmp) {
+    using ValueType = pystd2026::remove_reference_t<decltype(*last_element)>;
     // Using memmove makes things noticeably slower. Even though it shouldn't.
     constexpr bool is_memmovable =
         false; // pystd2026::is_integral_v<ValueType> || pystd2026::is_floating_point_v<ValueType>;
+    ValueType scratch;
     if constexpr(is_memmovable) {
         auto location = last_element;
         --location;
@@ -2600,11 +2602,13 @@ void linear_insert_has_sentinel(It1 last_element, ValueType &scratch, const Comp
         It1 current = last_element;
         auto previous = current;
         --previous;
-        while(cmp.compare(*current, *previous) < 0) {
-            swap(*previous, *current, scratch);
+        scratch = pystd2026::move(*last_element);
+        while(cmp.compare(scratch, *previous) < 0) {
+            *current = pystd2026::move(*previous);
             --previous;
             --current;
         }
+        *current = pystd2026::move(scratch);
     }
 }
 
@@ -2614,12 +2618,10 @@ void linear_insert_has_sentinel(It1 last_element, ValueType &scratch, const Comp
 // If that is not the case, behaviour is undefined.
 template<BasicIterator It, typename Comparator>
 void insertion_sort_has_sentinel(It begin, It end, const Comparator &cmp) {
-    using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
-    ValueType scratch;
     auto current_element = begin;
     ++current_element;
     while(current_element != end) {
-        linear_insert_has_sentinel(current_element, scratch, cmp);
+        linear_insert_has_sentinel(current_element, cmp);
         ++current_element;
     }
 }
