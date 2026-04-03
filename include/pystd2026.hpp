@@ -2578,36 +2578,53 @@ bool is_sorted(It1 start, It2 end, const Comparator &cmp) {
     return true;
 }
 
+template<BasicIterator It1, WellBehaved ValueType, typename Comparator>
+void linear_insert_has_sentinel(It1 last_element, ValueType &scratch, const Comparator &cmp) {
+    It1 current = last_element;
+    auto previous = current;
+    --previous;
+    while(cmp.compare(*current, *previous) < 0) {
+        swap(*previous, *current, scratch);
+        --previous;
+        --current;
+    }
+}
+
 // Before start there is an element that is smaller or equal to all
 // elements within the range.
 //
 // If that is not the case, behaviour is undefined.
-template<BasicIterator It1, BasicIterator It2, typename Comparator>
-void insertion_sort_has_sentinel(It1 start, It2 end, const Comparator &cmp) {
+template<BasicIterator It, typename Comparator>
+void insertion_sort_has_sentinel(It start, It end, const Comparator &cmp) {
     using ValueType = pystd2026::remove_reference_t<decltype(*start)>;
     ValueType scratch;
     ++start;
     while(start != end) {
-        It1 current = start;
-        auto previous = current;
-        --previous;
-        while(cmp.compare(*current, *previous) < 0) {
-            swap(*previous, *current, scratch);
-            --previous;
-            --current;
-        }
+        linear_insert_has_sentinel(start, scratch, cmp);
         ++start;
     }
 }
 
+template<BasicIterator It, WellBehaved ValueType, typename Comparator>
+void linear_insert(It begin, It last_element, ValueType &scratch, const Comparator &cmp) {
+    It current = last_element;
+    auto previous = current;
+    --previous;
+    while(current != begin && cmp.compare(*current, *previous) < 0) {
+        swap(*previous, *current, scratch);
+        --previous;
+        --current;
+    }
+}
+
 template<BasicIterator It1, BasicIterator It2, typename Comparator>
-void insertion_sort(It1 start, It2 end, const Comparator &cmp) {
-    const auto array_size = end - start;
+void insertion_sort(It1 begin, It2 end, const Comparator &cmp) {
+    const auto array_size = end - begin;
     if(array_size < 2) {
         return;
     }
     if(array_size == 2) {
-        auto first = start;
+        auto first = begin;
         auto second = first;
         ++second;
         if(cmp.compare(*first, *second) > 0) {
@@ -2615,10 +2632,22 @@ void insertion_sort(It1 start, It2 end, const Comparator &cmp) {
         }
         return;
     }
-    auto min_loc = min_element(start, end, cmp);
-    swap(*min_loc, *start);
-    ++start;
-    insertion_sort_has_sentinel(start, end, cmp);
+#if 0
+    // This is arguably "the right thing to do", but the latter runs faster.
+    using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
+    ValueType scratch;
+    auto current_item = begin;
+    ++current_item;
+    while(current_item != end) {
+        linear_insert(begin, current_item, scratch, cmp);
+        ++current_item;
+    }
+#else
+    auto min_loc = min_element(begin, end, cmp);
+    swap(*min_loc, *begin);
+    ++begin;
+    insertion_sort_has_sentinel(begin, end, cmp);
+#endif
 }
 
 template<BasicIterator It1, BasicIterator It2> void insertion_sort(It1 start, It2 end) {
