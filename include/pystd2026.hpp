@@ -2580,28 +2580,47 @@ bool is_sorted(It1 start, It2 end, const Comparator &cmp) {
 
 template<BasicIterator It1, WellBehaved ValueType, typename Comparator>
 void linear_insert_has_sentinel(It1 last_element, ValueType &scratch, const Comparator &cmp) {
-    It1 current = last_element;
-    auto previous = current;
-    --previous;
-    while(cmp.compare(*current, *previous) < 0) {
-        swap(*previous, *current, scratch);
+    // Using memmove makes things noticeably slower. Even though it shouldn't.
+    constexpr bool is_memmovable =
+        false; //pystd2026::is_integral_v<ValueType> || pystd2026::is_floating_point_v<ValueType>;
+    if constexpr(is_memmovable) {
+        auto location = last_element;
+        --location;
+        while(cmp.compare(*last_element, *location) < 0) {
+            --location;
+        }
+        ++location;
+        scratch = *last_element;
+        ValueType *src_ptr = &(*location);
+        ValueType *dst_ptr = src_ptr + 1;
+        auto num_bytes = (&(*last_element) - src_ptr) * sizeof(ValueType);
+        memmove(dst_ptr, src_ptr, num_bytes);
+        *location = scratch;
+    } else {
+        It1 current = last_element;
+        auto previous = current;
         --previous;
-        --current;
+        while(cmp.compare(*current, *previous) < 0) {
+            swap(*previous, *current, scratch);
+            --previous;
+            --current;
+        }
     }
 }
 
-// Before start there is an element that is smaller or equal to all
+// Before begin there is an element that is smaller or equal to all
 // elements within the range.
 //
 // If that is not the case, behaviour is undefined.
 template<BasicIterator It, typename Comparator>
-void insertion_sort_has_sentinel(It start, It end, const Comparator &cmp) {
-    using ValueType = pystd2026::remove_reference_t<decltype(*start)>;
+void insertion_sort_has_sentinel(It begin, It end, const Comparator &cmp) {
+    using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
     ValueType scratch;
-    ++start;
-    while(start != end) {
-        linear_insert_has_sentinel(start, scratch, cmp);
-        ++start;
+    auto current_element = begin;
+    ++current_element;
+    while(current_element != end) {
+        linear_insert_has_sentinel(current_element, scratch, cmp);
+        ++current_element;
     }
 }
 
