@@ -38,7 +38,7 @@ It nth_element(It begin, It end, size_t nth, const Comparator &cmp) {
         }
         ++round;
         size_t random_number = (size_t)&(*begin);
-        random_number >>= (sizeof(ValueType) / 8);
+        random_number >>= sizeof(ValueType);
         size_t pivot_offset = (random_number + round) % buf_size;
         if(pivot_offset != 0) {
             pystd2026::swap(*begin, *(begin + pivot_offset), scratch);
