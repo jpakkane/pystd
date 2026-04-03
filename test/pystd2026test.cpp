@@ -877,7 +877,7 @@ int test_stable_partition() {
     return 0;
 }
 
-int test_nth_element_small() {
+int test_nth_element() {
     TEST_START;
     const size_t NUM_ENTRIES = 20;
     int table[NUM_ENTRIES] = {6, 2, 1, 9, 3, 16, 12, 11, 19, 13, 10, 14, 15, 17, 18, 0, 4, 5, 7, 8};
@@ -885,7 +885,7 @@ int test_nth_element_small() {
     int *begin = table;
     int *end = begin + NUM_ENTRIES;
 
-    auto nth_point = pystd2026::nth_element_small(begin, end, 7);
+    auto nth_point = pystd2026::nth_element(begin, end, 7);
     ASSERT(*nth_point == 7);
     for(auto it = begin; it != nth_point; ++it) {
         ASSERT(*it < *nth_point);
@@ -902,7 +902,7 @@ int test_algorithms() {
     failing_subtests += test_rotate();
     failing_subtests += test_partition1();
     failing_subtests += test_stable_partition();
-    failing_subtests += test_nth_element_small();
+    failing_subtests += test_nth_element();
     return failing_subtests;
 }
 
