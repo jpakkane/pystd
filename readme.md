@@ -3,7 +3,7 @@
 Design goals:
 
 - NOT an implementation of the ISO C++ standard library, but instead
-  an experiment to see what a stdlib that no backwards compatibility
+  an experiment to see what a stdlib without backwards compatibility
   requirements might look like
 - design-wise copy the Python standard library's APIs whenever
   possible

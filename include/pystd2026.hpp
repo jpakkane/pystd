@@ -2582,7 +2582,7 @@ template<BasicIterator It1, WellBehaved ValueType, typename Comparator>
 void linear_insert_has_sentinel(It1 last_element, ValueType &scratch, const Comparator &cmp) {
     // Using memmove makes things noticeably slower. Even though it shouldn't.
     constexpr bool is_memmovable =
-        false; //pystd2026::is_integral_v<ValueType> || pystd2026::is_floating_point_v<ValueType>;
+        false; // pystd2026::is_integral_v<ValueType> || pystd2026::is_floating_point_v<ValueType>;
     if constexpr(is_memmovable) {
         auto location = last_element;
         --location;
