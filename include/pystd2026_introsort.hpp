@@ -53,6 +53,8 @@ void do_introsort(It begin,
     const size_t INSERTION_SORT_LIMIT = 16;
     const size_t num_elements = end - begin;
     const size_t degenerate_limit = num_elements / 8;
+    constexpr bool is_intlike =
+        pystd2026::is_integral_v<ValueType> || pystd2026::is_floating_point_v<ValueType>;
 
     if(num_elements <= INSERTION_SORT_LIMIT) {
         pystd2026::insertion_sort(begin, end, cmp);
@@ -87,10 +89,19 @@ void do_introsort(It begin,
     auto partitioning_begin = begin + pivot_index + 1;
     auto partitioning_end = end - half_median;
 
-    auto split_point = pystd2026::partition(
-        partitioning_begin, partitioning_end, [pivot_point, &cmp](const ValueType &v) -> bool {
-            return cmp.compare(v, *pivot_point) < 0;
-        });
+    It split_point;
+    if constexpr(is_intlike) {
+        const ValueType pivot_value{*pivot_point};
+        split_point = pystd2026::partition(
+            partitioning_begin, partitioning_end, [pivot_value, &cmp](const ValueType &v) -> bool {
+                return cmp.compare(v, pivot_value) < 0;
+            });
+    } else {
+        split_point = pystd2026::partition(
+            partitioning_begin, partitioning_end, [pivot_point, &cmp](const ValueType &v) -> bool {
+                return cmp.compare(v, *pivot_point) < 0;
+            });
+    }
     auto last_value_point = split_point - 1;
     // After this, last_value_point is in its correct, sorted location.
     pystd2026::swap(*pivot_point, *last_value_point);
