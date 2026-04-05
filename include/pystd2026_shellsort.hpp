@@ -26,19 +26,21 @@ template<BasicIterator It, typename Comparator>
 void shell_sort(It begin, It end, const Comparator &cmp) {
     const size_t buf_size = end - begin;
 
-    if(buf_size < 4)
-        goto shsort_final;
-    if(buf_size < 10)
+    if(buf_size <= 5) {
+        pystd2026::insertion_sort(begin, end, cmp);
+        return;
+    }
+    if(buf_size < 10 + 1)
         goto shsort4;
-    if(buf_size < 23)
+    if(buf_size < 23 + 1)
         goto shsort10;
-    if(buf_size < 57)
+    if(buf_size < 57 + 1)
         goto shsort23;
-    if(buf_size < 132)
+    if(buf_size < 132 + 1)
         goto shsort57;
-    if(buf_size < 301)
+    if(buf_size < 301 + 1)
         goto shsort132;
-    if(buf_size < 701)
+    if(buf_size < 701 + 1)
         goto shsort301;
     if(buf_size > 701 * 2.25) {
         size_t biggap = 701 * 2.25;
@@ -66,8 +68,9 @@ shsort10:
 shsort4:
     pystd2026::shell_sort_single_iteration(begin, end, 4, cmp);
 
-shsort_final:
-    pystd2026::insertion_sort(begin, end, cmp);
+    auto smallest = pystd2026::min_element(begin, begin + 4, cmp);
+    pystd2026::swap(*smallest, *begin);
+    pystd2026::insertion_sort_has_sentinel(begin, end, cmp);
 }
 
 template<BasicIterator It> void shell_sort(It begin, It end) {
