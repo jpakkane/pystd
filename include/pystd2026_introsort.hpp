@@ -9,27 +9,10 @@
 namespace pystd2026 {
 
 template<BasicIterator It, typename Comparator>
-It pick_qsort_pivot_median3(It begin, It end, const Comparator &cmp) {
-    auto midpoint = begin + (end - begin) / 2;
-    auto last = end - 1;
-    // Simple median of three.
-    if(cmp.compare(*midpoint, *begin) < 0) {
-        pystd2026::swap(*begin, *midpoint);
-    }
-    if(cmp.compare(*last, *midpoint) < 0) {
-        pystd2026::swap(*midpoint, *last);
-        if(cmp.compare(*midpoint, *begin) < 0) {
-            pystd2026::swap(*midpoint, *begin);
-        }
-    }
-    return midpoint;
-}
-
-template<BasicIterator It, typename Comparator>
-It pick_qsort_pivot_median(It begin,
-                           It end,
-                           const size_t NUM_MEDIAN_POINTS,
-                           const Comparator &cmp) {
+void pick_qsort_pivot_median(It begin,
+                             It end,
+                             const size_t NUM_MEDIAN_POINTS,
+                             const Comparator &cmp) {
     const auto step = (end - begin) / NUM_MEDIAN_POINTS;
     size_t picker = step;
     for(size_t i = 1; i < NUM_MEDIAN_POINTS; ++i) {
@@ -37,9 +20,9 @@ It pick_qsort_pivot_median(It begin,
         picker += step;
     }
 
-    // Ideally this should be nth_element_small, but it ran slower.
+    // Ideally this should be nth_element_small, but since NUM_MEDIAN_POINTS
+    // is always small, this is faster.
     pystd2026::insertion_sort(begin, begin + NUM_MEDIAN_POINTS, cmp);
-    return begin + NUM_MEDIAN_POINTS / 2;
 }
 
 // Converting this into a lambda inside do_introsort makes it _a lot_ slower.
@@ -82,24 +65,35 @@ void do_introsort(It begin,
     }
 
     const auto median_size = qsort_median_count(num_elements, degenerate_depth);
+    const auto half_median = median_size / 2;
 
-    auto pivot_point = median_size <= 3 ? pick_qsort_pivot_median3(begin, end, cmp)
-                                        : pick_qsort_pivot_median(begin, end, median_size, cmp);
+    pick_qsort_pivot_median(begin, end, median_size, cmp);
 
-    // Move pivot element outside the area to be partitioned
-    // so that partition operations do not move it in memory.
-    if(pivot_point != begin) {
-        pystd2026::swap(*pivot_point, *begin);
+    const auto pivot_index = half_median;
+    auto pivot_point = begin + pivot_index;
+
+    // At this point we have N/2 items that are less than (or equal) to pivot
+    // and N/2 that are greater than (or equal) to pivot.
+    // Shrink the partitioning space by median_size - 1.
+    // After this the pivot element is at the beginning of the range to be
+    // partitioned.
+    {
+        auto from_loc = pivot_point + 1;
+        auto to_loc = end - half_median - 1;
+        for(size_t i = 0; i < half_median; ++i) {
+            pystd2026::swap(*(from_loc + i), *(to_loc + i));
+        }
     }
-    auto begin_after_pivot = begin + 1;
+    auto partitioning_begin = begin + pivot_index + 1;
+    auto partitioning_end = end - half_median;
 
-    auto split_point =
-        pystd2026::partition(begin_after_pivot, end, [begin, &cmp](const ValueType &v) -> bool {
-            return cmp.compare(v, *begin) < 0;
+    auto split_point = pystd2026::partition(
+        partitioning_begin, partitioning_end, [pivot_point, &cmp](const ValueType &v) -> bool {
+            return cmp.compare(v, *pivot_point) < 0;
         });
     auto last_value_point = split_point - 1;
     // After this, last_value_point is in its correct, sorted location.
-    pystd2026::swap(*begin, *last_value_point);
+    pystd2026::swap(*pivot_point, *last_value_point);
 
     auto left_begin = begin;
     auto left_end = last_value_point;
@@ -107,7 +101,7 @@ void do_introsort(It begin,
     auto right_end = end;
 
     // Equal values adjacent to the pivot are also in their correct locations.
-    // They are all in the right half as the sort critarion was <.
+    // Most are in the right half as the partition critarion was <.
     // Gobble up as many as we can.
     while(right_begin < right_end && (*right_begin == *last_value_point)) {
         ++right_begin;
