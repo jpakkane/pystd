@@ -2578,6 +2578,24 @@ bool is_sorted(It1 start, It2 end, const Comparator &cmp) {
     return true;
 }
 
+template<BasicIterator It> void last_to_beginning(It begin, It end) {
+    using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
+    if(end - begin < 2) {
+        return;
+    }
+    It last_element = end - 1;
+    It current = last_element;
+    auto previous = current;
+    --previous;
+    ValueType scratch = pystd2026::move(*last_element);
+    while(current != begin) {
+        *current = pystd2026::move(*previous);
+        --previous;
+        --current;
+    }
+    *begin = pystd2026::move(scratch);
+}
+
 template<BasicIterator It1, typename Comparator>
 void linear_insert_has_sentinel(It1 last_element, const Comparator &cmp) {
     using ValueType = pystd2026::remove_reference_t<decltype(*last_element)>;
@@ -2668,11 +2686,9 @@ void insertion_sort(It1 begin, It2 end, const Comparator &cmp) {
         return;
     }
     if(array_size == 2) {
-        auto first = begin;
-        auto second = first;
-        ++second;
-        if(cmp.compare(*first, *second) > 0) {
-            swap(*first, *second);
+        auto second = begin + 1;
+        if(cmp.compare(*begin, *second) > 0) {
+            swap(*begin, *second);
         }
         return;
     }
@@ -2688,7 +2704,8 @@ void insertion_sort(It1 begin, It2 end, const Comparator &cmp) {
     }
 #else
     auto min_loc = min_element(begin, end, cmp);
-    swap(*min_loc, *begin);
+    // swap() is not suitable here because it would break sort stability.
+    last_to_beginning(begin, min_loc + 1);
     ++begin;
     insertion_sort_has_sentinel(begin, end, cmp);
 #endif
