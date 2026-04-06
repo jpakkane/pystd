@@ -2712,28 +2712,19 @@ void insertion_sort(It1 begin, It2 end, const Comparator &cmp) {
         }
         return;
     }
-#if 0
-    // This is arguably "the right thing to do", but the latter runs faster.
-    using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
-    ValueType scratch;
-    auto current_item = begin;
-    ++current_item;
-    while(current_item != end) {
-        linear_insert(begin, current_item, scratch, cmp);
-        ++current_item;
-    }
-#else
     auto min_loc = min_element(begin, end, cmp);
     // swap() is not suitable here because it would break sort stability.
     rotate_last(begin, min_loc + 1);
-    ++begin;
-    insertion_sort_has_sentinel(begin, end, cmp);
-#endif
+    insertion_sort_has_sentinel(begin + 1, end, cmp);
 }
 
 template<BasicIterator It1, BasicIterator It2> void insertion_sort(It1 start, It2 end) {
     using ValueType = pystd2026::remove_reference_t<decltype(*start)>;
     pystd2026::insertion_sort(start, end, DefaultComparator<ValueType>{});
+}
+
+template<WellBehaved T> void insertion_sort(pystd2026::Span<T> span) {
+    pystd2026::insertion_sort(span.begin(), span.end());
 }
 
 } // namespace pystd2026
