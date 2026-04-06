@@ -2634,7 +2634,9 @@ template<typename T> struct InsertionSortLimit {
     static constexpr size_t value = 16;
 };
 
-template<typename T> constexpr size_t insertion_sort_limit = 16;
+template<typename T>
+constexpr size_t insertion_sort_limit =
+    (pystd2026::is_integral_v<T> || pystd2026::is_floating_point_v<T>) ? 32 : 16;
 
 // Before begin there is an element that is smaller or equal to all
 // elements within the range.
