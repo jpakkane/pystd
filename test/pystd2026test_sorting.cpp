@@ -24,8 +24,10 @@ int breakpoint_opportunity(int number) { return number; }
 int test_heapsort_int() {
     TEST_START;
     int failing_subtests = 0;
-    const size_t NUM_ENTRIES = 20;
-    int table[NUM_ENTRIES] = {6, 2, 1, 9, 3, 16, 12, 11, 19, 13, 10, 14, 15, 17, 18, 0, 4, 5, 7, 8};
+    const size_t NUM_ENTRIES = 40;
+    int table[NUM_ENTRIES] = {36, 34, 22, 7,  27, 25, 29, 24, 39, 5,  28, 1, 14, 38,
+                              37, 30, 18, 3,  20, 15, 26, 16, 4,  11, 21, 9, 8,  13,
+                              17, 23, 0,  12, 31, 35, 19, 10, 6,  2,  33, 32};
 
     pystd2026::heapsort(table, table + NUM_ENTRIES);
 
@@ -126,8 +128,10 @@ int test_mergesort() {
 int test_introsort_int() {
     TEST_START;
     int failing_subtests = 0;
-    const size_t NUM_ENTRIES = 20;
-    int table[NUM_ENTRIES] = {6, 2, 1, 9, 3, 16, 12, 11, 19, 13, 10, 14, 15, 17, 18, 0, 4, 5, 7, 8};
+    const size_t NUM_ENTRIES = 40;
+    int table[NUM_ENTRIES] = {36, 34, 22, 7,  27, 25, 29, 24, 39, 5,  28, 1, 14, 38,
+                              37, 30, 18, 3,  20, 15, 26, 16, 4,  11, 21, 9, 8,  13,
+                              17, 23, 0,  12, 31, 35, 19, 10, 6,  2,  33, 32};
     pystd2026::Span<int> span(table, NUM_ENTRIES);
 
     pystd2026::introsort(span);
@@ -142,9 +146,10 @@ int test_radixsort() {
     TEST_START;
 
     int failing_subtests = 0;
-    const uint32_t NUM_ENTRIES = 21;
-    uint32_t table[NUM_ENTRIES] = {0xFFFFFFFF, 6,  2,  1,  9,  3, 16, 12, 11, 19, 13,
-                                   10,         14, 15, 17, 18, 0, 4,  5,  7,  8};
+    const uint32_t NUM_ENTRIES = 41;
+    uint32_t table[NUM_ENTRIES] = {0xFFFFFFFF, 36, 34, 22, 7,  27, 25, 29, 24, 39, 5,  28, 1, 14,
+                                   38,         37, 30, 18, 3,  20, 15, 26, 16, 4,  11, 21, 9, 8,
+                                   13,         17, 23, 0,  12, 31, 35, 19, 10, 6,  2,  33, 32};
 
     pystd2026::radix_sort(table, table + NUM_ENTRIES);
 
@@ -159,9 +164,10 @@ int test_bucketsort() {
     TEST_START;
 
     int failing_subtests = 0;
-    const uint32_t NUM_ENTRIES = 21;
-    uint32_t table[NUM_ENTRIES] = {0xFFFFFFFF, 6,  2,  1,  9,  3, 16, 12, 11, 19, 13,
-                                   10,         14, 15, 17, 18, 0, 4,  5,  7,  8};
+    const uint32_t NUM_ENTRIES = 41;
+    uint32_t table[NUM_ENTRIES] = {0xFFFFFFFF, 36, 34, 22, 7,  27, 25, 29, 24, 39, 5,  28, 1, 14,
+                                   38,         37, 30, 18, 3,  20, 15, 26, 16, 4,  11, 21, 9, 8,
+                                   13,         17, 23, 0,  12, 31, 35, 19, 10, 6,  2,  33, 32};
 
     pystd2026::bucketsort(table, table + NUM_ENTRIES);
 
@@ -175,8 +181,10 @@ int test_bucketsort() {
 int test_shellsort() {
     TEST_START;
     int failing_subtests = 0;
-    const size_t NUM_ENTRIES = 20;
-    int table[NUM_ENTRIES] = {6, 2, 1, 9, 3, 16, 12, 11, 19, 13, 10, 14, 15, 17, 18, 0, 4, 5, 7, 8};
+    const size_t NUM_ENTRIES = 40;
+    int table[NUM_ENTRIES] = {36, 34, 22, 7,  27, 25, 29, 24, 39, 5,  28, 1, 14, 38,
+                              37, 30, 18, 3,  20, 15, 26, 16, 4,  11, 21, 9, 8,  13,
+                              17, 23, 0,  12, 31, 35, 19, 10, 6,  2,  33, 32};
 
     pystd2026::shell_sort(table, table + NUM_ENTRIES);
 
