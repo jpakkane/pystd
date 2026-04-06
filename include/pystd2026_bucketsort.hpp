@@ -9,7 +9,7 @@ namespace pystd2026 {
 
 template<BasicIterator It> void do_bucketsort(It begin, It end, size_t round) {
     using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
-    const ssize_t INSERTION_SORT_LIMIT = 16;
+    const ssize_t INSERTION_SORT_LIMIT = ::pystd2026::insertion_sort_limit<ValueType>;
 
     if(end - begin < INSERTION_SORT_LIMIT) {
         pystd2026::insertion_sort(begin, end);

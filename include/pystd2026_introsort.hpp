@@ -50,7 +50,7 @@ void do_introsort(It begin,
                   const size_t MAX_ROUNDS,
                   const Comparator &cmp) {
     using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
-    const size_t INSERTION_SORT_LIMIT = 16;
+    const size_t INSERTION_SORT_LIMIT = ::pystd2026::insertion_sort_limit<ValueType>;
     const size_t num_elements = end - begin;
     const size_t degenerate_limit = num_elements / 8;
     constexpr bool is_intlike =
@@ -138,7 +138,8 @@ void do_introsort(It begin,
 
 template<BasicIterator It, typename Comparator>
 void introsort(It begin, It end, const Comparator &cmp) {
-    const size_t INSERTION_SORT_LIMIT = 16;
+    using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
+    const size_t INSERTION_SORT_LIMIT = ::pystd2026::insertion_sort_limit<ValueType>;
     const size_t num_elements = end - begin;
 
     if(num_elements <= INSERTION_SORT_LIMIT) {

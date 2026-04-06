@@ -6,8 +6,8 @@
 namespace pystd2026 {
 
 template<BasicIterator It> void do_radix_sort(It begin, It end, const size_t round) {
-    const ssize_t INSERTION_SORT_LIMIT = 16;
     using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
+    const ssize_t INSERTION_SORT_LIMIT = ::pystd2026::insertion_sort_limit<ValueType>;
     const auto num_bits = sizeof(ValueType) * 8;
     const ValueType sort_bit = (1 << (num_bits - 1 - (ValueType)round));
 
@@ -30,7 +30,8 @@ template<BasicIterator It> void radix_sort(It begin, It end) {
     const auto num_bits = sizeof(ValueType) * 8;
     static_assert(pystd2026::is_unsigned_v<ValueType>,
                   "Radix sort currently only supports unsigned integers. Patches welcome.");
-    const ssize_t INSERTION_SORT_LIMIT = 16;
+    const ssize_t INSERTION_SORT_LIMIT = ::pystd2026::insertion_sort_limit<ValueType>;
+    ;
     if(end - begin <= INSERTION_SORT_LIMIT) {
         return pystd2026::insertion_sort(begin, end);
     }

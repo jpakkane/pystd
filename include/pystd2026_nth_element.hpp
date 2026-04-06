@@ -8,7 +8,7 @@ namespace pystd2026 {
 template<BasicIterator It, typename Comparator>
 It nth_element(It begin, It end, size_t nth, const Comparator &cmp) {
     using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
-    const size_t INSERTION_SORT_LIMIT = 16;
+    const size_t INSERTION_SORT_LIMIT = ::pystd2026::insertion_sort_limit<ValueType>;
     ValueType scratch;
     if(nth >= (size_t)(end - begin)) {
         throw PyException("Requested nth element that is out of bounds.");

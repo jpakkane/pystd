@@ -95,8 +95,8 @@ void merge_preprocess(It1 begin, It2 end, const Comparator &cmp, const size_t BL
 
 template<BasicIterator It, typename Comparator>
 void mergesort(It begin, It end, const Comparator &cmp) {
-    using Value = pystd2026::remove_reference_t<decltype(*begin)>;
-    const size_t INSERTION_SORT_LIMIT = 16;
+    using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
+    const size_t INSERTION_SORT_LIMIT = ::pystd2026::insertion_sort_limit<ValueType>;
     const size_t INPUT_SIZE = end - begin;
     const size_t BUFFER_SIZE = (INPUT_SIZE + 1) / 2;
     const size_t RIGHT_SIZE = BUFFER_SIZE;
@@ -113,13 +113,13 @@ void mergesort(It begin, It end, const Comparator &cmp) {
         return;
     }
 
-    pystd2026::Vector<Value> buffer;
+    pystd2026::Vector<ValueType> buffer;
     buffer.reserve(BUFFER_SIZE);
     for(size_t i = 0; i < BUFFER_SIZE; ++i) {
-        if constexpr(pystd2026::is_integral_v<Value>) {
-            buffer.push_back((Value)-1);
+        if constexpr(pystd2026::is_integral_v<ValueType>) {
+            buffer.push_back((ValueType)-1);
         } else {
-            buffer.push_back(Value{});
+            buffer.push_back(ValueType{});
         }
     }
 
