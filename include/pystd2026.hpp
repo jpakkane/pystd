@@ -2700,6 +2700,18 @@ void insertion_sort(It1 begin, It2 end, const Comparator &cmp) {
         }
         return;
     }
+    if(array_size == 3) {
+        if(cmp.compare(*begin, *(begin + 2)) > 0) {
+            swap(*begin, *(begin + 2));
+        }
+        if(cmp.compare(*begin, *(begin + 1)) > 0) {
+            swap(*begin, *(begin + 1));
+        }
+        if(cmp.compare(*(begin + 1), *(begin + 2)) > 0) {
+            swap(*(begin + 1), *(begin + 2));
+        }
+        return;
+    }
 #if 0
     // This is arguably "the right thing to do", but the latter runs faster.
     using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
