@@ -45,6 +45,7 @@ inline constexpr size_t qsort_median_count(const size_t DATA_SIZE, const size_t 
 template<BasicIterator It, typename Comparator>
 void do_introsort(It begin,
                   It end,
+                  bool is_leftmost,
                   const size_t depth,
                   const size_t degenerate_depth,
                   const size_t MAX_ROUNDS,
@@ -57,7 +58,11 @@ void do_introsort(It begin,
         pystd2026::is_integral_v<ValueType> || pystd2026::is_floating_point_v<ValueType>;
 
     if(num_elements <= INSERTION_SORT_LIMIT) {
-        pystd2026::insertion_sort(begin, end, cmp);
+        if(is_leftmost) {
+            pystd2026::insertion_sort(begin, end, cmp);
+        } else {
+            pystd2026::insertion_sort_has_sentinel(begin, end, cmp);
+        }
         return;
     }
 
@@ -127,12 +132,19 @@ void do_introsort(It begin,
             pystd2026::heapsort(left_begin, left_end, cmp);
             pystd2026::heapsort(right_begin, right_end, cmp);
         } else {
-            do_introsort(left_begin, left_end, depth + 1, degenerate_depth + 1, MAX_ROUNDS, cmp);
-            do_introsort(right_begin, right_end, depth + 1, degenerate_depth + 1, MAX_ROUNDS, cmp);
+            do_introsort(left_begin,
+                         left_end,
+                         is_leftmost,
+                         depth + 1,
+                         degenerate_depth + 1,
+                         MAX_ROUNDS,
+                         cmp);
+            do_introsort(
+                right_begin, right_end, false, depth + 1, degenerate_depth + 1, MAX_ROUNDS, cmp);
         }
     } else {
-        do_introsort(left_begin, left_end, depth + 1, 0, MAX_ROUNDS, cmp);
-        do_introsort(right_begin, right_end, depth + 1, 0, MAX_ROUNDS, cmp);
+        do_introsort(left_begin, left_end, is_leftmost, depth + 1, 0, MAX_ROUNDS, cmp);
+        do_introsort(right_begin, right_end, false, depth + 1, 0, MAX_ROUNDS, cmp);
     }
 }
 
@@ -157,7 +169,7 @@ void introsort(It begin, It end, const Comparator &cmp) {
     };
 
     const size_t MAX_ROUNDS = max_qsort_rounds(num_elements);
-    do_introsort(begin, end, 0, 0, MAX_ROUNDS, cmp);
+    do_introsort(begin, end, true, 0, 0, MAX_ROUNDS, cmp);
 }
 
 template<BasicIterator It> void introsort(It begin, It end) {
