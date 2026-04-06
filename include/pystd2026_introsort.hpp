@@ -81,7 +81,7 @@ void do_introsort(It begin,
     // partitioned.
     {
         auto from_loc = pivot_point + 1;
-        auto to_loc = end - half_median - 1;
+        auto to_loc = end - half_median;
         for(size_t i = 0; i < half_median; ++i) {
             pystd2026::swap(*(from_loc + i), *(to_loc + i));
         }
