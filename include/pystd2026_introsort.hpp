@@ -20,13 +20,13 @@ void pick_qsort_pivot_median(It begin,
         picker += step;
     }
 
-    // Ideally this should be nth_element_small, but since NUM_MEDIAN_POINTS
+    // Ideally this should be nth_element, but since NUM_MEDIAN_POINTS
     // is always small, this is faster.
     pystd2026::insertion_sort(begin, begin + NUM_MEDIAN_POINTS, cmp);
 }
 
 // Converting this into a lambda inside do_introsort makes it _a lot_ slower.
-inline size_t qsort_median_count(const size_t DATA_SIZE, const size_t degenerate_depth) {
+inline constexpr size_t qsort_median_count(const size_t DATA_SIZE, const size_t degenerate_depth) {
     if(DATA_SIZE < 100) {
         return degenerate_depth == 0 ? 3 : 5;
     }
