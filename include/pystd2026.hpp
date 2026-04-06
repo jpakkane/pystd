@@ -2578,7 +2578,7 @@ bool is_sorted(It1 start, It2 end, const Comparator &cmp) {
     return true;
 }
 
-template<BasicIterator It> void last_to_beginning(It begin, It end) {
+template<BasicIterator It> void rotate_last(It begin, It end) {
     using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
     if(end - begin < 2) {
         return;
@@ -2705,7 +2705,7 @@ void insertion_sort(It1 begin, It2 end, const Comparator &cmp) {
 #else
     auto min_loc = min_element(begin, end, cmp);
     // swap() is not suitable here because it would break sort stability.
-    last_to_beginning(begin, min_loc + 1);
+    rotate_last(begin, min_loc + 1);
     ++begin;
     insertion_sort_has_sentinel(begin, end, cmp);
 #endif
