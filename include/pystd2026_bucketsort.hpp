@@ -22,7 +22,7 @@ template<BasicIterator It> void do_bucketsort(It begin, It end, size_t round) {
         return;
     }
 
-    const size_t shift = MAX_ROUNDS - round - 1;
+    const ValueType SHIFT = (MAX_ROUNDS - round - 1) * 8;
     const ValueType MASK = 0xFF;
     const size_t NUM_BUCKETS = 256;
     ValueType counts[NUM_BUCKETS];
@@ -34,7 +34,7 @@ template<BasicIterator It> void do_bucketsort(It begin, It end, size_t round) {
     }
 
     for(auto it = begin; it != end; ++it) {
-        ValueType bucket = (*it >> shift) & MASK;
+        const ValueType bucket = (*it >> SHIFT) & MASK;
         ++counts[bucket];
     }
 
@@ -54,7 +54,7 @@ template<BasicIterator It> void do_bucketsort(It begin, It end, size_t round) {
             continue;
         }
 
-        const ValueType item_bucket = (*(begin + current_item) >> shift) & MASK;
+        const ValueType item_bucket = (*(begin + current_item) >> SHIFT) & MASK;
         if(current_bucket != item_bucket) {
             const auto target_location = next_free[item_bucket];
             pystd2026::swap(*(begin + current_item), *(begin + target_location));
