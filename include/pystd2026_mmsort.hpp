@@ -12,6 +12,22 @@ template<WellBehaved Value> struct MMQueueItem {
     unsigned char source;
 };
 
+template<WellBehaved ValueType, typename ValueComparator> struct QueueComparator {
+    ValueComparator *cmp;
+
+    int compare(const MMQueueItem<ValueType> &a, const MMQueueItem<ValueType> &b) const noexcept {
+        auto v = cmp->compare(a.value, b.value);
+        if(v != 0) {
+            return v;
+        }
+        return a.source < b.source ? -1 : 1;
+    }
+
+    bool equal(const MMQueueItem<ValueType> &a, const MMQueueItem<ValueType> &b) const noexcept {
+        return a.source == b.source && cmp->equal(a.value, b.value);
+    }
+};
+
 template<BasicIterator It> void mm_debug_printf(const It begin, const It end, const char *name) {
     using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
     if constexpr(pystd2026::is_integral_v<ValueType>) {
