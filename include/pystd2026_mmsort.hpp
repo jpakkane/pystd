@@ -154,8 +154,8 @@ void mmsort(It begin, It end, const Comparator &cmp) {
 
     // This makes sorting 10000000 integers go from .94 to 0.90 seconds
     // when compared to starting with merge size of 1.
-    merge_preprocess(left_begin, left_end, cmp, INSERTION_SORT_LIMIT);
-    merge_preprocess(right_begin, right_end, cmp, INSERTION_SORT_LIMIT);
+    mm_merge_preprocess(left_begin, left_end, cmp, INSERTION_SORT_LIMIT);
+    mm_merge_preprocess(right_begin, right_end, cmp, INSERTION_SORT_LIMIT);
     size_t merge_size = INSERTION_SORT_LIMIT;
 
     // If the number of data points is odd, we need to store the
