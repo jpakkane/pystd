@@ -3,6 +3,7 @@
 
 #include <pystd2026_heapsort.hpp>
 #include <pystd2026_mergesort.hpp>
+#include <pystd2026_mmsort.hpp>
 #include <pystd2026_introsort.hpp>
 #include <pystd2026_radixsort.hpp>
 #include <pystd2026_bucketsort.hpp>
@@ -61,12 +62,7 @@ int test_mergesort_int(const int TOTAL_SIZE) {
     ASSERT((int)items.size() == TOTAL_SIZE);
     pystd2026::mergesort(items.begin(), items.end());
     ASSERT((int)items.size() == TOTAL_SIZE);
-    /*
-    for(size_t i = 0; i < items.size(); ++i) {
-        printf("%d ", items[i]);
-    }
-    printf("\n");
-    */
+
     for(int i = 0; i < TOTAL_SIZE; ++i) {
         const auto val = items[i];
         ASSERT(val == i);
@@ -106,11 +102,40 @@ int test_mergesort() {
     pystd2026::mergesort(items.begin(), items.end());
     ASSERT(items.size() == TOTAL_SIZE);
 
-    /*
-    for(size_t i = 0; i < items.size(); ++i) {
-        printf("%d %d\n", items[i].x, items[i].y);
+    for(size_t i = 0; i < items.size() - 1; ++i) {
+        ASSERT(items[i].x <= items[i + 1].x);
     }
-    */
+
+    ASSERT(items.front() == first);
+    ASSERT(items.back() == last);
+    for(size_t i = 1; i < items.size() - 2; i += 2) {
+        ASSERT(items[i].x == items[i + 1].x);
+        ASSERT(items[i].y > items[i + 1].y);
+    }
+    return 0;
+}
+
+int test_mmsort() {
+    TEST_START;
+    pystd2026::Vector<SortStruct> items;
+    const size_t NUM_VALUES = 100;
+    const SortStruct last{100000, 0};
+    const SortStruct first{0, 100000};
+    const size_t TOTAL_SIZE = 202;
+
+    items.reserve(TOTAL_SIZE);
+    items.emplace_back(last);
+    for(size_t i = 0; i < NUM_VALUES; ++i) {
+        items.emplace_back(NUM_VALUES - i, 1);
+    }
+    for(size_t i = 0; i < NUM_VALUES; ++i) {
+        items.emplace_back(NUM_VALUES - i, 0);
+    }
+    items.emplace_back(first);
+
+    ASSERT(items.size() == TOTAL_SIZE);
+    pystd2026::mmsort(items.begin(), items.end());
+    ASSERT(items.size() == TOTAL_SIZE);
 
     for(size_t i = 0; i < items.size() - 1; ++i) {
         ASSERT(items[i].x <= items[i + 1].x);
@@ -199,6 +224,7 @@ int test_sort_algorithms() {
     failing_subtests += test_heapsort_int();
     failing_subtests += test_mergesort_int();
     failing_subtests += test_mergesort();
+    failing_subtests += test_mmsort();
     failing_subtests += test_introsort_int();
     failing_subtests += test_radixsort();
     failing_subtests += test_bucketsort();
