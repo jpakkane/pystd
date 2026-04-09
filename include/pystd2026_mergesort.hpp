@@ -229,7 +229,7 @@ void mergesort(It begin, It end, const Comparator &cmp) {
 }
 
 template<BasicIterator It> void mergesort(It begin, It end) {
-    using ValueType = pystd2026::remove_const_t<decltype(*begin)>;
+    using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
     mergesort(begin, end, DefaultComparator<ValueType>{});
 }
 

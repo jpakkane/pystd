@@ -1406,13 +1406,13 @@ public:
 
     const T &operator[](size_t i) const {
         if(i >= num_entries) {
-            bootstrap_throw("Fixed Vector index out of bounds.");
+            bootstrap_throw("FixedVector index out of bounds.");
         }
         return *objptr(i);
     }
 
-    T &unsafe_at(size_t i) { return *objptr(i); }
-    const T &unsafe_at(size_t i) const { return *objptr(i); }
+    T &unsafe_at(size_t i) noexcept { return *objptr(i); }
+    const T &unsafe_at(size_t i) const noexcept { return *objptr(i); }
 
     T *begin() const { return const_cast<T *>(objptr(0)); }
     T *end() const { return const_cast<T *>(objptr(num_entries)); }
@@ -2431,6 +2431,7 @@ UnicodeConversionResult lowercase_unicode(uint32_t codepoint);
 // builtin types returns a std::something, which we don't
 // have.
 template<typename T> struct DefaultComparator {
+    static_assert(!pystd2026::is_lvalue_reference<T>::value, "Type must not be a reference.");
     int compare(const T &a, const T &b) const noexcept {
         static_assert(!pystd2026::is_floating_point_v<pystd2026::remove_cv_t<T>>,
                       "Floating point types do not form a strong ordering.");
@@ -2452,6 +2453,7 @@ template<typename T> struct DefaultComparator {
 
 // Helper for types that don't have the starship operator.
 template<typename T> struct OnlyLessComparator {
+    static_assert(!pystd2026::is_lvalue_reference<T>::value, "Type must not be a reference.");
     int compare(const T &a, const T &b) const noexcept {
         static_assert(!pystd2026::is_floating_point_v<pystd2026::remove_cv_t<T>>,
                       "Floating point types do not form a strong ordering.");
@@ -2475,6 +2477,7 @@ bool total_order_equal(double a, double b) noexcept;
 
 // Handles NaNs, but is slower.
 template<typename T> struct FloatTotalOrderComparator {
+    static_assert(!pystd2026::is_lvalue_reference<T>::value, "Type must not be a reference.");
     int compare(const T a, const T b) const noexcept {
         static_assert(pystd2026::is_floating_point_v<pystd2026::remove_cv_t<T>>,
                       "This type is unly usable with floating point types.");
@@ -2487,6 +2490,7 @@ template<typename T> struct FloatTotalOrderComparator {
 // Assumes NaNs do not exist in input data. If they do,
 // behaviour is undefined.
 template<typename T> struct FloatIgnoreNanComparator {
+    static_assert(!pystd2026::is_lvalue_reference<T>::value, "Type must not be a reference.");
     int compare(const T a, const T b) const noexcept {
         static_assert(pystd2026::is_floating_point_v<pystd2026::remove_cv_t<T>>,
                       "This type is unly usable with floating point types.");

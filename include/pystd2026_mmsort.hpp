@@ -12,15 +12,26 @@ template<WellBehaved Value> struct MMQueueItem {
     unsigned char source;
 };
 
+struct BlockInfo {
+    size_t size;
+    size_t offset;
+};
+
 template<WellBehaved ValueType, typename ValueComparator> struct QueueComparator {
-    ValueComparator *cmp;
+    const ValueComparator *cmp = nullptr;
 
     int compare(const MMQueueItem<ValueType> &a, const MMQueueItem<ValueType> &b) const noexcept {
         auto v = cmp->compare(a.value, b.value);
         if(v != 0) {
             return v;
         }
-        return a.source < b.source ? -1 : 1;
+        if(a.source < b.source) {
+            return -1;
+        }
+        if(a.source > b.source) {
+            return 1;
+        }
+        return 0;
     }
 
     bool equal(const MMQueueItem<ValueType> &a, const MMQueueItem<ValueType> &b) const noexcept {
@@ -42,6 +53,7 @@ template<BasicIterator It> void mm_debug_printf(const It begin, const It end, co
 template<BasicIterator It, BasicIterator ItOut, typename Comparator>
 void mm_merge_pass(
     It left_begin, It left_end, It right_begin, It right_end, ItOut output, const Comparator &cmp) {
+
     while(true) {
         if(left_begin == left_end) {
             while(right_begin != right_end) {
@@ -73,9 +85,18 @@ void mm_merge_pass(
 
 // If merge_block_size is, say 4, it means that the underlying data is in
 // consecutive sorted blocks of size 4.
-template<BasicIterator It, BasicIterator OutIt, typename Comparator>
+template<size_t QUEUE_SIZE, BasicIterator It, BasicIterator OutIt, typename Comparator>
 void mm_merge_with_block_size(
-    It begin, It end, OutIt output_start, size_t merge_block_size, const Comparator &cmp) {
+    It begin, It end, OutIt output_start, size_t merge_block_size, const Comparator &value_cmp) {
+    using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
+    MMQueueItem<ValueType> scratch;
+    pystd2026::FixedVector<MMQueueItem<ValueType>, QUEUE_SIZE> queue;
+    QueueComparator<ValueType, Comparator> cmp(&value_cmp);
+    BlockInfo binfo[QUEUE_SIZE];
+
+    pystd2026::insertion_sort(queue.begin(), queue.end(), cmp);
+    (void)binfo;
+
     const size_t INPUT_SIZE = end - begin;
     for(size_t block_start = 0; block_start < INPUT_SIZE; block_start += 2 * merge_block_size) {
         auto output_location = output_start + block_start;
@@ -84,7 +105,7 @@ void mm_merge_with_block_size(
             // There is no right block.
             auto left_size = INPUT_SIZE - block_start;
             auto left_end = left_begin + left_size;
-            mm_merge_pass(left_begin, left_end, left_begin, left_begin, output_location, cmp);
+            mm_merge_pass(left_begin, left_end, left_begin, left_begin, output_location, value_cmp);
         } else {
             auto left_end = left_begin + merge_block_size;
             auto right_begin = left_end;
@@ -92,7 +113,7 @@ void mm_merge_with_block_size(
                                               ? INPUT_SIZE - (block_start + merge_block_size)
                                               : merge_block_size;
             auto right_end = right_begin + right_block_size;
-            mm_merge_pass(left_begin, left_end, right_begin, right_end, output_location, cmp);
+            mm_merge_pass(left_begin, left_end, right_begin, right_end, output_location, value_cmp);
         }
     }
 }
@@ -171,10 +192,11 @@ void mmsort(It begin, It end, const Comparator &cmp) {
         // Split in two.
         if(merge_size < BUFFER_SIZE) {
             // Right part to scratch
-            mm_merge_with_block_size(right_begin, right_end, buffer_begin, merge_size, cmp);
+            mm_merge_with_block_size<QSIZE>(right_begin, right_end, buffer_begin, merge_size, cmp);
             // buffer_end = buffer_begin + (right_end - right_begin);
             //  Left part to right
-            mm_merge_with_block_size(left_begin, left_end, right_as_buffer_begin, merge_size, cmp);
+            mm_merge_with_block_size<QSIZE>(
+                left_begin, left_end, right_as_buffer_begin, merge_size, cmp);
         } else {
             need_fixup_move = true;
             break;
@@ -183,9 +205,10 @@ void mmsort(It begin, It end, const Comparator &cmp) {
         // Join anew.
         if(merge_size < BUFFER_SIZE) {
             // Right part to left
-            mm_merge_with_block_size(right_as_buffer_begin, right_end, left_begin, merge_size, cmp);
+            mm_merge_with_block_size<QSIZE>(
+                right_as_buffer_begin, right_end, left_begin, merge_size, cmp);
             // Buffer part to right
-            mm_merge_with_block_size(buffer_begin, buffer_end, right_begin, merge_size, cmp);
+            mm_merge_with_block_size<QSIZE>(buffer_begin, buffer_end, right_begin, merge_size, cmp);
         } else {
             // Data is already in the correct place for the final step.
             need_fixup_move = false;
@@ -245,7 +268,7 @@ void mmsort(It begin, It end, const Comparator &cmp) {
 }
 
 template<BasicIterator It> void mmsort(It begin, It end) {
-    using ValueType = pystd2026::remove_const_t<decltype(*begin)>;
+    using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
     mmsort<4, It, DefaultComparator<ValueType>>(begin, end, DefaultComparator<ValueType>{});
 }
 
