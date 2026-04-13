@@ -1319,6 +1319,26 @@ public:
         *objptr(loc) = ::pystd2026::move(obj);
     }
 
+    bool try_emplace_back(auto &&...args) noexcept {
+        if(is_full()) {
+            return false;
+        }
+        if constexpr(sizeof...(args) == 1 && pystd2026::is_same_v<decltype(args...[0]), T>) {
+            this->push_back(pystd2026::forward(args...[0]));
+        } else {
+            auto obj_loc = objptr(num_entries);
+            new(obj_loc) T(pystd2026::forward<decltype(args)>(args)...);
+            ++num_entries;
+        }
+        return true;
+    }
+
+    void emplace_back(auto &&...args) {
+        if(!try_emplace_back(::pystd2026::forward<decltype(args)>(args)...)) {
+            bootstrap_throw("Tried to emplace back to a full FixedVector.");
+        }
+    }
+
     size_t capacity() const noexcept { return MAX_SIZE; }
 
     size_t size() const noexcept { return num_entries; }

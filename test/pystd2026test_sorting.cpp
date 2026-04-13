@@ -115,6 +115,35 @@ int test_mergesort() {
     return 0;
 }
 
+int test_mmsort_int(const int TOTAL_SIZE) {
+    pystd2026::Vector<int> items;
+
+    items.reserve(TOTAL_SIZE);
+    for(int i = 0; i < TOTAL_SIZE; ++i) {
+        items.emplace_back(TOTAL_SIZE - i - 1);
+    }
+
+    ASSERT((int)items.size() == TOTAL_SIZE);
+    pystd2026::mmsort(items.begin(), items.end());
+    ASSERT((int)items.size() == TOTAL_SIZE);
+
+    for(int i = 0; i < TOTAL_SIZE; ++i) {
+        const auto val = items[i];
+        ASSERT(val == i);
+    }
+    return 0;
+}
+
+int test_mmsort_int() {
+    TEST_START;
+    for(int i = 64; i < 203; ++i) {
+        if(test_mmsort_int(i) != 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 int test_mmsort() {
     TEST_START;
     pystd2026::Vector<SortStruct> items;
@@ -224,6 +253,7 @@ int test_sort_algorithms() {
     failing_subtests += test_heapsort_int();
     failing_subtests += test_mergesort_int();
     failing_subtests += test_mergesort();
+    failing_subtests += test_mmsort_int();
     failing_subtests += test_mmsort();
     failing_subtests += test_introsort_int();
     failing_subtests += test_radixsort();
