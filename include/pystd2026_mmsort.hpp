@@ -20,19 +20,36 @@ template<BasicIterator It> struct BlockInfo {
 // Smallest value has preference.
 template<typename T> struct PriorityQueue {
     template<typename Comparator> void initialize(const Comparator &cmp) {
-        pystd2026::insertion_sort(backing.begin(), backing.end(), cmp);
+        int64_t i = backing.size() / 2 - 1;
+        for(; i >= 0; --i) {
+            heapify(i, cmp);
+        }
     }
 
-    template<typename Comparator> void front_changed(const Comparator &cmp) {
-        if(cmp.compare(backing[0], backing[1]) >= 1) {
-            pystd2026::swap(backing[0], backing[1]);
-            size_t current = 1;
-            size_t next = 2;
-            while(next < backing.size() && cmp.compare(backing[current], backing[next]) > 0) {
-                pystd2026::swap(backing[current], backing[next]);
-                ++current;
-                ++next;
+    template<typename Comparator> void front_changed(const Comparator &cmp) { heapify(0, cmp); }
+
+    template<typename Comparator> void heapify(size_t i, const Comparator &cmp) {
+        while(true) {
+            size_t fittest_index = i;
+            const auto left_child_id = i * 2 + 1;
+            if(left_child_id < backing.size()) {
+                if(cmp.compare(backing.unsafe_at(left_child_id), backing.unsafe_at(fittest_index)) <
+                   0) {
+                    fittest_index = left_child_id;
+                }
+                auto right_child_id = left_child_id + 1;
+                if(right_child_id < backing.size()) {
+                    if(cmp.compare(backing.unsafe_at(right_child_id),
+                                   backing.unsafe_at(fittest_index)) < 0) {
+                        fittest_index = right_child_id;
+                    }
+                }
             }
+            if(fittest_index == i) {
+                return;
+            }
+            pystd2026::swap(backing.unsafe_at(i), backing.unsafe_at(fittest_index));
+            i = fittest_index;
         }
     }
 
@@ -44,12 +61,17 @@ template<typename T> struct PriorityQueue {
 
     template<typename T2, typename Comparator> void replace_front(T2 &&new_value, Comparator cmp) {
         backing.front().value = pystd2026::move(new_value);
-        front_changed(cmp);
+        heapify(0, cmp);
     }
 
-    void pop_front() {
-        pystd2026::rotate_first_to_back(backing.begin(), backing.end());
-        backing.pop_back();
+    template<typename Comparator> void pop_front(const Comparator &cmp) {
+        if(backing.size() > 1) {
+            pystd2026::swap(backing.front(), backing.back());
+            backing.pop_back();
+            heapify(0, cmp);
+        } else {
+            backing.pop_back();
+        }
     }
 
     T backing;
@@ -164,7 +186,7 @@ void mm_merge_pass(It left_begin,
         } else {
             if(binfo[source_block].size == 0) {
                 // Block exhausted, remove it from the queue.
-                queue.pop_front();
+                queue.pop_front(cmp);
             } else {
                 queue.replace_front(pystd2026::move(*binfo[source_block].data), cmp);
                 --(binfo[source_block].size);
