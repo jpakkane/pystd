@@ -85,7 +85,6 @@ void mm_merge_pass(It left_begin,
                    const Comparator &value_cmp) {
 
     using ValueType = pystd2026::remove_reference_t<decltype(*left_begin)>;
-    MMQueueItem<ValueType> scratch;
     pystd2026::FixedVector<MMQueueItem<ValueType>, QUEUE_SIZE> queue;
     QueueComparator<ValueType, Comparator> cmp(&value_cmp);
     BlockInfo<It> binfo[QUEUE_SIZE];
@@ -105,10 +104,10 @@ void mm_merge_pass(It left_begin,
     }
     pystd2026::insertion_sort(queue.begin(), queue.end(), cmp);
 
+    if(queue.is_empty()) {
+        return;
+    }
     while(true) {
-        if(queue.is_empty()) {
-            return;
-        }
         const auto source_block = queue[0].source;
         *output = pystd2026::move(queue[0].value);
         ++output;
@@ -131,12 +130,15 @@ void mm_merge_pass(It left_begin,
                 queue[0].value = pystd2026::move(*binfo[source_block].data);
                 --(binfo[source_block].size);
                 ++(binfo[source_block].data);
-                size_t current = 0;
-                size_t next = 1;
-                while(next < queue.size() && cmp.compare(queue[current], queue[next]) > 0) {
-                    pystd2026::swap(queue[current], queue[next]);
-                    ++current;
-                    ++next;
+                if(cmp.compare(queue[0], queue[1]) >= 1) {
+                    pystd2026::swap(queue[0], queue[1]);
+                    size_t current = 1;
+                    size_t next = 2;
+                    while(next < queue.size() && cmp.compare(queue[current], queue[next]) > 0) {
+                        pystd2026::swap(queue[current], queue[next]);
+                        ++current;
+                        ++next;
+                    }
                 }
             }
         }
@@ -198,7 +200,6 @@ void mmsort(It begin, It end, const Comparator &cmp) {
     const size_t BUFFER_SIZE = (INPUT_SIZE + 1) / 2;
     const size_t RIGHT_SIZE = BUFFER_SIZE;
     const size_t LEFT_SIZE = INPUT_SIZE - RIGHT_SIZE;
-    constexpr bool do_validations = false;
     constexpr bool do_debug_prints = false;
 
     if(!(LEFT_SIZE == RIGHT_SIZE || (LEFT_SIZE + 1) == RIGHT_SIZE)) {
@@ -288,14 +289,6 @@ void mmsort(It begin, It end, const Comparator &cmp) {
         active_buffer_size = RIGHT_SIZE;
     }
 
-    if constexpr(do_validations) {
-        if(!pystd2026::is_sorted(right_as_buffer_begin, right_end, cmp)) {
-            internal_failure("Right buffer is not sorted before final step.");
-        }
-        if(!pystd2026::is_sorted(buffer_begin, buffer_begin + active_buffer_size, cmp)) {
-            internal_failure("Scratch buffer is not sorted before final step.");
-        }
-    }
     // In order to keep equal values in the same order,
     // we need to do the merge in different orders.
     if(need_fixup_move) {
@@ -315,16 +308,11 @@ void mmsort(It begin, It end, const Comparator &cmp) {
                                   merge_size,
                                   cmp);
     }
-    if constexpr(do_validations) {
-        if(!pystd2026::is_sorted(begin, end, cmp)) {
-            internal_failure("MM sorting failed.");
-        }
-    }
 }
 
 template<BasicIterator It> void mmsort(It begin, It end) {
     using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
-    mmsort<4, It, DefaultComparator<ValueType>>(begin, end, DefaultComparator<ValueType>{});
+    mmsort<8, It, DefaultComparator<ValueType>>(begin, end, DefaultComparator<ValueType>{});
 }
 
 template<WellBehaved T> void mmsort(Span<T> array) { memort(array.begin(), array.end()); }
