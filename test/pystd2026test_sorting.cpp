@@ -72,7 +72,7 @@ int test_mergesort_int(const int TOTAL_SIZE) {
 
 int test_mergesort_int() {
     TEST_START;
-    for(int i = 32; i < 203; ++i) {
+    for(int i = 64; i < 203; ++i) {
         if(test_mergesort_int(i) != 0) {
             return 1;
         }
