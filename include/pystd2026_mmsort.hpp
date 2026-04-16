@@ -193,7 +193,7 @@ void mm_merge_preprocess(It1 begin, It2 end, const Comparator &cmp, const size_t
 template<size_t QUEUE_SIZE, BasicIterator It, typename Comparator>
 void mmsort(It begin, It end, const Comparator &cmp) {
     using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
-    const size_t INSERTION_SORT_LIMIT = 4; //::pystd2026::insertion_sort_limit<ValueType>;
+    const size_t INSERTION_SORT_LIMIT = ::pystd2026::insertion_sort_limit<ValueType>;
     const size_t INPUT_SIZE = end - begin;
     const size_t BUFFER_SIZE = (INPUT_SIZE + 1) / 2;
     const size_t RIGHT_SIZE = BUFFER_SIZE;
