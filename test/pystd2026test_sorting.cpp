@@ -136,6 +136,7 @@ int test_mmsort_int(const int TOTAL_SIZE) {
 
 int test_mmsort_int() {
     TEST_START;
+
     for(int i = 64; i < 203; ++i) {
         if(test_mmsort_int(i) != 0) {
             return 1;

@@ -59,17 +59,13 @@ void setup_queue(BlockInfo<It> *binfo,
     static_assert(QUEUE_SIZE > 0);
     size_t i = 0;
     const auto queue_offset = queue.size();
-    if(block_size >= data_set_size) {
-        binfo[0] = BlockInfo{data_set_size, begin};
-        i = 1;
-    } else {
-        for(; i * block_size < data_set_size; ++i) {
-            binfo[i] = BlockInfo{block_size, begin + i * block_size};
-        }
-        if((data_set_size % block_size) != 0) {
-            binfo[i] = BlockInfo{data_set_size % block_size, begin + i * block_size};
-            ++i;
-        }
+    const size_t num_full_blocks = data_set_size / block_size;
+    for(; i < num_full_blocks; ++i) {
+        binfo[i] = BlockInfo{block_size, begin + i * block_size};
+    }
+    if((data_set_size % block_size) != 0) {
+        binfo[i] = BlockInfo{data_set_size % block_size, begin + i * block_size};
+        ++i;
     }
 
     for(size_t j = 0; j < i; ++j) {
