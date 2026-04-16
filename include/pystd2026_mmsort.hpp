@@ -58,16 +58,22 @@ void setup_queue(BlockInfo<It> *binfo,
                  const size_t block_size) {
     static_assert(QUEUE_SIZE > 0);
     size_t i = 0;
-    for(; i * block_size < data_set_size; ++i) {
-        binfo[i] = BlockInfo{block_size, begin + i * block_size};
-    }
-    if((data_set_size % block_size) != 0) {
-        binfo[i] = BlockInfo{data_set_size % block_size, begin + i * block_size};
-        ++i;
+    const auto queue_offset = queue.size();
+    if(block_size >= data_set_size) {
+        binfo[0] = BlockInfo{data_set_size, begin};
+        i = 1;
+    } else {
+        for(; i * block_size < data_set_size; ++i) {
+            binfo[i] = BlockInfo{block_size, begin + i * block_size};
+        }
+        if((data_set_size % block_size) != 0) {
+            binfo[i] = BlockInfo{data_set_size % block_size, begin + i * block_size};
+            ++i;
+        }
     }
 
     for(size_t j = 0; j < i; ++j) {
-        queue.emplace_back(pystd2026::move(*binfo[j].data), (unsigned char)j);
+        queue.emplace_back(pystd2026::move(*binfo[j].data), (unsigned char)(j + queue_offset));
         --(binfo[j].size);
         ++(binfo[j].data);
     }
@@ -87,19 +93,19 @@ void mm_merge_pass(It left_begin,
     pystd2026::FixedVector<MMQueueItem<ValueType>, QUEUE_SIZE> queue;
     QueueComparator<ValueType, Comparator> cmp(&value_cmp);
     BlockInfo<It> binfo[QUEUE_SIZE];
+    const size_t left_size = left_end - left_begin;
+    const size_t right_size = right_end - right_begin;
 
     static_assert(QUEUE_SIZE > 0);
     static_assert(QUEUE_SIZE % 2 == 0, "Queue size must be an even number");
 
-    if(right_begin == right_end) {
+    if(right_size == 0) {
         setup_queue<QUEUE_SIZE, ValueType>(
             binfo, queue, left_begin, left_end - left_begin, block_size);
-
     } else {
+        setup_queue<QUEUE_SIZE / 2, ValueType>(binfo, queue, left_begin, left_size, block_size);
         setup_queue<QUEUE_SIZE / 2, ValueType>(
-            binfo, queue, left_begin, left_end - left_begin, block_size);
-        setup_queue<QUEUE_SIZE / 2, ValueType>(
-            binfo + QUEUE_SIZE / 2, queue, right_begin, right_end - right_begin, block_size);
+            binfo + queue.size(), queue, right_begin, right_size, block_size);
     }
     pystd2026::insertion_sort(queue.begin(), queue.end(), cmp);
 
@@ -191,7 +197,7 @@ void mm_merge_preprocess(It1 begin, It2 end, const Comparator &cmp, const size_t
 template<size_t QUEUE_SIZE, BasicIterator It, typename Comparator>
 void mmsort(It begin, It end, const Comparator &cmp) {
     using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
-    const size_t INSERTION_SORT_LIMIT = 4;//::pystd2026::insertion_sort_limit<ValueType>;
+    const size_t INSERTION_SORT_LIMIT = 4; //::pystd2026::insertion_sort_limit<ValueType>;
     const size_t INPUT_SIZE = end - begin;
     const size_t BUFFER_SIZE = (INPUT_SIZE + 1) / 2;
     const size_t RIGHT_SIZE = BUFFER_SIZE;
