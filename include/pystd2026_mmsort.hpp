@@ -17,6 +17,44 @@ template<BasicIterator It> struct BlockInfo {
     It data;
 };
 
+// Smallest value has preference.
+template<typename T> struct PriorityQueue {
+    template<typename Comparator> void initialize(const Comparator &cmp) {
+        pystd2026::insertion_sort(backing.begin(), backing.end(), cmp);
+    }
+
+    template<typename Comparator> void front_changed(const Comparator &cmp) {
+        if(cmp.compare(backing[0], backing[1]) >= 1) {
+            pystd2026::swap(backing[0], backing[1]);
+            size_t current = 1;
+            size_t next = 2;
+            while(next < backing.size() && cmp.compare(backing[current], backing[next]) > 0) {
+                pystd2026::swap(backing[current], backing[next]);
+                ++current;
+                ++next;
+            }
+        }
+    }
+
+    bool is_empty() const { return backing.is_empty(); }
+
+    size_t size() const { return backing.size(); }
+
+    auto front() const { return backing.front(); }
+
+    template<typename T2, typename Comparator> void replace_front(T2 &&new_value, Comparator cmp) {
+        backing.front().value = pystd2026::move(new_value);
+        front_changed(cmp);
+    }
+
+    void pop_front() {
+        pystd2026::rotate_first_to_back(backing.begin(), backing.end());
+        backing.pop_back();
+    }
+
+    T backing;
+};
+
 template<WellBehaved ValueType, typename ValueComparator> struct QueueComparator {
     const ValueComparator *cmp = nullptr;
 
@@ -85,7 +123,8 @@ void mm_merge_pass(It left_begin,
                    const Comparator &value_cmp) {
 
     using ValueType = pystd2026::remove_reference_t<decltype(*left_begin)>;
-    pystd2026::FixedVector<MMQueueItem<ValueType>, QUEUE_SIZE> queue;
+
+    PriorityQueue<pystd2026::FixedVector<MMQueueItem<ValueType>, QUEUE_SIZE>> queue;
     QueueComparator<ValueType, Comparator> cmp(&value_cmp);
     BlockInfo<It> binfo[QUEUE_SIZE];
     const size_t left_size = left_end - left_begin;
@@ -96,20 +135,21 @@ void mm_merge_pass(It left_begin,
 
     if(right_size == 0) {
         setup_queue<QUEUE_SIZE, ValueType>(
-            binfo, queue, left_begin, left_end - left_begin, block_size);
+            binfo, queue.backing, left_begin, left_end - left_begin, block_size);
     } else {
-        setup_queue<QUEUE_SIZE / 2, ValueType>(binfo, queue, left_begin, left_size, block_size);
         setup_queue<QUEUE_SIZE / 2, ValueType>(
-            binfo + queue.size(), queue, right_begin, right_size, block_size);
+            binfo, queue.backing, left_begin, left_size, block_size);
+        setup_queue<QUEUE_SIZE / 2, ValueType>(
+            binfo + queue.size(), queue.backing, right_begin, right_size, block_size);
     }
-    pystd2026::insertion_sort(queue.begin(), queue.end(), cmp);
+    queue.initialize(cmp);
 
     if(queue.is_empty()) {
         return;
     }
     while(true) {
-        const auto source_block = queue[0].source;
-        *output = pystd2026::move(queue[0].value);
+        const auto source_block = queue.front().source;
+        *output = pystd2026::move(queue.front().value);
         ++output;
         if(queue.size() == 1) {
             // Move remaining data.
@@ -124,22 +164,11 @@ void mm_merge_pass(It left_begin,
         } else {
             if(binfo[source_block].size == 0) {
                 // Block exhausted, remove it from the queue.
-                pystd2026::rotate_first_to_back(queue.begin(), queue.end());
-                queue.pop_back();
+                queue.pop_front();
             } else {
-                queue[0].value = pystd2026::move(*binfo[source_block].data);
+                queue.replace_front(pystd2026::move(*binfo[source_block].data), cmp);
                 --(binfo[source_block].size);
                 ++(binfo[source_block].data);
-                if(cmp.compare(queue[0], queue[1]) >= 1) {
-                    pystd2026::swap(queue[0], queue[1]);
-                    size_t current = 1;
-                    size_t next = 2;
-                    while(next < queue.size() && cmp.compare(queue[current], queue[next]) > 0) {
-                        pystd2026::swap(queue[current], queue[next]);
-                        ++current;
-                        ++next;
-                    }
-                }
             }
         }
     }
