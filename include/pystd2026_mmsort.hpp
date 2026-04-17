@@ -32,18 +32,23 @@ template<typename T> struct PriorityQueue {
         while(true) {
             size_t fittest_index = i;
             const auto left_child_id = i * 2 + 1;
-            if(left_child_id < backing.size()) {
+            auto right_child_id = left_child_id + 1;
+            if(right_child_id < backing.size()) {
+                if(cmp.compare(backing.unsafe_at(right_child_id),
+                               backing.unsafe_at(fittest_index)) < 0) {
+                    fittest_index = right_child_id;
+                }
                 if(cmp.compare(backing.unsafe_at(left_child_id), backing.unsafe_at(fittest_index)) <
                    0) {
                     fittest_index = left_child_id;
                 }
-                auto right_child_id = left_child_id + 1;
-                if(right_child_id < backing.size()) {
-                    if(cmp.compare(backing.unsafe_at(right_child_id),
-                                   backing.unsafe_at(fittest_index)) < 0) {
-                        fittest_index = right_child_id;
-                    }
+            } else if(left_child_id < backing.size()) {
+                if(cmp.compare(backing.unsafe_at(left_child_id), backing.unsafe_at(fittest_index)) <
+                   0) {
+                    fittest_index = left_child_id;
                 }
+            } else {
+                return;
             }
             if(fittest_index == i) {
                 return;
@@ -57,7 +62,7 @@ template<typename T> struct PriorityQueue {
 
     size_t size() const { return backing.size(); }
 
-    auto front() const { return backing.front(); }
+    auto &front() const { return backing.front(); }
 
     template<typename T2, typename Comparator> void replace_front(T2 &&new_value, Comparator cmp) {
         backing.front().value = pystd2026::move(new_value);
@@ -363,7 +368,7 @@ void mmsort(It begin, It end, const Comparator &cmp) {
 
 template<BasicIterator It> void mmsort(It begin, It end) {
     using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
-    mmsort<8, It, DefaultComparator<ValueType>>(begin, end, DefaultComparator<ValueType>{});
+    mmsort<16, It, DefaultComparator<ValueType>>(begin, end, DefaultComparator<ValueType>{});
 }
 
 template<WellBehaved T> void mmsort(Span<T> array) { memort(array.begin(), array.end()); }
