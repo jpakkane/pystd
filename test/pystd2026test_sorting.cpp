@@ -9,6 +9,7 @@
 #include <pystd2026_bucketsort.hpp>
 #include <pystd2026_shellsort.hpp>
 #include <pystd2026_partial_sort.hpp>
+#include <pystd2026_indirect_sort.hpp>
 #include <pystd_testconfig.hpp>
 
 int breakpoint_opportunity(int number) { return number; }
@@ -271,6 +272,21 @@ int test_partial_sort() {
     return 0;
 }
 
+int test_indirect_sort() {
+    TEST_START;
+    const size_t NUM_ENTRIES = 40;
+    const int table[NUM_ENTRIES] = {36, 34, 22, 7,  27, 25, 29, 24, 39, 5,  28, 1, 14, 38,
+                                    37, 30, 18, 3,  20, 15, 26, 16, 4,  11, 21, 9, 8,  13,
+                                    17, 23, 0,  12, 31, 35, 19, 10, 6,  2,  33, 32};
+
+    auto indices = pystd2026::indirect_sort(table, table + NUM_ENTRIES);
+
+    for(size_t i = 0; i < NUM_ENTRIES; ++i) {
+        ASSERT((int)i == table[indices[i]]);
+    }
+    return 0;
+}
+
 int test_sort_algorithms() {
     int failing_subtests = 0;
     failing_subtests += test_heapsort_int();
@@ -283,6 +299,7 @@ int test_sort_algorithms() {
     failing_subtests += test_bucketsort();
     failing_subtests += test_shellsort();
     failing_subtests += test_partial_sort();
+    failing_subtests += test_indirect_sort();
     return failing_subtests;
 }
 
