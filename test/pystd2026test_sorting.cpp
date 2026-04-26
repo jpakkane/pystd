@@ -8,6 +8,7 @@
 #include <pystd2026_radixsort.hpp>
 #include <pystd2026_bucketsort.hpp>
 #include <pystd2026_shellsort.hpp>
+#include <pystd2026_partial_sort.hpp>
 #include <pystd_testconfig.hpp>
 
 int breakpoint_opportunity(int number) { return number; }
@@ -249,6 +250,27 @@ int test_shellsort() {
     return failing_subtests;
 }
 
+int test_partial_sort() {
+    pystd2026::Vector<int> entries;
+    entries.reserve(200);
+    for(int i = 0; i < 100; ++i) {
+        entries.push_back(99 - i);
+        entries.push_back(70);
+    }
+
+    auto it = pystd2026::partial_sort(entries.begin(), entries.end(), 75);
+    ASSERT(it - entries.begin() == 75);
+    for(int i = 0; i < 70; ++i) {
+        ASSERT(entries[i] == i);
+    }
+
+    for(int i = 70; i < 75; ++i) {
+        ASSERT(entries[i] == 70);
+    }
+
+    return 0;
+}
+
 int test_sort_algorithms() {
     int failing_subtests = 0;
     failing_subtests += test_heapsort_int();
@@ -260,6 +282,7 @@ int test_sort_algorithms() {
     failing_subtests += test_radixsort();
     failing_subtests += test_bucketsort();
     failing_subtests += test_shellsort();
+    failing_subtests += test_partial_sort();
     return failing_subtests;
 }
 
