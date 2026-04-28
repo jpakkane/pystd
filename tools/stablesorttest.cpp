@@ -2,6 +2,7 @@
 // Copyright 2026 Jussi Pakkanen
 
 #include <pystd2026_mergesort.hpp>
+#include <pystd2026_indirect_sort.hpp>
 
 // Same as sorttest, but uses stable sort.
 
@@ -20,13 +21,23 @@ int main() {
     (void)ignore;
     fclose(f);
 
-    pystd2026::mergesort(nums.begin(), nums.end());
-    for(size_t i = 0; i < NUM_ENTRIES; ++i) {
-        if(nums[i] != i) {
-            printf("Sort error!\n");
-            return 1;
+    if(true) {
+        pystd2026::mergesort(nums.begin(), nums.end());
+
+        for(size_t i = 0; i < NUM_ENTRIES; ++i) {
+            if(nums[i] != i) {
+                printf("Sort error!\n");
+                return 1;
+            }
+        }
+    } else {
+        auto indices = pystd2026::indirect_stable_sort(nums.begin(), nums.end());
+        for(size_t i = 0; i < NUM_ENTRIES; ++i) {
+            if(nums[i] != i) {
+                printf("Sort error!\n");
+                return 1;
+            }
         }
     }
-
     return 0;
 }

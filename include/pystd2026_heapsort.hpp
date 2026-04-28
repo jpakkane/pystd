@@ -96,7 +96,7 @@ void heapsort(It begin, It end, const Comparator &cmp) {
         HeapInfo<It> shrunk_heap{begin, begin + i};
         heapify(shrunk_heap, begin, cmp);
     }
-    pystd2026::insertion_sort(begin, begin + MIN_SIZE + 1);
+    pystd2026::insertion_sort(begin, begin + MIN_SIZE + 1, cmp);
 }
 
 template<BasicIterator It> void heapsort(It begin, It end) {
