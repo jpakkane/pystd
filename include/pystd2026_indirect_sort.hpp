@@ -43,4 +43,29 @@ template<BasicIterator It> pystd2026::Vector<size_t> indirect_sort(It begin, It 
     using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
     return indirect_sort(begin, end, DefaultComparator<ValueType>{});
 }
+
+template<BasicIterator It, typename Comparator>
+pystd2026::Vector<size_t> indirect_stable_sort(It begin, It end, const Comparator &cmp) {
+    auto indices = pystd2026::indirect_sort(begin, end, cmp);
+    auto ibegin = indices.begin();
+    auto iend = indices.end();
+    auto i = ibegin;
+    while(i != iend) {
+        auto inext = i + 1;
+        while(inext != iend && cmp.equal(*(begin + *i), *(begin + *inext))) {
+            ++inext;
+        }
+        if(inext - i > 1) {
+            pystd2026::introsort(i, inext);
+        }
+        i = inext;
+    }
+    return indices;
+}
+
+template<BasicIterator It> pystd2026::Vector<size_t> indirect_stable_sort(It begin, It end) {
+    using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
+    return indirect_stable_sort(begin, end, DefaultComparator<ValueType>{});
+}
+
 } // namespace pystd2026

@@ -287,6 +287,43 @@ int test_indirect_sort() {
     return 0;
 }
 
+int test_indirect_stable_sort() {
+    TEST_START;
+    pystd2026::Vector<SortStruct> items;
+    const size_t NUM_VALUES = 100;
+    const SortStruct last{100000, 0};
+    const SortStruct first{0, 100000};
+    const size_t TOTAL_SIZE = 202;
+
+    items.reserve(TOTAL_SIZE);
+    items.emplace_back(last);
+    for(size_t i = 0; i < NUM_VALUES; ++i) {
+        items.emplace_back(NUM_VALUES - i, 1);
+    }
+    for(size_t i = 0; i < NUM_VALUES; ++i) {
+        items.emplace_back(NUM_VALUES - i, 0);
+    }
+    items.emplace_back(first);
+
+    ASSERT(items.size() == TOTAL_SIZE);
+    auto indices = pystd2026::indirect_stable_sort(items.begin(), items.end());
+    ASSERT(items.size() == TOTAL_SIZE);
+    ASSERT(indices.size() == TOTAL_SIZE);
+
+    for(size_t i = 0; i < indices.size() - 1; ++i) {
+        ASSERT(items[indices[i]].x <= items[indices[i + 1]].x);
+    }
+
+    ASSERT(items[indices.front()] == first);
+    ASSERT(items[indices.back()] == last);
+    for(size_t i = 1; i < indices.size() - 2; i += 2) {
+        ASSERT(items[indices[i]].x == items[indices[i + 1]].x);
+        ASSERT(items[indices[i]].y > items[indices[i + 1]].y);
+    }
+
+    return 0;
+}
+
 int test_sort_algorithms() {
     int failing_subtests = 0;
     failing_subtests += test_heapsort_int();
@@ -300,6 +337,7 @@ int test_sort_algorithms() {
     failing_subtests += test_shellsort();
     failing_subtests += test_partial_sort();
     failing_subtests += test_indirect_sort();
+    failing_subtests += test_indirect_stable_sort();
     return failing_subtests;
 }
 
