@@ -204,7 +204,7 @@ int test_radixsort() {
 
     int failing_subtests = 0;
     const uint32_t NUM_ENTRIES = 41;
-    uint32_t table[NUM_ENTRIES] = {0xFFFFFFFF, 36, 34, 22, 7,  27, 25, 29, 24, 39, 5,  28, 1, 14,
+    uint32_t table[NUM_ENTRIES] = {0xF00000FF, 36, 34, 22, 7,  27, 25, 29, 24, 39, 5,  28, 1, 14,
                                    38,         37, 30, 18, 3,  20, 15, 26, 16, 4,  11, 21, 9, 8,
                                    13,         17, 23, 0,  12, 31, 35, 19, 10, 6,  2,  33, 32};
 
@@ -213,7 +213,7 @@ int test_radixsort() {
     for(uint32_t i = 0; i < NUM_ENTRIES - 1; ++i) {
         ASSERT(i == table[i]);
     }
-    ASSERT(table[NUM_ENTRIES - 1] == 0xFFFFFFFF);
+    ASSERT(table[NUM_ENTRIES - 1] == 0xF00000FF);
     return failing_subtests;
 }
 
