@@ -11,7 +11,7 @@ namespace pystd2026 {
 template<BasicIterator It, typename Comparator>
 It partial_sort(It begin, It end, size_t nth, const Comparator &cmp) {
     auto ppoint = nth_element(begin, end, nth, cmp);
-    insertion_sort(begin, ppoint, cmp);
+    ::pystd2026::introsort(begin, ppoint, cmp);
     return ppoint;
 }
 
