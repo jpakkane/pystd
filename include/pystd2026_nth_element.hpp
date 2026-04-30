@@ -2,8 +2,32 @@
 // Copyright 2025 Jussi Pakkanen
 
 #include <pystd2026.hpp>
+#include <pystd2026_heapsort.hpp>
 
 namespace pystd2026 {
+
+template<BasicIterator It, typename Comparator>
+It nth_element_heap(It begin, It end, size_t nth, const Comparator &cmp) {
+    const size_t data_size = end - begin;
+    if(nth >= data_size) {
+        throw PyException("Nth element out of bounds.");
+    }
+    if(nth == data_size + 1) {
+        auto max_loc = pystd2026::max_element(begin, end, cmp);
+        pystd2026::swap(*(end - 1), *max_loc);
+        return end - 1;
+    }
+    const HeapInfo small_heap{begin, begin + nth + 1};
+    build_heap(small_heap, cmp);
+    for(auto it = begin + nth + 2; it < end; ++it) {
+        if(cmp.compare(*it, *begin) < 0) {
+            pystd2026::swap(*begin, *it);
+            heapify(small_heap, begin, cmp);
+        }
+    }
+    pystd2026::swap(*begin, *(begin + nth));
+    return begin + nth;
+}
 
 template<BasicIterator It, typename Comparator>
 It nth_element(It begin, It end, size_t nth, const Comparator &cmp) {
@@ -31,10 +55,12 @@ It nth_element(It begin, It end, size_t nth, const Comparator &cmp) {
             return begin + nth;
         }
         if(round >= max_rounds) {
-            // FIXME: maybe should use heap sort.
-            // However this should only be hit rarely.
-            pystd2026::insertion_sort(begin, end, cmp);
-            return begin + nth;
+            if(buf_size <= 2 * INSERTION_SORT_LIMIT) {
+                pystd2026::insertion_sort(begin, end, cmp);
+                return begin + nth;
+            } else {
+                return nth_element_heap(begin, end, nth, cmp);
+            }
         }
         ++round;
         size_t random_number = (size_t)&(*begin);
@@ -65,7 +91,7 @@ It nth_element(It begin, It end, size_t nth, const Comparator &cmp) {
 
 template<BasicIterator It> It nth_element(It begin, It end, const size_t nth) {
     using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
-    return nth_element(begin, end, nth, DefaultComparator<ValueType>{});
+    return nth_element_heap(begin, end, nth, DefaultComparator<ValueType>{});
 }
 
 template<WellBehaved ValueType, typename Comparator>
