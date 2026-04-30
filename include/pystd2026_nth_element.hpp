@@ -19,7 +19,7 @@ It nth_element_heap(It begin, It end, size_t nth, const Comparator &cmp) {
     }
     const HeapInfo small_heap{begin, begin + nth + 1};
     build_heap(small_heap, cmp);
-    for(auto it = begin + nth + 2; it < end; ++it) {
+    for(auto it = begin + nth + 1; it < end; ++it) {
         if(cmp.compare(*it, *begin) < 0) {
             pystd2026::swap(*begin, *it);
             heapify(small_heap, begin, cmp);
