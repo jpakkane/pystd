@@ -2740,9 +2740,12 @@ void insertion_sort(It1 begin, It2 end, const Comparator &cmp) {
         }
         return;
     }
+    // Remember!
+    // Insertion sort must be stable, so any sorting networks
+    // used must also be stable.
     if(array_size == 3) {
-        if(cmp.compare(*begin, *(begin + 2)) > 0) {
-            swap(*begin, *(begin + 2));
+        if(cmp.compare(*(begin + 1), *(begin + 2)) > 0) {
+            swap(*(begin + 1), *(begin + 2));
         }
         if(cmp.compare(*begin, *(begin + 1)) > 0) {
             swap(*begin, *(begin + 1));
