@@ -143,6 +143,19 @@ ValidU8Iterator::CharInfo extract_one_codepoint(const unsigned char *buf) {
 
 } // namespace
 
+#ifdef _MSC_VER
+
+#error "Visual Studio not supported yet."
+
+#else
+
+void *allocate_native(size_t size) { return malloc(size); }
+void *allocate_aligned_native(size_t alignment, size_t size) {
+    return aligned_alloc(alignment, size);
+}
+void free_native(void *ptr) { free(ptr); }
+#endif
+
 void internal_failure(const char *message) noexcept {
     fprintf(stderr, "Pystd encountered an internal failure: %s\n", message);
     fprintf(stderr, "Killing process for your security.\n");

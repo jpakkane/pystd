@@ -3,6 +3,8 @@
 
 #pragma once
 
+// DO NOT ADD windows.h HERE! Or any header, really.
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -16,6 +18,10 @@ void *operator new(size_t, void *ptr) noexcept;
 #endif
 
 namespace pystd2026 {
+
+void *allocate_native(size_t size);
+void *allocate_aligned_native(size_t alignment, size_t size);
+void free_native(void *ptr);
 
 enum class align_val_t : size_t {};
 
@@ -997,7 +1003,7 @@ public:
 
     ~Vector() {
         deallocate_objects();
-        free(buffer);
+        free_native(buffer);
     }
 
     void push_back(const T &obj) noexcept {
@@ -1142,7 +1148,7 @@ public:
     Vector<T> &operator=(Vector<T> &&o) noexcept {
         if(this != &o) {
             deallocate_objects();
-            free(buffer);
+            free_native(buffer);
             buffer = o.buffer;
             num_entries = o.num_entries;
             buf_capacity = o.buf_capacity;
@@ -1233,14 +1239,14 @@ private:
 #else
         const size_t alignment = alignof(T);
 #endif
-        char *new_buf = (char *)aligned_alloc(alignment, allocation_size);
+        char *new_buf = (char *)allocate_aligned_native(alignment, allocation_size);
         for(size_t i = 0; i < num_entries; ++i) {
             T *obj = objptr(i);
             new(new_buf + i * sizeof(T)) T(::pystd2026::move(*obj));
             obj->~T();
         }
         buf_capacity = new_capacity;
-        free(buffer);
+        free_native(buffer);
         buffer = new_buf;
     }
 
