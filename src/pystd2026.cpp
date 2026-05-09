@@ -168,8 +168,6 @@ void SimpleHash::feed_bytes(const char *buf, size_t bufsize) noexcept {
     }
 }
 
-BytesView::BytesView(const Bytes &b) noexcept : BytesView(b.data(), b.size()) {}
-
 Bytes::Bytes() noexcept : buf{} { bufsize = 0; }
 
 Bytes::Bytes(size_t initial_size) noexcept : buf{new char[initial_size], initial_size} {

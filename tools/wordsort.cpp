@@ -17,7 +17,7 @@ int file_main(int argc, char **argv) {
             printf("Could not open input file.\n");
             return 1;
         }
-        auto bytes = mmap_o->view();
+        auto bytes = mmap_o->span();
         pystd2026::CStringView file_view(bytes);
 
         // words.reserve(30000);

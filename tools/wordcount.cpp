@@ -34,7 +34,7 @@ int file_main(int argc, char **argv) {
             return 1;
         }
         auto &mmap = *mmap_o;
-        auto bytes = mmap.view();
+        auto bytes = mmap.span();
         auto file_as_u8 = pystd2026::U8StringView(bytes.data(), bytes.size_bytes());
 
         for(const auto &word : pystd2026::Loopsume(file_as_u8.split_ascii())) {

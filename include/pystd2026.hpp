@@ -794,57 +794,62 @@ class PyException;
 
 class Bytes;
 
-class BytesView {
+template<typename T> class Span {
 public:
-    BytesView() noexcept : buf{nullptr}, bufsize{0} {}
-    BytesView(const char *buf_, size_t bufsize_) noexcept : buf{buf_}, bufsize{bufsize_} {}
-    BytesView(BytesView &&o) noexcept = default;
-    BytesView(const BytesView &o) noexcept = default;
-    BytesView(const Bytes &b) noexcept;
+    Span() noexcept : array(nullptr), arraysize(0) {};
+    Span(T *src, size_t src_size) noexcept : array(src), arraysize(src_size) {}
+    Span(Span &&o) noexcept = default;
+    Span(const Span &o) noexcept = default;
 
-    BytesView &operator=(BytesView &&o) noexcept = default;
-    BytesView &operator=(const BytesView &o) noexcept = default;
+    Span &operator=(Span &&o) noexcept = default;
+    Span &operator=(const Span &o) noexcept = default;
 
-    const char *data() const noexcept { return buf; }
-    size_t size() const noexcept { return bufsize; }
-    size_t size_bytes() const noexcept { return bufsize; }
+    T *data() { return array; }
 
-    bool is_empty() const noexcept { return bufsize == 0; }
-
-    char operator[](size_t i) const {
-        if(!buf || i >= bufsize) {
-            bootstrap_throw("OOB access in BytesView.");
+    const T &operator[](size_t i) const {
+        if(i >= arraysize) {
+            bootstrap_throw("OOB in span.");
         }
-        return buf[i];
+        return array[i];
     }
 
-    char at(size_t i) const { return (*this)[i]; }
-
-    char unsafe_at(size_t i) const { return buf[i]; }
-
-    BytesView subview(size_t loc, size_t size = -1) const {
-        if(size == (size_t)-1) {
-            if(loc > bufsize) {
-                bootstrap_throw("OOB error in BytesView.");
-            }
-            return BytesView(buf + loc, bufsize - loc);
-        } else {
-            if(loc + size > bufsize) {
-                bootstrap_throw("OOB error in BytesView.");
-            }
-            return BytesView(buf + loc, size);
+    T &operator[](size_t i) {
+        if(i >= arraysize) {
+            bootstrap_throw("OOB in span.");
         }
+        return array[i];
     }
 
-    const char *begin() const { return buf; }
+    const T &at(size_t i) const { return (*this)[i]; }
 
-    const char *end() const { return buf + bufsize; }
+    const T *cbegin() const { return array; }
+    T *begin() const { return array; }
 
-    template<typename Hasher> void feed_hash(Hasher &h) const { h.feed_bytes(buf, bufsize); }
+    const T *cend() const { return array + arraysize; }
+    T *end() const { return array + arraysize; }
+
+    size_t size() const noexcept { return arraysize; }
+
+    size_t size_bytes() const noexcept { return arraysize * sizeof(T); }
+
+    bool is_empty() const noexcept { return arraysize == 0; }
+
+    Span subspan(size_t offset, size_t subspan_size = (size_t)-1) const {
+        if(offset >= arraysize) {
+            bootstrap_throw("Offset OoB in subspan.");
+        }
+        if(subspan_size == (size_t)-1) {
+            return Span(array + offset, arraysize - offset);
+        }
+        if(offset + subspan_size >= arraysize) {
+            bootstrap_throw("Subspan goes OoB.");
+        }
+        return Span(array + offset, subspan_size);
+    }
 
 private:
-    const char *buf;
-    size_t bufsize;
+    T *array;
+    size_t arraysize;
 };
 
 class Bytes {
@@ -959,7 +964,8 @@ public:
     char front() const;
     char back() const;
 
-    BytesView view() const noexcept { return BytesView(buf.get(), bufsize); }
+    Span<char> span() noexcept { return Span(buf.get(), bufsize); }
+    Span<const char> span() const noexcept { return Span(buf.get(), bufsize); }
 
     const char *begin() const noexcept { return buf.get(); }
 
@@ -1121,6 +1127,11 @@ public:
     }
 
     T *data() { return reinterpret_cast<T *>(buffer); }
+
+    Span<T> span() noexcept { return Span(reinterpret_cast<T *>(buffer), num_entries); }
+    Span<const T> span() const noexcept {
+        return Span(reinterpret_cast<const T *>(buffer), num_entries);
+    }
 
     T &operator[](size_t i) {
         if(i >= num_entries) {
@@ -1423,6 +1434,11 @@ public:
 
     T *data() noexcept { return reinterpret_cast<T *>(backing); }
 
+    Span<T> span() noexcept { return Span(reinterpret_cast<T *>(backing), num_entries); }
+    Span<const T> span() const noexcept {
+        return Span(reinterpret_cast<const T *>(backing), num_entries);
+    }
+
     T &operator[](size_t i) {
         if(i >= num_entries) {
             bootstrap_throw("FixedVector index out of bounds.");
@@ -1561,7 +1577,7 @@ public:
     CStringView(const char *start, const char *stop);
     CStringView(const char *str, size_t length);
     explicit CStringView(const CString &str) noexcept;
-    explicit CStringView(BytesView bv) : CStringView(bv.data(), bv.size_bytes()) {}
+    explicit CStringView(Span<const char> bytes) : CStringView(bytes.data(), bytes.size_bytes()) {}
 
     bool operator==(const char *str) const;
     bool operator==(CStringView o) const;
@@ -1604,10 +1620,7 @@ public:
 
     void split(CStringViewCallback cb, void *ctx) const;
 
-    template<typename Hasher> void feed_hash(Hasher &h) const {
-        BytesView bv(data(), size());
-        bv.feed_hash(h);
-    }
+    template<typename Hasher> void feed_hash(Hasher &h) const { h.feed_bytes(buf, bufsize); }
 
 private:
     const char *buf;
@@ -2076,60 +2089,6 @@ private:
     U8String message;
 };
 
-template<typename T> class Span {
-public:
-    Span() noexcept : array(nullptr), arraysize(0) {};
-    Span(T *src, size_t src_size) noexcept : array(src), arraysize(src_size) {}
-    Span(Span &&o) noexcept = default;
-    Span(const Span &o) noexcept = default;
-
-    Span &operator=(Span &&o) noexcept = default;
-    Span &operator=(const Span &o) noexcept = default;
-
-    const T &operator[](size_t i) const {
-        if(i >= arraysize) {
-            throw PyException("OOB in span.");
-        }
-        return array[i];
-    }
-
-    T &operator[](size_t i) {
-        if(i >= arraysize) {
-            throw PyException("OOB in span.");
-        }
-        return array[i];
-    }
-
-    const T &at(size_t i) const { return (*this)[i]; }
-
-    const T *cbegin() const { return array; }
-    T *begin() const { return array; }
-
-    const T *cend() const { return array + arraysize; }
-    T *end() const { return array + arraysize; }
-
-    size_t size() const noexcept { return arraysize; }
-
-    bool is_empty() const noexcept { return arraysize == 0; }
-
-    Span subspan(size_t offset, size_t subspan_size = (size_t)-1) const {
-        if(offset >= arraysize) {
-            throw PyException("Offset OoB in subspan.");
-        }
-        if(subspan_size == (size_t)-1) {
-            return Span(array + offset, arraysize - offset);
-        }
-        if(offset + subspan_size >= arraysize) {
-            throw PyException("Subspan goes OoB.");
-        }
-        return Span(array + offset, subspan_size);
-    }
-
-private:
-    T *array;
-    size_t arraysize;
-};
-
 template<typename Hasher> struct HashFeeder<Hasher, U8String> {
     void operator()(Hasher &h, const U8String &u8) noexcept { u8.feed_hash(h); }
 };
@@ -2275,7 +2234,7 @@ public:
     }
     ~MMapping();
 
-    BytesView view() const { return BytesView{(const char *)buf, bufsize}; }
+    Span<const char> span() const { return Span{(const char *)buf, bufsize}; }
 
     MMapping &operator=(MMapping &&o) noexcept {
         if(this != &o) {
