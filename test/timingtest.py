@@ -6,6 +6,7 @@
 # Compiling a helloworld must never take more than a fraction of a second.
 
 import os, sys, subprocess, shutil, json, time
+from glob import glob
 
 # GCC gets by in 0.1 seconds, but clang needs more.
 MAX_RUNTIME = 0.15
@@ -37,6 +38,13 @@ def test_header(compile_command_base, fname):
             return
     slow_headers.append((fname, fastest_time))
 
+def get_header_list(source_root):
+    headers = []
+    for fname in glob(os.path.join(source_root, 'include/*2026*.hpp')):  # REMEMBER: update to match epoch.
+        basename = os.path.basename(fname)
+        headers.append(basename)
+    assert len(headers) > 0
+    return headers
 
 def test_unixy():
     global slow_headers
@@ -52,6 +60,7 @@ def test_unixy():
     build_to_src = os.path.relpath(sourcedir, builddir)
 
     fname = os.path.join(build_to_src, 'test/timingtest.cpp')
+    fname_in = os.path.join(build_to_src, 'test/timingtest.cpp.in')
     compile_command_base = cpp + std_flags + ['-nostdinc++',
                                               '-Iinclude',
                                               '-I' + os.path.join(build_to_src, 'include'),
@@ -59,7 +68,12 @@ def test_unixy():
                                               '-o',
                                               '/dev/null']
 
-    test_header(compile_command_base, fname)
+    contents = open(fname_in, 'r').read()
+
+    for header_name in get_header_list(sourcedir):
+        open(fname, 'w').write(contents.replace('PYSTD_HEADER', header_name))
+        test_header(compile_command_base, fname)
+        os.unlink(fname)
 
     if slow_headers:
         print('Slow headers:\n')
