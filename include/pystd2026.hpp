@@ -2402,6 +2402,10 @@ It partition(It first, It last, const Predicate &pred) {
     }
 }
 
+template<WellBehaved T, typename Predicate> size_t partition(Span<T> span, const Predicate &pred) {
+    return partition(span.begin(), span.end(), pred) - span.begin();
+}
+
 double clamp(double val, double lower, double upper);
 int64_t clamp(int64_t val, int64_t lower, int64_t upper);
 

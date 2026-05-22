@@ -32,8 +32,8 @@ It stable_partition(It begin, It end, const Predicate &pred) {
 }
 
 template<BasicIterator It, WellBehaved ValueType, typename Predicate>
-It stable_partition(pystd2026::Span<ValueType> span, const Predicate &pred) {
-    return stable_partition(span.begin(), span.end(), pred);
+size_t stable_partition(pystd2026::Span<ValueType> span, const Predicate &pred) {
+    return stable_partition(span.begin(), span.end(), pred) - span.begin();
 }
 
 } // namespace pystd2026
