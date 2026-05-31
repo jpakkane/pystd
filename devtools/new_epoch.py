@@ -20,4 +20,4 @@ if __name__ == '__main__':
     old_year = str(today.year - 1)
     new_year = str(today.year)
     create_epoch(old_year, new_year)
-    print('Remember to fix timintest.cpp by hand.')
+    print('Remember to fix timingtest.cpp by hand.')
