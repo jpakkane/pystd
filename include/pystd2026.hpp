@@ -201,9 +201,9 @@ class SimpleHash final {
 public:
     void feed_bytes(const char *buf, size_t bufsize) noexcept;
 
-    size_t get_hash_value() const { return value; }
+    size_t get_hash_value() const noexcept { return value; }
 
-    void reset() { value = 0; }
+    void reset() noexcept { value = 0; }
 
 private:
     size_t value{0};
@@ -231,46 +231,50 @@ template<typename Hasher> void feed_hash(Hasher &h, uint64_t i) noexcept { h.fee
 
 // template<typename Hasher> void feed_hash(Hasher &h, size_t i) noexcept { h.feed_primitive(i); }
 
-template<WellBehaved HashAlgo = SimpleHash> class Hasher {
+// For cases like pimpl classes where the actual definition is inside a source file.
+class HashFeedInterface {
+public:
+    HashFeedInterface() = default;
+    virtual ~HashFeedInterface() = default;
+
+    virtual void feed_bytes(const char *data, size_t bufsize) = 0;
+
+    void feed_hash(const int8_t o) { feed_bytes(reinterpret_cast<const char *>(&o), sizeof(o)); }
+
+    void feed_hash(const uint8_t o) { feed_bytes(reinterpret_cast<const char *>(&o), sizeof(o)); }
+
+    void feed_hash(const int16_t o) { feed_bytes(reinterpret_cast<const char *>(&o), sizeof(o)); }
+
+    void feed_hash(const uint16_t o) { feed_bytes(reinterpret_cast<const char *>(&o), sizeof(o)); }
+
+    void feed_hash(const int32_t o) { feed_bytes(reinterpret_cast<const char *>(&o), sizeof(o)); }
+
+    void feed_hash(const uint32_t o) { feed_bytes(reinterpret_cast<const char *>(&o), sizeof(o)); }
+
+    void feed_hash(const int64_t o) { feed_bytes(reinterpret_cast<const char *>(&o), sizeof(o)); }
+
+    void feed_hash(const uint64_t o) { feed_bytes(reinterpret_cast<const char *>(&o), sizeof(o)); }
+
+    // Pointers not handled, because you can't know whether to hash the pointer value
+    // or the hash of the object it points to.
+};
+
+template<WellBehaved HashAlgo = SimpleHash> class Hasher final : public HashFeedInterface {
 public:
     template<typename Object> void feed_hash(const Object &o) {
         HashFeeder<Hasher, Object> f;
         f(*this, o);
     }
 
-    void feed_bytes(const char *buf, size_t bufsize) { h.feed_bytes(buf, bufsize); }
+    using HashFeedInterface::feed_hash;
 
-    void feed_hash(const int8_t o) { h.feed_bytes(reinterpret_cast<const char *>(&o), sizeof(o)); }
-
-    void feed_hash(const uint8_t o) { h.feed_bytes(reinterpret_cast<const char *>(&o), sizeof(o)); }
-
-    void feed_hash(const int16_t o) { h.feed_bytes(reinterpret_cast<const char *>(&o), sizeof(o)); }
-
-    void feed_hash(const uint16_t o) {
-        h.feed_bytes(reinterpret_cast<const char *>(&o), sizeof(o));
-    }
-
-    void feed_hash(const int32_t o) { h.feed_bytes(reinterpret_cast<const char *>(&o), sizeof(o)); }
-
-    void feed_hash(const uint32_t o) {
-        h.feed_bytes(reinterpret_cast<const char *>(&o), sizeof(o));
-    }
-
-    void feed_hash(const int64_t o) { h.feed_bytes(reinterpret_cast<const char *>(&o), sizeof(o)); }
-
-    void feed_hash(const uint64_t o) {
-        h.feed_bytes(reinterpret_cast<const char *>(&o), sizeof(o));
-    }
+    void feed_bytes(const char *buf, size_t bufsize) override { h.feed_bytes(buf, bufsize); }
 
 #if defined(__APPLE__)
     void feed_hash(const unsigned long o) {
         h.feed_bytes(reinterpret_cast<const char *>(&o), sizeof(o));
     }
 #endif
-
-    template<typename T> void feed_hash(const T *o) {
-        h.feed_bytes(reinterpret_cast<const char *>(&o), sizeof(T *));
-    }
 
     size_t get_hash_value() const { return h.get_hash_value(); }
 
