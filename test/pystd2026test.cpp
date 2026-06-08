@@ -18,6 +18,21 @@ const char daikatana[] = "大刀";
 
 }
 
+struct CustomHashObject {
+    pystd2026::CString str;
+};
+
+namespace pystd2026 {
+
+// Template specialization to make hashing work for objects
+// you can't edit.
+
+template<typename Hasher> struct HashFeeder<Hasher, CustomHashObject> {
+    void operator()(Hasher &h, const CustomHashObject &o) noexcept { o.str.feed_hash(h); }
+};
+
+} // namespace pystd2026
+
 int breakpoint_opportunity(int number) { return number; }
 
 #define ASSERT_WITH(statement, message)                                                            \
@@ -594,6 +609,23 @@ int test_hash_computation() {
     return 0;
 }
 
+int test_custom_hash() {
+    const char *original_text = "For testing purposes only.";
+    pystd2026::CString str(original_text);
+
+    pystd2026::Hasher h;
+    h.feed_hash(str);
+    const auto string_hash_value = h.get_hash_value();
+
+    CustomHashObject co{str};
+    h.reset();
+    h.feed_hash(co);
+    const auto custom_hash_value = h.get_hash_value();
+    ASSERT(string_hash_value == custom_hash_value);
+
+    return 0;
+}
+
 int test_hashmap() {
     TEST_START;
     pystd2026::HashMap<int, int> map;
@@ -666,6 +698,7 @@ int test_hashset() {
 int test_hashing() {
     int total_errors = 0;
     total_errors += test_hash_computation();
+    total_errors += test_custom_hash();
     total_errors += test_hashmap();
     total_errors += test_hashset();
     return total_errors;
