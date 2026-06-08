@@ -479,6 +479,10 @@ template<typename T> struct DefaultDeleter {
     static void del(T *t) { delete t; }
 };
 
+template<typename T> struct DefaultArrayDeleter {
+    static void del(T *t) { delete[] t; }
+};
+
 template<typename T, typename Deleter = DefaultDeleter<T>> class unique_ptr final {
 public:
     unique_ptr() noexcept : ptr{nullptr} {}
@@ -523,30 +527,29 @@ private:
     T *ptr;
 };
 
-template<typename T> class unique_arr final {
+template<typename T, typename Deleter = DefaultArrayDeleter<T>> class unique_arr final {
 public:
     unique_arr() noexcept = default;
     explicit unique_arr(size_t size) noexcept : ptr{new T[size]}, array_size{size} {}
-    explicit unique_arr(T *t, size_t size = 0) noexcept : ptr{t}, array_size{size} {}
+    unique_arr(T *t, size_t size = 0) noexcept : ptr{t}, array_size{size} {}
     explicit unique_arr(const unique_arr<T> &o) = delete;
     explicit unique_arr(unique_arr<T> &&o) noexcept : ptr{o.ptr}, array_size{o.array_size} {
         o.ptr = nullptr;
         o.array_size = 0;
     }
-    ~unique_arr() { delete[] ptr; }
+    ~unique_arr() { Deleter::del(ptr); }
 
     unique_arr &operator=(const unique_arr<T> &o) = delete;
 
-    // unique_ptr<T> &
-    void operator=(unique_arr<T> &&o) noexcept {
+    unique_arr &operator=(unique_arr<T> &&o) noexcept {
         if(this != &o) {
-            delete[] ptr;
+            Deleter::del(ptr);
             ptr = o.ptr;
             array_size = o.array_size;
             o.ptr = nullptr;
             o.array_size = 0;
         }
-        // return *this;
+        return *this;
     }
 
     size_t size() const { return array_size; }
