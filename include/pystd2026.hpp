@@ -2695,7 +2695,7 @@ void insertion_sort_has_sentinel(It begin, It end, const Comparator &cmp) {
                 }
                 *begin = scratch;
             } else {
-                linear_insert_has_sentinel(current_element, cmp);
+                ::pystd2026::linear_insert_has_sentinel(current_element, cmp);
                 ++current_element;
             }
         }
@@ -2704,7 +2704,7 @@ void insertion_sort_has_sentinel(It begin, It end, const Comparator &cmp) {
         auto current_element = begin;
         ++current_element;
         while(current_element != end) {
-            linear_insert_has_sentinel(current_element, cmp);
+            ::pystd2026::linear_insert_has_sentinel(current_element, cmp);
             ++current_element;
         }
     }
@@ -2716,7 +2716,7 @@ void linear_insert(It begin, It last_element, ValueType &scratch, const Comparat
     auto previous = current;
     --previous;
     while(current != begin && cmp.compare(*current, *previous) < 0) {
-        swap(*previous, *current, scratch);
+        ::pystd2026::swap(*previous, *current, scratch);
         --previous;
         --current;
     }
@@ -2731,7 +2731,7 @@ void insertion_sort(It1 begin, It2 end, const Comparator &cmp) {
     if(array_size == 2) {
         auto second = begin + 1;
         if(cmp.compare(*begin, *second) > 0) {
-            swap(*begin, *second);
+            ::pystd2026::swap(*begin, *second);
         }
         return;
     }
@@ -2740,20 +2740,20 @@ void insertion_sort(It1 begin, It2 end, const Comparator &cmp) {
     // used must also be stable.
     if(array_size == 3) {
         if(cmp.compare(*(begin + 1), *(begin + 2)) > 0) {
-            swap(*(begin + 1), *(begin + 2));
+            ::pystd2026::swap(*(begin + 1), *(begin + 2));
         }
         if(cmp.compare(*begin, *(begin + 1)) > 0) {
-            swap(*begin, *(begin + 1));
+            ::pystd2026::swap(*begin, *(begin + 1));
         }
         if(cmp.compare(*(begin + 1), *(begin + 2)) > 0) {
-            swap(*(begin + 1), *(begin + 2));
+            ::pystd2026::swap(*(begin + 1), *(begin + 2));
         }
         return;
     }
-    auto min_loc = min_element(begin, end, cmp);
+    auto min_loc = ::pystd2026::min_element(begin, end, cmp);
     // swap() is not suitable here because it would break sort stability.
-    rotate_last_to_front(begin, min_loc + 1);
-    insertion_sort_has_sentinel(begin + 1, end, cmp);
+    ::pystd2026::rotate_last_to_front(begin, min_loc + 1);
+    ::pystd2026::insertion_sort_has_sentinel(begin + 1, end, cmp);
 }
 
 template<BasicIterator It1, BasicIterator It2> void insertion_sort(It1 start, It2 end) {

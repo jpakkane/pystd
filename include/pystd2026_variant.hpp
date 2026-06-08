@@ -588,67 +588,100 @@ private:
     }
 
     void destroy() noexcept {
-        if(type_id == 0) {
+        switch(type_id) {
+        case 0:
             destroy_by_index<0>();
-        } else if(type_id == 1) {
+            break;
+        case 1:
             destroy_by_index<1>();
-        } else if(type_id == 2) {
+            break;
+        case 2:
             destroy_by_index<2>();
-        } else if(type_id == 3) {
+            break;
+        case 3:
             destroy_by_index<3>();
-        } else if(type_id == 4) {
+            break;
+        case 4:
             destroy_by_index<4>();
-        } else if(type_id == 5) {
+            break;
+        case 5:
             destroy_by_index<5>();
-        } else if(type_id == 6) {
+            break;
+        case 6:
             destroy_by_index<6>();
-        } else if(type_id == 7) {
+            break;
+        case 7:
             destroy_by_index<7>();
-        } else if(type_id == 8) {
+            break;
+        case 8:
             destroy_by_index<8>();
-        } else if(type_id == 9) {
+            break;
+        case 9:
             destroy_by_index<9>();
-        } else if(type_id == 10) {
+            break;
+
+        case 10:
             destroy_by_index<10>();
-        } else if(type_id == 11) {
+            break;
+        case 11:
             destroy_by_index<11>();
-        } else if(type_id == 12) {
+            break;
+        case 12:
             destroy_by_index<12>();
-        } else if(type_id == 13) {
+            break;
+        case 13:
             destroy_by_index<13>();
-        } else if(type_id == 14) {
+            break;
+        case 14:
             destroy_by_index<14>();
-        } else if(type_id == 15) {
+            break;
+        case 15:
             destroy_by_index<15>();
-        } else if(type_id == 16) {
+            break;
+        case 16:
             destroy_by_index<16>();
-        } else if(type_id == 17) {
+            break;
+        case 17:
             destroy_by_index<17>();
-        } else if(type_id == 18) {
+            break;
+        case 18:
             destroy_by_index<18>();
-        } else if(type_id == 19) {
+            break;
+        case 19:
             destroy_by_index<19>();
-        } else if(type_id == 20) {
+            break;
+
+        case 20:
             destroy_by_index<20>();
-        } else if(type_id == 21) {
+            break;
+        case 21:
             destroy_by_index<21>();
-        } else if(type_id == 22) {
+            break;
+        case 22:
             destroy_by_index<22>();
-        } else if(type_id == 23) {
+            break;
+        case 23:
             destroy_by_index<23>();
-        } else if(type_id == 24) {
+            break;
+        case 24:
             destroy_by_index<24>();
-        } else if(type_id == 25) {
+            break;
+        case 25:
             destroy_by_index<25>();
-        } else if(type_id == 26) {
+            break;
+        case 26:
             destroy_by_index<26>();
-        } else if(type_id == 27) {
+            break;
+        case 27:
             destroy_by_index<27>();
-        } else if(type_id == 28) {
+            break;
+        case 28:
             destroy_by_index<28>();
-        } else if(type_id == 29) {
+            break;
+        case 29:
             destroy_by_index<29>();
-        } else {
+            break;
+        default:
             internal_failure("Unreachable code in variant destroy.");
         }
     }
@@ -661,6 +694,7 @@ private:
         type_id = -1;
     }
 
+    bool is_ptr_within(const char *ptr) const { return ptr >= buf && (ptr < (buf + sizeof(buf))); }
     alignas(compute_alignment<0, T...>()) char buf[compute_size<0, T...>()];
     int8_t type_id;
 };

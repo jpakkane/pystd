@@ -783,6 +783,10 @@ int test_variant5() {
     ASSERT(v2.contains<pystd2026::U8String>());
     ASSERT(v2.get<pystd2026::U8String>() == "bob");
 
+    v2 = 777;
+    ASSERT(v2.contains<int32_t>());
+    ASSERT(v2.get<int32_t>() == 777);
+
     return 0;
 }
 
