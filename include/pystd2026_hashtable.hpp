@@ -54,7 +54,7 @@ public:
     }
 
     Value &insert(const Key &key, Value v) {
-        if(fill_ratio() >= MAX_LOAD) {
+        if(fill_ratio() >= MAX_LOAD_PERCENTAGE) {
             grow();
         }
 
@@ -267,8 +267,9 @@ private:
 
     size_t table_size() const { return data.md.size(); }
 
-    double fill_ratio() const { return double(num_entries) / table_size(); }
-    static constexpr double MAX_LOAD = 0.7;
+    size_t fill_ratio() const { return (num_entries * 100) / table_size(); }
+    static constexpr size_t MAX_LOAD_PERCENTAGE = 77;
+    // static constexpr size_t MIN_LOAD_PERCENTAGE = 25;
 
     MapData data;
     size_t salt;
