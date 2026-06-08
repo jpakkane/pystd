@@ -203,11 +203,33 @@ public:
 
     size_t get_hash_value() const { return value; }
 
+    void reset() { value = 0; }
+
 private:
     size_t value{0};
 };
 
-template<typename Hasher, typename Object> struct HashFeeder {};
+template<typename Hasher, typename Object> struct HashFeeder {
+    void operator()(Hasher &h, const Object &o) noexcept { o.feed_hash(h); }
+};
+
+template<typename Hasher> void feed_hash(Hasher &h, int8_t i) noexcept { h.feed_primitive(i); }
+
+template<typename Hasher> void feed_hash(Hasher &h, int16_t i) noexcept { h.feed_primitive(i); }
+
+template<typename Hasher> void feed_hash(Hasher &h, int32_t i) noexcept { h.feed_primitive(i); }
+
+template<typename Hasher> void feed_hash(Hasher &h, int64_t i) noexcept { h.feed_primitive(i); }
+
+template<typename Hasher> void feed_hash(Hasher &h, uint8_t i) noexcept { h.feed_primitive(i); }
+
+template<typename Hasher> void feed_hash(Hasher &h, uint16_t i) noexcept { h.feed_primitive(i); }
+
+template<typename Hasher> void feed_hash(Hasher &h, uint32_t i) noexcept { h.feed_primitive(i); }
+
+template<typename Hasher> void feed_hash(Hasher &h, uint64_t i) noexcept { h.feed_primitive(i); }
+
+// template<typename Hasher> void feed_hash(Hasher &h, size_t i) noexcept { h.feed_primitive(i); }
 
 template<WellBehaved HashAlgo = SimpleHash> class Hasher {
 public:
@@ -252,13 +274,11 @@ public:
 
     size_t get_hash_value() const { return h.get_hash_value(); }
 
+    void reset() { h.reset(); }
+
 private:
     HashAlgo h;
 };
-
-template<typename Hasher> void feed_hash(Hasher &h, int32_t i) noexcept { h.feed_primitive(i); }
-
-template<typename Hasher> void feed_hash(Hasher &h, size_t i) noexcept { h.feed_primitive(i); }
 
 template<WellBehaved E> class Unexpected {
 public:
@@ -1636,7 +1656,7 @@ public:
     // If the string has embedded zero bytes, the output is UB.
     explicit ZStringView(const char *original, size_t original_size = (size_t)-1) noexcept;
 
-    CStringView view() { return CStringView(buf, bufsize); }
+    CStringView view() const { return CStringView(buf, bufsize); }
 
     const char *c_str() const noexcept { return buf; }
 
@@ -1648,6 +1668,8 @@ public:
     // Only the right half, because the result has to be
     // null terminated.
     ZStringView subview(size_t index) const;
+
+    template<typename Hasher> void feed_hash(Hasher &h) const { view().feed_hash(h); }
 
 private:
     const char *buf = nullptr;
@@ -1710,7 +1732,12 @@ public:
     void append(const char *str, size_t strsize = -1);
     void append(const char *start, const char *stop);
 
-    template<typename Hasher> void feed_hash(Hasher &h) const { bytes.feed_hash(h); }
+    template<typename Hasher> void feed_hash(Hasher &h) const {
+        // The hash for strings and string views need to be the same.
+        // Our buffer contains a null character at the end, which must
+        // not be fed in the hash.
+        view().feed_hash(h);
+    }
 
     template<typename T = CString> Vector<T> split() const;
 
@@ -2087,14 +2114,6 @@ public:
 
 private:
     U8String message;
-};
-
-template<typename Hasher> struct HashFeeder<Hasher, U8String> {
-    void operator()(Hasher &h, const U8String &u8) noexcept { u8.feed_hash(h); }
-};
-
-template<typename Hasher> struct HashFeeder<Hasher, U8StringView> {
-    void operator()(Hasher &h, const U8StringView &u8) noexcept { u8.feed_hash(h); }
 };
 
 class File;

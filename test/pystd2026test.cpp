@@ -555,6 +555,45 @@ int test_files() {
     return failing_subtests;
 }
 
+int test_hash_computation() {
+    const char *original_text = "For testing purposes only.";
+    pystd2026::CString str(original_text);
+
+    pystd2026::Hasher h;
+    h.feed_hash(str);
+    const auto string_hash_value = h.get_hash_value();
+
+    ASSERT(string_hash_value != 0);
+
+    auto strview = str.view();
+    h.reset();
+    h.feed_hash(strview);
+
+    const auto view_hash_value = h.get_hash_value();
+    ASSERT(string_hash_value == view_hash_value);
+
+    auto zview = str.zview();
+    h.reset();
+    h.feed_hash(zview);
+    const auto zview_hash_value = h.get_hash_value();
+    ASSERT(string_hash_value == zview_hash_value);
+
+    pystd2026::U8String u8string(original_text);
+    h.reset();
+    h.feed_hash(u8string);
+    const auto u8string_hash_value = h.get_hash_value();
+
+    ASSERT(string_hash_value == u8string_hash_value);
+
+    auto u8view = u8string.view();
+    h.reset();
+    h.feed_hash(u8view);
+    const auto u8view_hash_value = h.get_hash_value();
+    ASSERT(string_hash_value == u8view_hash_value);
+
+    return 0;
+}
+
 int test_hashmap() {
     TEST_START;
     pystd2026::HashMap<int, int> map;
@@ -622,6 +661,14 @@ int test_hashset() {
     ASSERT(!set.contains(11));
 
     return 0;
+}
+
+int test_hashing() {
+    int total_errors = 0;
+    total_errors += test_hash_computation();
+    total_errors += test_hashmap();
+    total_errors += test_hashset();
+    return total_errors;
 }
 
 int test_variant1() {
@@ -1003,8 +1050,7 @@ int main(int argc, char **argv) {
         total_errors += test_range();
         total_errors += test_vector();
         total_errors += test_files();
-        total_errors += test_hashmap();
-        total_errors += test_hashset();
+        total_errors += test_hashing();
         total_errors += test_variant();
         total_errors += test_format();
         total_errors += test_algorithms();
