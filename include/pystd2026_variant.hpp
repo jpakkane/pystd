@@ -54,14 +54,14 @@ public:
         new(buf) T...[0]{};
     }
     Variant(const Variant<T...> &o) { copy_value_in(o, false); }
-    Variant(Variant<T...> &&o) noexcept { move_to_uninitialized_memory(pystd2026::move(o)); }
+    Variant(Variant<T...> &&o) noexcept { move_to_uninitialized_memory(::pystd2026::move(o)); }
 
     int8_t index() const noexcept { return type_id; }
 
 #define PYSTD2026_VAR_MOVE_CONSTRUCT_SWITCH(i)                                                     \
     {                                                                                              \
         if constexpr(i == new_type) {                                                              \
-            new(buf) T... [i] { pystd2026::move(o) };                                              \
+            new(buf) T... [i] { ::pystd2026::move(o) };                                            \
         }                                                                                          \
     }                                                                                              \
     break;
@@ -326,7 +326,7 @@ public:
     template<typename OBJ> void insert(OBJ o) noexcept {
         constexpr int new_type = get_index_for_type<OBJ, T...>();
         destroy();
-        new(buf) OBJ(move(o));
+        new(buf) OBJ(::pystd2026::move(o));
         type_id = new_type;
     }
 
@@ -335,7 +335,7 @@ public:
             return *this;
         }
         destroy();
-        move_to_uninitialized_memory(move(o));
+        move_to_uninitialized_memory(::pystd2026::move(o));
         return *this;
     }
 
@@ -351,7 +351,7 @@ private:
 #define PYSTD2026_VAR_MOVE_SWITCH(i)                                                               \
     {                                                                                              \
         if constexpr(i < sizeof...(T)) {                                                           \
-            new(buf) T... [i] { move(o.get<T...[i]>()) };                                          \
+            new(buf) T... [i] { ::pystd2026::move(o.get<T...[i]>()) };                             \
         }                                                                                          \
     }                                                                                              \
     break;
@@ -433,7 +433,7 @@ private:
             if(has_existing_value) {                                                               \
                 destroy();                                                                         \
             }                                                                                      \
-            new(buf) T...[i](move(tmp));                                                           \
+            new(buf) T...[i](::pystd2026::move(tmp));                                              \
         }                                                                                          \
     }                                                                                              \
     break;

@@ -17,12 +17,12 @@ It stable_partition(It begin, It end, const Predicate &pred) {
     auto scan_point = segment_begin;
 
     while(true) {
-        auto middle = pystd2026::find_if(scan_point, end, pred);
+        auto middle = ::pystd2026::find_if(scan_point, end, pred);
         if(middle == end) {
             return segment_begin;
         }
-        auto segment_end = pystd2026::find_if_not(middle, end, pred);
-        auto rotate_point = pystd2026::rotate(segment_begin, middle, segment_end);
+        auto segment_end = ::pystd2026::find_if_not(middle, end, pred);
+        auto rotate_point = ::pystd2026::rotate(segment_begin, middle, segment_end);
         if(segment_end == end) {
             return rotate_point;
         }
@@ -32,7 +32,7 @@ It stable_partition(It begin, It end, const Predicate &pred) {
 }
 
 template<BasicIterator It, WellBehaved ValueType, typename Predicate>
-size_t stable_partition(pystd2026::Span<ValueType> span, const Predicate &pred) {
+size_t stable_partition(::pystd2026::Span<ValueType> span, const Predicate &pred) {
     return stable_partition(span.begin(), span.end(), pred) - span.begin();
 }
 

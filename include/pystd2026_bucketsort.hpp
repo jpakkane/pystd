@@ -8,11 +8,11 @@
 namespace pystd2026 {
 
 template<BasicIterator It> void do_bucketsort(It begin, It end, size_t round) {
-    using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
+    using ValueType = ::pystd2026::remove_reference_t<decltype(*begin)>;
     const ssize_t INSERTION_SORT_LIMIT = ::pystd2026::insertion_sort_limit<ValueType>;
 
     if(end - begin < INSERTION_SORT_LIMIT) {
-        pystd2026::insertion_sort(begin, end);
+        ::pystd2026::insertion_sort(begin, end);
         return;
     }
 
@@ -57,7 +57,7 @@ template<BasicIterator It> void do_bucketsort(It begin, It end, size_t round) {
         const ValueType item_bucket = (*(begin + current_item) >> SHIFT) & MASK;
         if(current_bucket != item_bucket) {
             const auto target_location = next_free[item_bucket];
-            pystd2026::swap(*(begin + current_item), *(begin + target_location));
+            ::pystd2026::swap(*(begin + current_item), *(begin + target_location));
         }
         ++next_free[item_bucket];
     }
@@ -69,10 +69,10 @@ template<BasicIterator It> void do_bucketsort(It begin, It end, size_t round) {
 }
 
 template<BasicIterator It> void bucketsort(It begin, It end) {
-    using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
-    static_assert(pystd2026::is_integral_v<ValueType>,
+    using ValueType = ::pystd2026::remove_reference_t<decltype(*begin)>;
+    static_assert(::pystd2026::is_integral_v<ValueType>,
                   "Bucket sort only works with integral types.");
-    static_assert(pystd2026::is_unsigned_v<ValueType>,
+    static_assert(::pystd2026::is_unsigned_v<ValueType>,
                   "Bucket sort only works with unsigned types.");
 
     do_bucketsort(begin, end, 0);

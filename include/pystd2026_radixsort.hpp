@@ -12,7 +12,7 @@ void do_radix_sort(It begin, It end, const ValueType needs_processing_mask, cons
     const ValueType sort_bit = (1 << (num_bits - 1 - (ValueType)round));
 
     if(end - begin < INSERTION_SORT_LIMIT) {
-        pystd2026::insertion_sort(begin, end);
+        ::pystd2026::insertion_sort(begin, end);
         return;
     }
 
@@ -21,7 +21,7 @@ void do_radix_sort(It begin, It end, const ValueType needs_processing_mask, cons
         return;
     }
     const auto picker = [sort_bit](const ValueType &v) -> bool { return !(v & sort_bit); };
-    auto split_point = pystd2026::partition(begin, end, picker);
+    auto split_point = ::pystd2026::partition(begin, end, picker);
 
     if(sort_bit != 1) {
         do_radix_sort(begin, split_point, needs_processing_mask, round + 1);
@@ -30,13 +30,13 @@ void do_radix_sort(It begin, It end, const ValueType needs_processing_mask, cons
 }
 
 template<BasicIterator It> void radix_sort(It begin, It end) {
-    using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
-    static_assert(pystd2026::is_unsigned_v<ValueType>,
+    using ValueType = ::pystd2026::remove_reference_t<decltype(*begin)>;
+    static_assert(::pystd2026::is_unsigned_v<ValueType>,
                   "Radix sort currently only supports unsigned integers. Patches welcome.");
     const ssize_t INSERTION_SORT_LIMIT = ::pystd2026::insertion_sort_limit<ValueType>;
 
     if(end - begin <= INSERTION_SORT_LIMIT) {
-        return pystd2026::insertion_sort(begin, end);
+        return ::pystd2026::insertion_sort(begin, end);
     }
 
     // If all bits in one location are either one or zero, that bit
@@ -52,7 +52,7 @@ template<BasicIterator It> void radix_sort(It begin, It end) {
     do_radix_sort(begin, end, needs_processing, 0);
 }
 
-template<WellBehaved ValueType> void radix_sort(pystd2026::Span<ValueType> sp) {
+template<WellBehaved ValueType> void radix_sort(::pystd2026::Span<ValueType> sp) {
     radix_sort(sp.begin(), sp.end());
 }
 

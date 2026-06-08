@@ -399,7 +399,7 @@ private:
             InternalNode new_root;
             new_root.parent = NodeReference::null_ref();
             new_root.children.push_back(node_id);
-            internals.push_back(pystd2026::move(new_root));
+            internals.push_back(::pystd2026::move(new_root));
             parent_id = NodeReference{0, false};
             root = parent_id;
         } else {
@@ -411,7 +411,7 @@ private:
 
         new_leaf.parent = parent_id;
         to_split.parent = parent_id;
-        Payload value_to_parent = pystd2026::move(to_split.values[EntryCount / 2]);
+        Payload value_to_parent = ::pystd2026::move(to_split.values[EntryCount / 2]);
         // new_root.children.push_back(node_id);
         // new_root.children.push_back(new_leaf_id);
         for(size_t i = EntryCount / 2 + 1; i < EntryCount; ++i) {
@@ -420,9 +420,9 @@ private:
         while(to_split.values.size() > (EntryCount / 2)) {
             to_split.values.pop_back();
         }
-        leaves.push_back(pystd2026::move(new_leaf));
+        leaves.push_back(::pystd2026::move(new_leaf));
 
-        insert_nonfull(pystd2026::move(value_to_parent), parent_id, new_leaf_id);
+        insert_nonfull(::pystd2026::move(value_to_parent), parent_id, new_leaf_id);
         return parent_id;
     }
 
@@ -436,8 +436,8 @@ private:
         InternalNode &inode = get_internal(node_id);
         new_node.parent = to_split_before_push.parent;
         for(size_t i = to_right; i < EntryCount; ++i) {
-            new_node.values.push_back(pystd2026::move(inode.values[i]));
-            new_node.children.push_back(pystd2026::move(inode.children[i]));
+            new_node.values.push_back(::pystd2026::move(inode.values[i]));
+            new_node.children.push_back(::pystd2026::move(inode.children[i]));
         }
         new_node.children.push_back(inode.children.back());
         // Pop moved ones.
@@ -798,16 +798,16 @@ private:
         if(left_sibling_id.to_leaf) {
             auto &l = static_cast<LeafNode &>(lc);
             auto &r = static_cast<LeafNode &>(rc);
-            r.values.insert(0, pystd2026::move(p.values[node_loc]));
-            p.values[node_loc] = pystd2026::move(l.values.back());
+            r.values.insert(0, ::pystd2026::move(p.values[node_loc]));
+            p.values[node_loc] = ::pystd2026::move(l.values.back());
             l.values.pop_back();
         } else {
             auto &l = static_cast<InternalNode &>(lc);
             auto &r = static_cast<InternalNode &>(rc);
             NodeReference to_reparent_id = l.children.back();
-            r.values.insert(0, pystd2026::move(p.values[node_loc]));
-            p.values[node_loc] = pystd2026::move(l.values.back());
-            r.children.insert(0, pystd2026::move(l.children.back()));
+            r.values.insert(0, ::pystd2026::move(p.values[node_loc]));
+            p.values[node_loc] = ::pystd2026::move(l.values.back());
+            r.children.insert(0, ::pystd2026::move(l.children.back()));
             if(!to_reparent_id.is_null()) {
                 assert(get_node_common(to_reparent_id).parent == left_sibling_id);
                 get_node_common(to_reparent_id).parent = right_sibling_id;
@@ -828,17 +828,17 @@ private:
         if(left_sibling_id.to_leaf) {
             auto &l = static_cast<LeafNode &>(lc);
             auto &r = static_cast<LeafNode &>(rc);
-            l.values.push_back(pystd2026::move(p.values[node_loc]));
-            p.values[node_loc] = pystd2026::move(r.values.front());
+            l.values.push_back(::pystd2026::move(p.values[node_loc]));
+            p.values[node_loc] = ::pystd2026::move(r.values.front());
             r.values.pop_front();
         } else {
             auto &l = static_cast<InternalNode &>(lc);
             auto &r = static_cast<InternalNode &>(rc);
             const auto to_reparent_id = r.children.front();
 
-            l.values.push_back(pystd2026::move(p.values[node_loc]));
-            p.values[node_loc] = pystd2026::move(r.values.front());
-            l.children.push_back(pystd2026::move(r.children.front()));
+            l.values.push_back(::pystd2026::move(p.values[node_loc]));
+            p.values[node_loc] = ::pystd2026::move(r.values.front());
+            l.children.push_back(::pystd2026::move(r.children.front()));
             if(!to_reparent_id.is_null()) {
                 assert(get_node_common(to_reparent_id).parent == right_sibling_id);
                 get_node_common(to_reparent_id).parent = left_sibling_id;
@@ -921,7 +921,7 @@ private:
         return leftmost_of(root);
     }
 
-    pystd2026::Optional<EntryLocation> get_next_location(EntryLocation current) const {
+    ::pystd2026::Optional<EntryLocation> get_next_location(EntryLocation current) const {
         if(current.node_id.to_leaf) {
             if(current.offset < leaves[current.node_id.id].size() - 1) {
                 EntryLocation next{current};
@@ -939,7 +939,7 @@ private:
         }
     }
 
-    pystd2026::Optional<NodeReference> parent_of(const NodeReference &r) const {
+    ::pystd2026::Optional<NodeReference> parent_of(const NodeReference &r) const {
         if(r == root) {
             return {};
         }
@@ -950,7 +950,7 @@ private:
         }
     }
 
-    pystd2026::Optional<EntryLocation> up_and_next(NodeReference current) const {
+    ::pystd2026::Optional<EntryLocation> up_and_next(NodeReference current) const {
         while(true) {
             auto maybe_parent = parent_of(current);
             if(!maybe_parent) {
@@ -1062,8 +1062,8 @@ public:
 
     // These make a copy of the key object. Fix at some point.
     void insert(const Key &key, Value v) {
-        MapEntry entry{key, pystd2026::move(v)};
-        tree.insert(pystd2026::move(entry));
+        MapEntry entry{key, ::pystd2026::move(v)};
+        tree.insert(::pystd2026::move(entry));
     }
 
     Value *lookup(const Key &key) {
@@ -1077,7 +1077,7 @@ public:
 
     void remove(const Key &key) {
         MapEntry entry{key, Value{}};
-        tree.remove(pystd2026::move(entry));
+        tree.remove(::pystd2026::move(entry));
     }
 
 private:

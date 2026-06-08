@@ -16,13 +16,13 @@ void pick_qsort_pivot_median(It begin,
     const auto step = (end - begin) / NUM_MEDIAN_POINTS;
     size_t picker = step;
     for(size_t i = 1; i < NUM_MEDIAN_POINTS; ++i) {
-        pystd2026::swap(*(begin + step), *(begin + i));
+        ::pystd2026::swap(*(begin + step), *(begin + i));
         picker += step;
     }
 
     // Ideally this should be nth_element, but since NUM_MEDIAN_POINTS
     // is always small, this is faster.
-    pystd2026::insertion_sort(begin, begin + NUM_MEDIAN_POINTS, cmp);
+    ::pystd2026::insertion_sort(begin, begin + NUM_MEDIAN_POINTS, cmp);
 }
 
 // Converting this into a lambda inside do_introsort makes it _a lot_ slower.
@@ -50,24 +50,24 @@ void do_introsort(It begin,
                   const size_t degenerate_depth,
                   const size_t MAX_ROUNDS,
                   const Comparator &cmp) {
-    using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
+    using ValueType = ::pystd2026::remove_reference_t<decltype(*begin)>;
     const size_t INSERTION_SORT_LIMIT = ::pystd2026::insertion_sort_limit<ValueType>;
     const size_t num_elements = end - begin;
     const size_t degenerate_limit = num_elements / 8;
     constexpr bool is_intlike =
-        pystd2026::is_integral_v<ValueType> || pystd2026::is_floating_point_v<ValueType>;
+        ::pystd2026::is_integral_v<ValueType> || ::pystd2026::is_floating_point_v<ValueType>;
 
     if(num_elements <= INSERTION_SORT_LIMIT) {
         if(is_leftmost) {
-            pystd2026::insertion_sort(begin, end, cmp);
+            ::pystd2026::insertion_sort(begin, end, cmp);
         } else {
-            pystd2026::insertion_sort_has_sentinel(begin, end, cmp);
+            ::pystd2026::insertion_sort_has_sentinel(begin, end, cmp);
         }
         return;
     }
 
     if(depth >= MAX_ROUNDS) {
-        pystd2026::heapsort(begin, end, cmp);
+        ::pystd2026::heapsort(begin, end, cmp);
         return;
     }
 
@@ -88,7 +88,7 @@ void do_introsort(It begin,
         auto from_loc = pivot_point + 1;
         auto to_loc = end - half_median;
         for(size_t i = 0; i < half_median; ++i) {
-            pystd2026::swap(*(from_loc + i), *(to_loc + i));
+            ::pystd2026::swap(*(from_loc + i), *(to_loc + i));
         }
     }
     auto partitioning_begin = begin + pivot_index + 1;
@@ -97,19 +97,19 @@ void do_introsort(It begin,
     It split_point;
     if constexpr(is_intlike) {
         const ValueType pivot_value{*pivot_point};
-        split_point = pystd2026::partition(
+        split_point = ::pystd2026::partition(
             partitioning_begin, partitioning_end, [pivot_value, &cmp](const ValueType &v) -> bool {
                 return cmp.compare(v, pivot_value) < 0;
             });
     } else {
-        split_point = pystd2026::partition(
+        split_point = ::pystd2026::partition(
             partitioning_begin, partitioning_end, [pivot_point, &cmp](const ValueType &v) -> bool {
                 return cmp.compare(v, *pivot_point) < 0;
             });
     }
     auto last_value_point = split_point - 1;
     // After this, last_value_point is in its correct, sorted location.
-    pystd2026::swap(*pivot_point, *last_value_point);
+    ::pystd2026::swap(*pivot_point, *last_value_point);
 
     auto left_begin = begin;
     auto left_end = last_value_point;
@@ -129,8 +129,8 @@ void do_introsort(It begin,
     // Check if we need to fall back to heapsort.
     if(left_size < degenerate_limit || right_size < degenerate_limit) {
         if(degenerate_depth > 0) {
-            pystd2026::heapsort(left_begin, left_end, cmp);
-            pystd2026::heapsort(right_begin, right_end, cmp);
+            ::pystd2026::heapsort(left_begin, left_end, cmp);
+            ::pystd2026::heapsort(right_begin, right_end, cmp);
         } else {
             do_introsort(left_begin,
                          left_end,
@@ -150,12 +150,12 @@ void do_introsort(It begin,
 
 template<BasicIterator It, typename Comparator>
 void introsort(It begin, It end, const Comparator &cmp) {
-    using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
+    using ValueType = ::pystd2026::remove_reference_t<decltype(*begin)>;
     const size_t INSERTION_SORT_LIMIT = ::pystd2026::insertion_sort_limit<ValueType>;
     const size_t num_elements = end - begin;
 
     if(num_elements <= INSERTION_SORT_LIMIT) {
-        pystd2026::insertion_sort(begin, end, cmp);
+        ::pystd2026::insertion_sort(begin, end, cmp);
         return;
     }
 
@@ -173,11 +173,11 @@ void introsort(It begin, It end, const Comparator &cmp) {
 }
 
 template<BasicIterator It> void introsort(It begin, It end) {
-    using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
+    using ValueType = ::pystd2026::remove_reference_t<decltype(*begin)>;
     introsort(begin, end, DefaultComparator<ValueType>{});
 }
 
-template<WellBehaved T> void introsort(pystd2026::Span<T> span) {
+template<WellBehaved T> void introsort(::pystd2026::Span<T> span) {
     introsort(span.begin(), span.end());
 }
 

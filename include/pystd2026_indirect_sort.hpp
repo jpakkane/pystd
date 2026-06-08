@@ -23,8 +23,8 @@ template<BasicIterator It, typename UnderlyingComparator> struct IndirectCompara
 };
 
 template<BasicIterator It, typename Comparator>
-pystd2026::Vector<size_t> indirect_sort(It begin, It end, const Comparator &cmp) {
-    pystd2026::Vector<size_t> indices;
+::pystd2026::Vector<size_t> indirect_sort(It begin, It end, const Comparator &cmp) {
+    ::pystd2026::Vector<size_t> indices;
     const size_t data_size = end - begin;
     indices.reserve(data_size);
     for(size_t i = 0; i < data_size; ++i) {
@@ -35,18 +35,18 @@ pystd2026::Vector<size_t> indirect_sort(It begin, It end, const Comparator &cmp)
 
     // Fixme, the underlying sort algorithm should be a parameter,
     // but I could not figure out how to make it work.
-    pystd2026::introsort(indices.begin(), indices.end(), icmp);
+    ::pystd2026::introsort(indices.begin(), indices.end(), icmp);
     return indices;
 }
 
-template<BasicIterator It> pystd2026::Vector<size_t> indirect_sort(It begin, It end) {
-    using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
+template<BasicIterator It>::pystd2026::Vector<size_t> indirect_sort(It begin, It end) {
+    using ValueType = ::pystd2026::remove_reference_t<decltype(*begin)>;
     return indirect_sort(begin, end, DefaultComparator<ValueType>{});
 }
 
 template<BasicIterator It, typename Comparator>
-pystd2026::Vector<size_t> indirect_stable_sort(It begin, It end, const Comparator &cmp) {
-    auto indices = pystd2026::indirect_sort(begin, end, cmp);
+::pystd2026::Vector<size_t> indirect_stable_sort(It begin, It end, const Comparator &cmp) {
+    auto indices = ::pystd2026::indirect_sort(begin, end, cmp);
     auto ibegin = indices.begin();
     auto iend = indices.end();
     auto i = ibegin;
@@ -56,16 +56,16 @@ pystd2026::Vector<size_t> indirect_stable_sort(It begin, It end, const Comparato
             ++inext;
         }
         if(inext - i > 1) {
-            pystd2026::introsort(i, inext);
+            ::pystd2026::introsort(i, inext);
         }
         i = inext;
     }
     return indices;
 }
 
-template<BasicIterator It> pystd2026::Vector<size_t> indirect_stable_sort(It begin, It end) {
-    using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
-    return indirect_stable_sort(begin, end, DefaultComparator<ValueType>{});
+template<BasicIterator It>::pystd2026::Vector<size_t> indirect_stable_sort(It begin, It end) {
+    using ValueType = ::pystd2026::remove_reference_t<decltype(*begin)>;
+    return ::pystd2026::indirect_stable_sort(begin, end, DefaultComparator<ValueType>{});
 }
 
 } // namespace pystd2026

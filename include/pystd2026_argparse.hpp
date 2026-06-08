@@ -64,7 +64,7 @@ class ParseOutput {
 public:
     ParseOutput() noexcept = default;
     ParseOutput(ParseOutput &&o) noexcept = default;
-    ParseOutput(ParseResult pr_) : pr{pystd2026::move(pr_)} {}
+    ParseOutput(ParseResult pr_) : pr{::pystd2026::move(pr_)} {}
 
     ParseOutput &operator=(ParseOutput &&o) noexcept = default;
 

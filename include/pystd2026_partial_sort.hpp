@@ -10,14 +10,14 @@ namespace pystd2026 {
 
 template<BasicIterator It, typename Comparator>
 It partial_sort(It begin, It end, size_t nth, const Comparator &cmp) {
-    auto ppoint = nth_element(begin, end, nth, cmp);
+    auto ppoint = ::pystd2026::nth_element(begin, end, nth, cmp);
     ::pystd2026::introsort(begin, ppoint, cmp);
     return ppoint;
 }
 
 template<BasicIterator It> It partial_sort(It begin, It end, size_t nth) {
-    using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
-    return partial_sort(begin, end, nth, DefaultComparator<ValueType>{});
+    using ValueType = ::pystd2026::remove_reference_t<decltype(*begin)>;
+    return ::pystd2026::partial_sort(begin, end, nth, DefaultComparator<ValueType>{});
 }
 
 } // namespace pystd2026

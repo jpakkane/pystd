@@ -10,7 +10,7 @@ template<typename Key, typename Value> class HashMapIterator;
 template<WellBehaved Key, WellBehaved Value, WellBehaved HashAlgo = SimpleHash>
 class HashMap final {
 public:
-    static_assert(!pystd2026::is_floating_point_v<pystd2026::remove_cv_t<Key>>,
+    static_assert(!::pystd2026::is_floating_point_v<::pystd2026::remove_cv_t<Key>>,
                   "Floats can not be used as map keys as that is highly unreliable.");
 
     friend class HashMapIterator<Key, Value>;
@@ -58,7 +58,7 @@ public:
         }
 
         const auto hashval = hash_for(key);
-        return insert_internal(hashval, key, pystd2026::move(v));
+        return insert_internal(hashval, key, ::pystd2026::move(v));
     }
 
     void remove(const Key &key) {
@@ -214,7 +214,7 @@ private:
                 auto *key_loc = data.keyptr(slot);
                 auto *value_loc = data.valueptr(slot);
                 new(key_loc) Key(key);
-                new(value_loc) Value{pystd2026::move(v)};
+                new(value_loc) Value{::pystd2026::move(v)};
                 data.md[slot] = SlotMetadata{SlotState::HasValue, (uint8_t)(hashval & BLOOM_MASK)};
                 ++num_entries;
                 return *value_loc;
@@ -223,7 +223,7 @@ private:
                 auto *potential_key = data.keyptr(slot);
                 if(*potential_key == key) {
                     auto *value_loc = data.valueptr(slot);
-                    *value_loc = pystd2026::move(v);
+                    *value_loc = ::pystd2026::move(v);
                     return *value_loc;
                 }
             }
@@ -251,7 +251,7 @@ private:
             if(old.md[i].state == SlotState::HasValue) {
                 auto &old_key = *old.keyptr(i);
                 auto hashval = hash_for(old_key);
-                insert_internal(hashval, old_key, pystd2026::move(*old.valueptr(i)));
+                insert_internal(hashval, old_key, ::pystd2026::move(*old.valueptr(i)));
             }
         }
     }
@@ -336,7 +336,7 @@ struct HashInsertResult {
 
 template<WellBehaved Key, WellBehaved HashAlgo = SimpleHash> class HashSet final {
 
-    static_assert(!pystd2026::is_floating_point_v<pystd2026::remove_cv_t<Key>>,
+    static_assert(!::pystd2026::is_floating_point_v<::pystd2026::remove_cv_t<Key>>,
                   "Floats can not be used as set keys as that is highly unreliable.");
 
 public:
