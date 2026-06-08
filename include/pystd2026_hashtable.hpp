@@ -12,6 +12,8 @@ class HashMap final {
 public:
     static_assert(!::pystd2026::is_floating_point_v<::pystd2026::remove_cv_t<Key>>,
                   "Floats can not be used as map keys as that is highly unreliable.");
+    static_assert(!::pystd2026::is_reference_v<Key>);
+    static_assert(!::pystd2026::is_reference_v<Value>);
 
     friend class HashMapIterator<Key, Value>;
     HashMap() noexcept {
@@ -19,7 +21,6 @@ public:
         num_entries = 0;
         size_in_powers_of_two = 4;
         auto initial_table_size = 1 << size_in_powers_of_two;
-        mod_mask = initial_table_size - 1;
         data.md = unique_arr<SlotMetadata>(initial_table_size);
         data.reset_hash_values();
         data.keydata = Bytes(initial_table_size * sizeof(Key));
@@ -40,7 +41,7 @@ public:
                     return const_cast<Value *>(data.valueptr(slot));
                 }
             }
-            slot = (slot + 1) & mod_mask;
+            slot = (slot + 1) & mod_mask();
         }
     }
 
@@ -74,8 +75,8 @@ public:
                 if(*potential_key == key) {
                     auto *value_loc = data.valueptr(slot);
                     value_loc->~Value();
-                    const auto previous_slot = (slot + table_size() - 1) & mod_mask;
-                    const auto next_slot = (slot + 1) & mod_mask;
+                    const auto previous_slot = (slot + table_size() - 1) & mod_mask();
+                    const auto next_slot = (slot + 1) & mod_mask();
                     if(data.md[previous_slot].state == SlotState::Empty &&
                        data.md[next_slot].state == SlotState::Empty) {
                         data.md[slot].state = SlotState::Empty;
@@ -86,7 +87,7 @@ public:
                     return;
                 }
             }
-            slot = (slot + 1) & mod_mask;
+            slot = (slot + 1) & mod_mask();
         }
     }
 
@@ -200,7 +201,7 @@ private:
         size_t consumed_bits = 0;
         size_t slot = 0;
         while(consumed_bits < total_bits) {
-            slot ^= hashval & mod_mask;
+            slot ^= hashval & mod_mask();
             consumed_bits += size_in_powers_of_two;
             hashval >>= size_in_powers_of_two;
         }
@@ -227,14 +228,13 @@ private:
                     return *value_loc;
                 }
             }
-            slot = (slot + 1) & mod_mask;
+            slot = (slot + 1) & mod_mask();
         }
     }
 
     void grow() {
         const auto new_size = 2 * table_size();
         const auto new_powers_of_two = size_in_powers_of_two + 1;
-        const auto new_mod_mask = new_size - 1;
         MapData grown;
 
         grown.md = unique_arr<SlotMetadata>(new_size);
@@ -245,7 +245,6 @@ private:
         MapData old = move(data);
         data = move(grown);
         size_in_powers_of_two = new_powers_of_two;
-        mod_mask = new_mod_mask;
         num_entries = 0;
         for(size_t i = 0; i < old.md.size(); ++i) {
             if(old.md[i].state == SlotState::HasValue) {
@@ -264,6 +263,8 @@ private:
         return raw_hash;
     }
 
+    size_t mod_mask() const { return (size_t{1} << size_in_powers_of_two) - 1; }
+
     size_t table_size() const { return data.md.size(); }
 
     double fill_ratio() const { return double(num_entries) / table_size(); }
@@ -272,8 +273,7 @@ private:
     MapData data;
     size_t salt;
     size_t num_entries;
-    size_t mod_mask;
-    int32_t size_in_powers_of_two;
+    uint32_t size_in_powers_of_two;
 };
 
 template<typename Key, typename Value> struct KeyValue {
@@ -366,7 +366,7 @@ private:
     // It is just to get the implementation going
     // and work out the API.
     // Replace with a proper implementation later.
-    HashMap<Key, int, HashAlgo> map;
+    HashMap<Key, uint8_t, HashAlgo> map;
 };
 
 } // namespace pystd2026

@@ -108,6 +108,13 @@ template<class T> constexpr bool is_volatile_v = is_volatile<T>::value;
 
 template<class T> struct is_lvalue_reference : ::pystd2026::false_type {};
 template<class T> struct is_lvalue_reference<T &> : ::pystd2026::true_type {};
+template<class T> struct is_rvalue_reference : ::pystd2026::false_type {};
+template<class T> struct is_rvalue_reference<T &&> : ::pystd2026::true_type {};
+template<class T> struct is_reference : ::pystd2026::false_type {};
+template<class T> struct is_reference<T &> : ::pystd2026::true_type {};
+template<class T> struct is_reference<T &&> : ::pystd2026::true_type {};
+
+template<class T> constexpr bool is_reference_v = ::pystd2026::is_reference<T>::value;
 
 template<class T> struct is_floating_point_base : ::pystd2026::false_type {};
 template<> struct is_floating_point_base<float> : ::pystd2026::true_type {};
