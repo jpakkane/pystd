@@ -98,62 +98,62 @@ template<typename U> struct is_same<U, U> : true_type {};
 
 template<typename U, typename V> constexpr bool is_same_v = is_same<U, V>::value;
 
-template<class T> struct is_const : pystd2026::false_type {};
-template<class T> struct is_const<const T> : pystd2026::true_type {};
+template<class T> struct is_const : ::pystd2026::false_type {};
+template<class T> struct is_const<const T> : ::pystd2026::true_type {};
 template<class T> constexpr bool is_const_v = is_const<T>::value;
 
-template<class T> struct is_volatile : pystd2026::false_type {};
-template<class T> struct is_volatile<volatile T> : pystd2026::true_type {};
+template<class T> struct is_volatile : ::pystd2026::false_type {};
+template<class T> struct is_volatile<volatile T> : ::pystd2026::true_type {};
 template<class T> constexpr bool is_volatile_v = is_volatile<T>::value;
 
-template<class T> struct is_lvalue_reference : pystd2026::false_type {};
-template<class T> struct is_lvalue_reference<T &> : pystd2026::true_type {};
+template<class T> struct is_lvalue_reference : ::pystd2026::false_type {};
+template<class T> struct is_lvalue_reference<T &> : ::pystd2026::true_type {};
 
-template<class T> struct is_floating_point_base : pystd2026::false_type {};
-template<> struct is_floating_point_base<float> : pystd2026::true_type {};
-template<> struct is_floating_point_base<double> : pystd2026::true_type {};
+template<class T> struct is_floating_point_base : ::pystd2026::false_type {};
+template<> struct is_floating_point_base<float> : ::pystd2026::true_type {};
+template<> struct is_floating_point_base<double> : ::pystd2026::true_type {};
 
 template<typename T>
 struct is_floating_point : is_floating_point_base<remove_cv_t<remove_reference_t<T>>> {};
 
 template<class T> constexpr bool is_floating_point_v = is_floating_point<T>::value;
 
-template<class T> struct is_integral_base : pystd2026::false_type {};
-template<> struct is_integral_base<bool> : pystd2026::true_type {};
-template<> struct is_integral_base<char> : pystd2026::true_type {};
-template<> struct is_integral_base<short> : pystd2026::true_type {};
-template<> struct is_integral_base<int> : pystd2026::true_type {};
-template<> struct is_integral_base<long> : pystd2026::true_type {};
-template<> struct is_integral_base<long long> : pystd2026::true_type {};
-template<> struct is_integral_base<unsigned char> : pystd2026::true_type {};
-template<> struct is_integral_base<unsigned short> : pystd2026::true_type {};
-template<> struct is_integral_base<unsigned int> : pystd2026::true_type {};
-template<> struct is_integral_base<unsigned long> : pystd2026::true_type {};
-template<> struct is_integral_base<unsigned long long> : pystd2026::true_type {};
+template<class T> struct is_integral_base : ::pystd2026::false_type {};
+template<> struct is_integral_base<bool> : ::pystd2026::true_type {};
+template<> struct is_integral_base<char> : ::pystd2026::true_type {};
+template<> struct is_integral_base<short> : ::pystd2026::true_type {};
+template<> struct is_integral_base<int> : ::pystd2026::true_type {};
+template<> struct is_integral_base<long> : ::pystd2026::true_type {};
+template<> struct is_integral_base<long long> : ::pystd2026::true_type {};
+template<> struct is_integral_base<unsigned char> : ::pystd2026::true_type {};
+template<> struct is_integral_base<unsigned short> : ::pystd2026::true_type {};
+template<> struct is_integral_base<unsigned int> : ::pystd2026::true_type {};
+template<> struct is_integral_base<unsigned long> : ::pystd2026::true_type {};
+template<> struct is_integral_base<unsigned long long> : ::pystd2026::true_type {};
 
 template<typename T> struct is_integral : is_integral_base<remove_cv_t<remove_reference_t<T>>> {};
 
 template<class T> constexpr bool is_integral_v = is_integral<T>::value;
 
-template<class T> struct is_unsigned_base : pystd2026::false_type {};
-template<> struct is_unsigned_base<unsigned char> : pystd2026::true_type {};
-template<> struct is_unsigned_base<unsigned short> : pystd2026::true_type {};
-template<> struct is_unsigned_base<unsigned int> : pystd2026::true_type {};
-template<> struct is_unsigned_base<unsigned long> : pystd2026::true_type {};
-template<> struct is_unsigned_base<unsigned long long> : pystd2026::true_type {};
+template<class T> struct is_unsigned_base : ::pystd2026::false_type {};
+template<> struct is_unsigned_base<unsigned char> : ::pystd2026::true_type {};
+template<> struct is_unsigned_base<unsigned short> : ::pystd2026::true_type {};
+template<> struct is_unsigned_base<unsigned int> : ::pystd2026::true_type {};
+template<> struct is_unsigned_base<unsigned long> : ::pystd2026::true_type {};
+template<> struct is_unsigned_base<unsigned long long> : ::pystd2026::true_type {};
 
 template<typename T> struct is_unsigned : is_unsigned_base<remove_cv_t<remove_reference_t<T>>> {};
 
 template<class T> constexpr bool is_unsigned_v = is_unsigned<T>::value;
 
 template<typename T>
-constexpr T &&forward(typename pystd2026::remove_reference<T>::type &t) noexcept {
+constexpr T &&forward(typename ::pystd2026::remove_reference<T>::type &t) noexcept {
     return static_cast<T &&>(t);
 }
 
 template<typename T>
-constexpr T &&forward(typename pystd2026::remove_reference<T>::type &&t) noexcept {
-    static_assert(!pystd2026::is_lvalue_reference<T>::value,
+constexpr T &&forward(typename ::pystd2026::remove_reference<T>::type &&t) noexcept {
+    static_assert(!::pystd2026::is_lvalue_reference<T>::value,
                   "Forward may not be used to convert an rvalue to an lvalue");
     return static_cast<T &&>(t);
 }
@@ -176,7 +176,7 @@ concept WellBehaved = requires(T a, T &b, T &&c) {
 };
 
 template<typename T>
-concept BasicIterator = pystd2026::WellBehaved<T> && requires(T a) {
+concept BasicIterator = ::pystd2026::WellBehaved<T> && requires(T a) {
     ++a;
     a++;
     a + 5;
@@ -184,7 +184,7 @@ concept BasicIterator = pystd2026::WellBehaved<T> && requires(T a) {
     a += 5;
     a -= 5;
     *a;
-    // requires pystd2026::WellBehaved<pystd2026::remove_reference_t<decltype(*a)>>;
+    // requires ::pystd2026::WellBehaved<::pystd2026::remove_reference_t<decltype(*a)>>;
 };
 
 template<typename T1, typename T2> constexpr int maxval(const T1 &a, const T2 &b) {
@@ -287,7 +287,7 @@ private:
 template<WellBehaved E> class Unexpected {
 public:
     Unexpected() noexcept : e{} {}
-    Unexpected(E &&e_) noexcept : e{pystd2026::move(e_)} {}
+    Unexpected(E &&e_) noexcept : e{::pystd2026::move(e_)} {}
     Unexpected(const E &e_) noexcept : e(e_) {}
 
     E &error() & noexcept { return e; }
@@ -315,21 +315,21 @@ public:
     Expected() noexcept : state{UnionState::Empty} {}
 
     Expected(Unexpected<E> &&e) noexcept : state{UnionState::Error} {
-        new(content) E(pystd2026::move(e.error()));
+        new(content) E(::pystd2026::move(e.error()));
     }
 
     Expected(const V &v) noexcept : state{UnionState::Value} { new(content) V(v); }
 
-    Expected(V &&v) noexcept : state{UnionState::Value} { new(content) V(pystd2026::move(v)); }
+    Expected(V &&v) noexcept : state{UnionState::Value} { new(content) V(::pystd2026::move(v)); }
 
     Expected(const E &e) noexcept : state{UnionState::Error} { new(content) E(e); }
-    Expected(E &&e) noexcept : state{UnionState::Error} { new(content) E(pystd2026::move(e)); }
+    Expected(E &&e) noexcept : state{UnionState::Error} { new(content) E(::pystd2026::move(e)); }
 
     Expected(Expected<V, E> &&o) noexcept : state{o.state} {
         if(o.has_value()) {
-            new(content) V(pystd2026::move(o.value()));
+            new(content) V(::pystd2026::move(o.value()));
         } else {
-            new(content) E(pystd2026::move(o.error()));
+            new(content) E(::pystd2026::move(o.error()));
         }
     }
 
@@ -345,10 +345,10 @@ public:
         if(this != &o) {
             destroy();
             if(o.has_value()) {
-                new(content) V(pystd2026::move(*reinterpret_cast<V *>(content)));
+                new(content) V(::pystd2026::move(*reinterpret_cast<V *>(content)));
                 state = UnionState::Value;
             } else if(o.has_error()) {
-                new(content) E(pystd2026::move(*reinterpret_cast<E *>(o.content)));
+                new(content) E(::pystd2026::move(*reinterpret_cast<E *>(o.content)));
                 state = UnionState::Error;
             } else {
                 state = UnionState::Empty;
@@ -631,7 +631,7 @@ public:
         if(this != &o) {
             destroy();
             if(o) {
-                new(&data.value) T{pystd2026::move(o.data.value)};
+                new(&data.value) T{::pystd2026::move(o.data.value)};
                 has_value = true;
                 o.destroy();
             }
@@ -653,9 +653,9 @@ public:
             return;
         }
         if(*this) {
-            data.value = pystd2026::move(o);
+            data.value = ::pystd2026::move(o);
         } else {
-            new(&data.value) T{pystd2026::move(o)};
+            new(&data.value) T{::pystd2026::move(o)};
             has_value = true;
         }
     }
@@ -1074,12 +1074,12 @@ public:
     }
 
     void emplace_back(auto &&...args) noexcept {
-        if constexpr(sizeof...(args) == 1 && pystd2026::is_same_v<decltype(args...[0]), T>) {
-            this->push_back(pystd2026::forward(args...[0]));
+        if constexpr(sizeof...(args) == 1 && ::pystd2026::is_same_v<decltype(args...[0]), T>) {
+            this->push_back(::pystd2026::forward(args...[0]));
         } else {
             reserve(num_entries + 1);
             auto obj_loc = objptr(num_entries);
-            new(obj_loc) T(pystd2026::forward<decltype(args)>(args)...);
+            new(obj_loc) T(::pystd2026::forward<decltype(args)>(args)...);
             ++num_entries;
         }
     }
@@ -1367,11 +1367,11 @@ public:
         if(is_full()) {
             return false;
         }
-        if constexpr(sizeof...(args) == 1 && pystd2026::is_same_v<decltype(args...[0]), T>) {
-            this->push_back(pystd2026::forward(args...[0]));
+        if constexpr(sizeof...(args) == 1 && ::pystd2026::is_same_v<decltype(args...[0]), T>) {
+            this->push_back(::pystd2026::forward(args...[0]));
         } else {
             auto obj_loc = objptr(num_entries);
-            new(obj_loc) T(pystd2026::forward<decltype(args)>(args)...);
+            new(obj_loc) T(::pystd2026::forward<decltype(args)>(args)...);
             ++num_entries;
         }
         return true;
@@ -1714,7 +1714,7 @@ public:
 
     char operator[](size_t i) const { return bytes[i]; }
 
-    void operator=(const pystd2026::CString &) noexcept;
+    void operator=(const ::pystd2026::CString &) noexcept;
     void operator=(CString &&o) noexcept {
         if(this != &o) {
             bytes = move(o.bytes);
@@ -1966,8 +1966,8 @@ public:
 
     U8StringView &operator=(U8StringView &&o) noexcept {
         if(this != &o) {
-            start = pystd2026::move(o.start);
-            stop = pystd2026::move(o.stop);
+            start = ::pystd2026::move(o.start);
+            stop = ::pystd2026::move(o.stop);
         }
         return *this;
     }
@@ -1997,7 +1997,7 @@ class U8StringSplitClosure_temp {
 public:
     U8StringSplitClosure_temp() noexcept : original{}, current{original.start} {};
     explicit U8StringSplitClosure_temp(U8StringView original_string) noexcept
-        : original{pystd2026::move(original_string)}, current{original.start} {}
+        : original{::pystd2026::move(original_string)}, current{original.start} {}
 
     U8StringSplitClosure_temp(U8StringSplitClosure_temp &&o) noexcept = default;
 
@@ -2045,7 +2045,7 @@ public:
 
     U8String &operator=(const U8String &o) {
         U8String tmp(o);
-        (*this) = pystd2026::move(tmp);
+        (*this) = ::pystd2026::move(tmp);
         return *this;
     }
 
@@ -2101,9 +2101,9 @@ public:
     bool contains(const U8StringView &view) const;
     bool overlaps(const U8StringView &view) const;
 
-    pystd2026::U8String upper() const { return view().upper(); }
+    ::pystd2026::U8String upper() const { return view().upper(); }
 
-    pystd2026::U8String lower() const { return view().lower(); }
+    ::pystd2026::U8String lower() const { return view().lower(); }
 
     void reserve(size_t size_in_bytes) noexcept { cstring.reserve(size_in_bytes); }
 
@@ -2350,22 +2350,22 @@ It1 find_if(It1 start, It2 end, const Callable c) {
 }
 
 template<WellBehaved T> void swap(T &a, T &b, T &tmp) noexcept {
-    if constexpr(pystd2026::is_integral_v<T> || pystd2026::is_floating_point_v<T>) {
+    if constexpr(::pystd2026::is_integral_v<T> || ::pystd2026::is_floating_point_v<T>) {
         // Use a stack variable instead to avoid pointer dereference.
         T private_tmp{a};
         a = b;
         b = private_tmp;
     } else {
         if(&a != &b) {
-            tmp = pystd2026::move(a);
-            a = pystd2026::move(b);
-            b = pystd2026::move(tmp);
+            tmp = ::pystd2026::move(a);
+            a = ::pystd2026::move(b);
+            b = ::pystd2026::move(tmp);
         }
     }
 }
 
 template<WellBehaved T> void swap(T &a, T &b) noexcept {
-    if constexpr(pystd2026::is_integral_v<T> || pystd2026::is_floating_point_v<T>) {
+    if constexpr(::pystd2026::is_integral_v<T> || ::pystd2026::is_floating_point_v<T>) {
         // Use a stack variable instead to avoid pointer dereference.
         T private_tmp{a};
         a = b;
@@ -2373,7 +2373,7 @@ template<WellBehaved T> void swap(T &a, T &b) noexcept {
     } else {
         if(&a != &b) {
             T tmp;
-            pystd2026::swap(a, b, tmp);
+            ::pystd2026::swap(a, b, tmp);
         }
     }
 }
@@ -2395,13 +2395,13 @@ It find_if_not(It first, It last, const Predicate &pred) {
 
 template<BasicIterator It, typename Predicate>
 It partition(It first, It last, const Predicate &pred) {
-    using ValueType = pystd2026::remove_reference_t<decltype(*first)>;
+    using ValueType = ::pystd2026::remove_reference_t<decltype(*first)>;
     ValueType scratch;
 
     if(first == last)
         return first;
 
-    auto lo = pystd2026::find_if_not(first, last, pred);
+    auto lo = ::pystd2026::find_if_not(first, last, pred);
     if(lo == last) {
         return last;
     }
@@ -2413,7 +2413,7 @@ It partition(It first, It last, const Predicate &pred) {
         return hi;
     }
 
-    pystd2026::swap(*lo, *hi, scratch);
+    ::pystd2026::swap(*lo, *hi, scratch);
     while(true) {
         do {
             ++lo;
@@ -2424,7 +2424,7 @@ It partition(It first, It last, const Predicate &pred) {
         if(hi <= lo) {
             return lo;
         }
-        pystd2026::swap(*lo, *hi, scratch);
+        ::pystd2026::swap(*lo, *hi, scratch);
     }
 }
 
@@ -2446,11 +2446,11 @@ UnicodeConversionResult lowercase_unicode(uint32_t codepoint);
 // builtin types returns a std::something, which we don't
 // have.
 template<typename T> struct DefaultComparator {
-    static_assert(!pystd2026::is_lvalue_reference<T>::value, "Type must not be a reference.");
+    static_assert(!::pystd2026::is_lvalue_reference<T>::value, "Type must not be a reference.");
     int compare(const T &a, const T &b) const noexcept {
-        static_assert(!pystd2026::is_floating_point_v<pystd2026::remove_cv_t<T>>,
+        static_assert(!::pystd2026::is_floating_point_v<::pystd2026::remove_cv_t<T>>,
                       "Floating point types do not form a strong ordering.");
-        if constexpr(pystd2026::is_integral_v<T>) {
+        if constexpr(::pystd2026::is_integral_v<T>) {
             if(a < b) {
                 return -1;
             }
@@ -2468,9 +2468,9 @@ template<typename T> struct DefaultComparator {
 
 // Helper for types that don't have the starship operator.
 template<typename T> struct OnlyLessComparator {
-    static_assert(!pystd2026::is_lvalue_reference<T>::value, "Type must not be a reference.");
+    static_assert(!::pystd2026::is_lvalue_reference<T>::value, "Type must not be a reference.");
     int compare(const T &a, const T &b) const noexcept {
-        static_assert(!pystd2026::is_floating_point_v<pystd2026::remove_cv_t<T>>,
+        static_assert(!::pystd2026::is_floating_point_v<::pystd2026::remove_cv_t<T>>,
                       "Floating point types do not form a strong ordering.");
         if(a < b) {
             return -1;
@@ -2492,9 +2492,9 @@ bool total_order_equal(double a, double b) noexcept;
 
 // Handles NaNs, but is slower.
 template<typename T> struct FloatTotalOrderComparator {
-    static_assert(!pystd2026::is_lvalue_reference<T>::value, "Type must not be a reference.");
+    static_assert(!::pystd2026::is_lvalue_reference<T>::value, "Type must not be a reference.");
     int compare(const T a, const T b) const noexcept {
-        static_assert(pystd2026::is_floating_point_v<pystd2026::remove_cv_t<T>>,
+        static_assert(::pystd2026::is_floating_point_v<::pystd2026::remove_cv_t<T>>,
                       "This type is unly usable with floating point types.");
         return total_order_compare(a, b);
     }
@@ -2505,9 +2505,9 @@ template<typename T> struct FloatTotalOrderComparator {
 // Assumes NaNs do not exist in input data. If they do,
 // behaviour is undefined.
 template<typename T> struct FloatIgnoreNanComparator {
-    static_assert(!pystd2026::is_lvalue_reference<T>::value, "Type must not be a reference.");
+    static_assert(!::pystd2026::is_lvalue_reference<T>::value, "Type must not be a reference.");
     int compare(const T a, const T b) const noexcept {
-        static_assert(pystd2026::is_floating_point_v<pystd2026::remove_cv_t<T>>,
+        static_assert(::pystd2026::is_floating_point_v<::pystd2026::remove_cv_t<T>>,
                       "This type is unly usable with floating point types.");
         if(a < b) {
             return -1;
@@ -2540,7 +2540,7 @@ It lower_bound(It first, It last, const Value &value, const Comparator &cmp) {
 }
 
 template<BasicIterator It, typename Value> It lower_bound(It first, It last, const Value &value) {
-    using ValueType = pystd2026::remove_reference_t<decltype(*first)>;
+    using ValueType = ::pystd2026::remove_reference_t<decltype(*first)>;
     return lower_bound(first, last, value, DefaultComparator<ValueType>{});
 }
 
@@ -2577,8 +2577,8 @@ It1 max_element(It1 start, It2 stop, const Comparator &cmp) noexcept {
 }
 
 template<BasicIterator It1, BasicIterator It2> It1 min_element(It1 start, It2 stop) noexcept {
-    using ValueType = pystd2026::remove_reference_t<decltype(*start)>;
-    return pystd2026::min_element(start, stop, DefaultComparator<ValueType>{});
+    using ValueType = ::pystd2026::remove_reference_t<decltype(*start)>;
+    return ::pystd2026::min_element(start, stop, DefaultComparator<ValueType>{});
 }
 
 template<BasicIterator It1, BasicIterator It2, typename Comparator>
@@ -2598,7 +2598,7 @@ bool is_sorted(It1 start, It2 end, const Comparator &cmp) {
 }
 
 template<BasicIterator It> void rotate_last_to_front(It begin, It end) {
-    using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
+    using ValueType = ::pystd2026::remove_reference_t<decltype(*begin)>;
     if(end - begin < 2) {
         return;
     }
@@ -2606,37 +2606,37 @@ template<BasicIterator It> void rotate_last_to_front(It begin, It end) {
     It current = last_element;
     auto previous = current;
     --previous;
-    ValueType scratch = pystd2026::move(*last_element);
+    ValueType scratch = ::pystd2026::move(*last_element);
     while(current != begin) {
-        *current = pystd2026::move(*previous);
+        *current = ::pystd2026::move(*previous);
         --previous;
         --current;
     }
-    *begin = pystd2026::move(scratch);
+    *begin = ::pystd2026::move(scratch);
 }
 
 template<BasicIterator It> void rotate_first_to_back(It begin, It end) {
-    using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
+    using ValueType = ::pystd2026::remove_reference_t<decltype(*begin)>;
     if(end - begin < 2) {
         return;
     }
     It current = begin;
     auto next = current + 1;
-    ValueType scratch = pystd2026::move(*begin);
+    ValueType scratch = ::pystd2026::move(*begin);
     while(next != end) {
-        *current = pystd2026::move(*next);
+        *current = ::pystd2026::move(*next);
         ++next;
         ++current;
     }
-    *(end - 1) = pystd2026::move(scratch);
+    *(end - 1) = ::pystd2026::move(scratch);
 }
 
 template<BasicIterator It1, typename Comparator>
 void linear_insert_has_sentinel(It1 last_element, const Comparator &cmp) {
-    using ValueType = pystd2026::remove_reference_t<decltype(*last_element)>;
+    using ValueType = ::pystd2026::remove_reference_t<decltype(*last_element)>;
     // Using memmove makes things noticeably slower. Even though it shouldn't.
-    constexpr bool is_memmovable =
-        false; // pystd2026::is_integral_v<ValueType> || pystd2026::is_floating_point_v<ValueType>;
+    constexpr bool is_memmovable = false; // ::pystd2026::is_integral_v<ValueType> ||
+                                          // ::pystd2026::is_floating_point_v<ValueType>;
     ValueType scratch;
     if constexpr(is_memmovable) {
         auto location = last_element;
@@ -2655,13 +2655,13 @@ void linear_insert_has_sentinel(It1 last_element, const Comparator &cmp) {
         It1 current = last_element;
         auto previous = current;
         --previous;
-        scratch = pystd2026::move(*last_element);
+        scratch = ::pystd2026::move(*last_element);
         while(cmp.compare(scratch, *previous) < 0) {
-            *current = pystd2026::move(*previous);
+            *current = ::pystd2026::move(*previous);
             --previous;
             --current;
         }
-        *current = pystd2026::move(scratch);
+        *current = ::pystd2026::move(scratch);
     }
 }
 
@@ -2671,7 +2671,7 @@ template<typename T> struct InsertionSortLimit {
 
 template<typename T>
 constexpr size_t insertion_sort_limit =
-    (pystd2026::is_integral_v<T> || pystd2026::is_floating_point_v<T>) ? 32 : 16;
+    (::pystd2026::is_integral_v<T> || ::pystd2026::is_floating_point_v<T>) ? 32 : 16;
 
 // Before begin there is an element that is smaller or equal to all
 // elements within the range.
@@ -2679,10 +2679,10 @@ constexpr size_t insertion_sort_limit =
 // If that is not the case, behaviour is undefined.
 template<BasicIterator It, typename Comparator>
 void insertion_sort_has_sentinel(It begin, It end, const Comparator &cmp) {
-    using ValueType = pystd2026::remove_reference_t<decltype(*begin)>;
+    using ValueType = ::pystd2026::remove_reference_t<decltype(*begin)>;
     // This should be faster, but according to measurements it is not.
     constexpr bool is_cheap_to_copy = false;
-    // pystd2026::is_integral_v<ValueType> || pystd2026::is_floating_point_v<ValueType>;
+    // ::pystd2026::is_integral_v<ValueType> || ::pystd2026::is_floating_point_v<ValueType>;
     if constexpr(is_cheap_to_copy) {
         auto current_element = begin;
         ++current_element;
@@ -2757,12 +2757,12 @@ void insertion_sort(It1 begin, It2 end, const Comparator &cmp) {
 }
 
 template<BasicIterator It1, BasicIterator It2> void insertion_sort(It1 start, It2 end) {
-    using ValueType = pystd2026::remove_reference_t<decltype(*start)>;
-    pystd2026::insertion_sort(start, end, DefaultComparator<ValueType>{});
+    using ValueType = ::pystd2026::remove_reference_t<decltype(*start)>;
+    ::pystd2026::insertion_sort(start, end, DefaultComparator<ValueType>{});
 }
 
-template<WellBehaved T> void insertion_sort(pystd2026::Span<T> span) {
-    pystd2026::insertion_sort(span.begin(), span.end());
+template<WellBehaved T> void insertion_sort(::pystd2026::Span<T> span) {
+    ::pystd2026::insertion_sort(span.begin(), span.end());
 }
 
 } // namespace pystd2026
