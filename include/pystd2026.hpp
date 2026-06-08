@@ -255,6 +255,12 @@ public:
 
     void feed_hash(const uint64_t o) { feed_bytes(reinterpret_cast<const char *>(&o), sizeof(o)); }
 
+#if defined(__APPLE__)
+    void feed_hash(const unsigned long o) {
+        h.feed_bytes(reinterpret_cast<const char *>(&o), sizeof(o));
+    }
+#endif
+
     // Pointers not handled, because you can't know whether to hash the pointer value
     // or the hash of the object it points to.
 };
@@ -269,12 +275,6 @@ public:
     using HashFeedInterface::feed_hash;
 
     void feed_bytes(const char *buf, size_t bufsize) override { h.feed_bytes(buf, bufsize); }
-
-#if defined(__APPLE__)
-    void feed_hash(const unsigned long o) {
-        h.feed_bytes(reinterpret_cast<const char *>(&o), sizeof(o));
-    }
-#endif
 
     size_t get_hash_value() const { return h.get_hash_value(); }
 
