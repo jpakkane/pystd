@@ -222,7 +222,7 @@ protected:
 
     size_t insert_internal(const Key &key, Value &&v) {
         auto hashval = hash_for(key);
-        if(fill_ratio() >= MAX_LOAD_PERCENTAGE) {
+        if(fill_percentage() >= MAX_LOAD_PERCENTAGE) {
             grow();
         }
         auto slot = hash_to_slot(hashval);
@@ -292,7 +292,7 @@ protected:
 
     size_t table_size() const { return data.md.size(); }
 
-    size_t fill_ratio() const { return (num_entries * 100) / table_size(); }
+    size_t fill_percentage() const { return (num_entries * 100) / table_size(); }
     static constexpr size_t MAX_LOAD_PERCENTAGE = 77;
     // static constexpr size_t MIN_LOAD_PERCENTAGE = 25;
 
@@ -305,11 +305,6 @@ protected:
 template<WellBehaved Key, WellBehaved Value, WellBehaved HashAlgo = SimpleHash>
 class HashMap final : private HashTableCommon<Key, Value, HashAlgo> {
 public:
-    static_assert(!::pystd2026::is_floating_point_v<::pystd2026::remove_cv_t<Key>>,
-                  "Floats can not be used as map keys as that is highly unreliable.");
-    static_assert(!::pystd2026::is_reference_v<Key>);
-    static_assert(!::pystd2026::is_reference_v<Value>);
-
     friend class HashMapIterator<Key, Value>;
     HashMap() noexcept = default;
 
@@ -431,10 +426,9 @@ struct HashInsertResult {
 template<WellBehaved Key, WellBehaved HashAlgo = SimpleHash>
 class HashSet final : private HashTableCommon<Key, SetOnlyTag, HashAlgo> {
 
-    static_assert(!::pystd2026::is_floating_point_v<::pystd2026::remove_cv_t<Key>>,
-                  "Floats can not be used as set keys as that is highly unreliable.");
-
 public:
+    HashSet() noexcept = default;
+
     HashInsertResult insert(const Key &key) {
         // FIXME, inefficient. Does the lookup twice.
         bool inserted = !contains(key);
