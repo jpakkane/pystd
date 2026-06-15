@@ -7,6 +7,8 @@ namespace pystd2026 {
 
 template<typename Key, typename Value> class HashMapIterator;
 
+struct SetOnlyTag {};
+
 template<WellBehaved Key, WellBehaved Value, WellBehaved HashAlgo = SimpleHash>
 class HashTableCommon {
 protected:
@@ -14,6 +16,8 @@ protected:
                   "Floats can not be used as map keys as that is highly unreliable.");
     static_assert(!::pystd2026::is_reference_v<Key>);
     static_assert(!::pystd2026::is_reference_v<Value>);
+
+    static constexpr bool set_only = ::pystd2026::is_same_v<Value, SetOnlyTag>;
 
     friend class HashMapIterator<Key, Value>;
     HashTableCommon() noexcept {
@@ -24,7 +28,9 @@ protected:
         data.md = unique_arr<SlotMetadata>(initial_table_size);
         data.reset_hash_values();
         data.keydata = Bytes(initial_table_size * sizeof(Key));
-        data.valuedata = Bytes(initial_table_size * sizeof(Value));
+        if constexpr(!set_only) {
+            data.valuedata = Bytes(initial_table_size * sizeof(Value));
+        }
     }
 
     ::pystd2026::Optional<size_t> lookup_slot(const Key &key) const {
@@ -145,6 +151,7 @@ protected:
     // At this point in the project life cycle it does not need to be.
     struct MapData {
         unique_arr<SlotMetadata> md;
+        // FIXME: fold both of these into one allocation.
         Bytes keydata;
         Bytes valuedata;
 
@@ -224,7 +231,9 @@ protected:
                 auto *key_loc = data.keyptr(slot);
                 auto *value_loc = data.valueptr(slot);
                 new(key_loc) Key(key);
-                new(value_loc) Value{::pystd2026::move(v)};
+                if constexpr(!set_only) {
+                    new(value_loc) Value{::pystd2026::move(v)};
+                }
                 data.md[slot] = SlotMetadata{SlotState::HasValue, (uint8_t)(hashval & BLOOM_MASK)};
                 ++num_entries;
                 return slot;
@@ -232,8 +241,10 @@ protected:
             if(data.md[slot].bloom_matches(hashval)) {
                 auto *potential_key = data.keyptr(slot);
                 if(*potential_key == key) {
-                    auto *value_loc = data.valueptr(slot);
-                    *value_loc = ::pystd2026::move(v);
+                    if constexpr(!set_only) {
+                        auto *value_loc = data.valueptr(slot);
+                        *value_loc = ::pystd2026::move(v);
+                    }
                     return slot;
                 }
             }
@@ -248,7 +259,9 @@ protected:
 
         grown.md = unique_arr<SlotMetadata>(new_size);
         grown.keydata = Bytes(new_size * sizeof(Key));
-        grown.valuedata = Bytes(new_size * sizeof(Value));
+        if(!set_only) {
+            grown.valuedata = Bytes(new_size * sizeof(Value));
+        }
 
         grown.reset_hash_values();
         MapData old = move(data);
@@ -258,7 +271,11 @@ protected:
         for(size_t i = 0; i < old.md.size(); ++i) {
             if(old.md[i].state == SlotState::HasValue) {
                 auto &old_key = *old.keyptr(i);
-                insert_internal(old_key, ::pystd2026::move(*old.valueptr(i)));
+                if constexpr(!set_only) {
+                    insert_internal(old_key, ::pystd2026::move(*old.valueptr(i)));
+                } else {
+                    insert_internal(old_key, SetOnlyTag{});
+                }
             }
         }
     }
@@ -411,7 +428,8 @@ struct HashInsertResult {
     bool second;
 };
 
-template<WellBehaved Key, WellBehaved HashAlgo = SimpleHash> class HashSet final {
+template<WellBehaved Key, WellBehaved HashAlgo = SimpleHash>
+class HashSet final : private HashTableCommon<Key, SetOnlyTag, HashAlgo> {
 
     static_assert(!::pystd2026::is_floating_point_v<::pystd2026::remove_cv_t<Key>>,
                   "Floats can not be used as set keys as that is highly unreliable.");
@@ -420,30 +438,31 @@ public:
     HashInsertResult insert(const Key &key) {
         // FIXME, inefficient. Does the lookup twice.
         bool inserted = !contains(key);
-        map.insert(key, 1);
+        if(inserted) {
+            insert_internal(key, {});
+        }
         return HashInsertResult{42, inserted};
     }
 
-    bool contains(const Key &key) const { return map.contains(key); }
+    bool contains(const Key &key) const { return lookup_slot(key); }
 
-    void remove(const Key &k) { map.remove(k); }
+    using HashTableCommon<Key, SetOnlyTag, HashAlgo>::remove;
 
-    size_t size() const noexcept { return map.size(); }
+    using HashTableCommon<Key, SetOnlyTag, HashAlgo>::size;
 
     bool is_empty() const noexcept { return size() == 0; }
 
-    void clear() noexcept { map.clear(); }
+    using HashTableCommon<Key, SetOnlyTag, HashAlgo>::clear;
 
+    /*
     HashSetIterator<Key> begin() const { return HashSetIterator<Key>(map.begin()); }
 
     HashSetIterator<Key> end() const { return HashSetIterator<Key>(map.end()); }
+    */
 
 private:
-    // This is inefficient.
-    // It is just to get the implementation going
-    // and work out the API.
-    // Replace with a proper implementation later.
-    HashMap<Key, uint8_t, HashAlgo> map;
+    using HashTableCommon<Key, SetOnlyTag, HashAlgo>::insert_internal;
+    using HashTableCommon<Key, SetOnlyTag, HashAlgo>::lookup_slot;
 };
 
 } // namespace pystd2026
