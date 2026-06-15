@@ -8,15 +8,15 @@ namespace pystd2026 {
 template<typename Key, typename Value> class HashMapIterator;
 
 template<WellBehaved Key, WellBehaved Value, WellBehaved HashAlgo = SimpleHash>
-class HashMap final {
-public:
+class HashTableCommon {
+protected:
     static_assert(!::pystd2026::is_floating_point_v<::pystd2026::remove_cv_t<Key>>,
                   "Floats can not be used as map keys as that is highly unreliable.");
     static_assert(!::pystd2026::is_reference_v<Key>);
     static_assert(!::pystd2026::is_reference_v<Value>);
 
     friend class HashMapIterator<Key, Value>;
-    HashMap() noexcept {
+    HashTableCommon() noexcept {
         salt = (size_t)this;
         num_entries = 0;
         size_in_powers_of_two = 4;
@@ -63,10 +63,6 @@ public:
     }
 
     Value &insert(const Key &key, Value v) {
-        if(fill_ratio() >= MAX_LOAD_PERCENTAGE) {
-            grow();
-        }
-
         const auto hashval = hash_for(key);
         auto result_slot = insert_internal(hashval, key, ::pystd2026::move(v));
         return *const_cast<Value *>(data.valueptr(result_slot));
@@ -117,11 +113,11 @@ public:
     bool is_empty() const { return size() == 0; }
 
     HashMapIterator<Key, Value> begin() const {
-        return HashMapIterator<Key, Value>(const_cast<HashMap *>(this), 0);
+        return HashMapIterator<Key, Value>(const_cast<HashTableCommon *>(this), 0);
     }
 
     HashMapIterator<Key, Value> end() const {
-        return HashMapIterator<Key, Value>(const_cast<HashMap *>(this), table_size());
+        return HashMapIterator<Key, Value>(const_cast<HashTableCommon *>(this), table_size());
     }
 
     void clear() {
@@ -129,7 +125,6 @@ public:
         num_entries = 0;
     }
 
-private:
     static constexpr uint8_t BLOOM_MASK = 0b111111;
 
     enum class SlotState : uint8_t {
@@ -218,7 +213,11 @@ private:
         return slot;
     }
 
-    size_t insert_internal(size_t hashval, const Key &key, Value &&v) {
+    size_t insert_internal(const Key &key, Value &&v) {
+        auto hashval = hash_for(key);
+        if(fill_ratio() >= MAX_LOAD_PERCENTAGE) {
+            grow();
+        }
         auto slot = hash_to_slot(hashval);
         while(true) {
             if(data.md[slot].state != SlotState::HasValue) {
@@ -259,8 +258,7 @@ private:
         for(size_t i = 0; i < old.md.size(); ++i) {
             if(old.md[i].state == SlotState::HasValue) {
                 auto &old_key = *old.keyptr(i);
-                auto hashval = hash_for(old_key);
-                insert_internal(hashval, old_key, ::pystd2026::move(*old.valueptr(i)));
+                insert_internal(old_key, ::pystd2026::move(*old.valueptr(i)));
             }
         }
     }
@@ -285,6 +283,74 @@ private:
     size_t salt;
     size_t num_entries;
     uint32_t size_in_powers_of_two;
+};
+
+template<WellBehaved Key, WellBehaved Value, WellBehaved HashAlgo = SimpleHash>
+class HashMap final : private HashTableCommon<Key, Value, HashAlgo> {
+public:
+    static_assert(!::pystd2026::is_floating_point_v<::pystd2026::remove_cv_t<Key>>,
+                  "Floats can not be used as map keys as that is highly unreliable.");
+    static_assert(!::pystd2026::is_reference_v<Key>);
+    static_assert(!::pystd2026::is_reference_v<Value>);
+
+    friend class HashMapIterator<Key, Value>;
+    HashMap() noexcept = default;
+
+    Value *lookup(const Key &key) const {
+        auto slot = lookup_slot(key);
+        if(slot) {
+            return const_cast<Value *>(data.valueptr(*slot));
+        } else {
+            return nullptr;
+        }
+    }
+
+    Value &at(const Key &key) {
+        auto *v = lookup(key);
+        if(!v) {
+            throw PyException("Map did not contain requested element.");
+        }
+        return *v;
+    }
+
+    Value &insert(const Key &key, Value v) {
+        auto result_slot = insert_internal(key, ::pystd2026::move(v));
+        return *const_cast<Value *>(data.valueptr(result_slot));
+    }
+
+    Value &operator[](const Key &k) {
+        auto *c = lookup(k);
+        if(c) {
+            return (*c);
+        } else {
+            return insert(k, Value{});
+        }
+    }
+
+    using HashTableCommon<Key, Value, HashAlgo>::remove;
+
+    bool contains(const Key &key) const { return lookup(key) != nullptr; }
+
+    using HashTableCommon<Key, Value, HashAlgo>::size;
+
+    bool is_empty() const { return size() == 0; }
+
+    HashMapIterator<Key, Value> begin() const {
+        return HashMapIterator<Key, Value>(const_cast<HashMap *>(this), 0);
+    }
+
+    HashMapIterator<Key, Value> end() const {
+        return HashMapIterator<Key, Value>(const_cast<HashMap *>(this), table_size());
+    }
+
+    using HashTableCommon<Key, Value, HashAlgo>::clear;
+    using HashTableCommon<Key, Value, HashAlgo>::table_size;
+
+private:
+    using HashTableCommon<Key, Value, HashAlgo>::data;
+    using HashTableCommon<Key, Value, HashAlgo>::lookup_slot;
+    using HashTableCommon<Key, Value, HashAlgo>::hash_for;
+    using HashTableCommon<Key, Value, HashAlgo>::insert_internal;
 };
 
 template<typename Key, typename Value> struct KeyValue {
