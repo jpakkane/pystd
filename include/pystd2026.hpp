@@ -2680,43 +2680,20 @@ template<typename T>
 constexpr size_t insertion_sort_limit =
     (::pystd2026::is_integral_v<T> || ::pystd2026::is_floating_point_v<T>) ? 32 : 16;
 
-// Before begin there is an element that is smaller or equal to all
+// Before "begin" there has to be an element that is smaller or equal to all
 // elements within the range.
 //
 // If that is not the case, behaviour is undefined.
 template<BasicIterator It, typename Comparator>
 void insertion_sort_has_sentinel(It begin, It end, const Comparator &cmp) {
-    using ValueType = ::pystd2026::remove_reference_t<decltype(*begin)>;
-    // This should be faster, but according to measurements it is not.
     if(end - begin < 2) {
         return;
     }
-    constexpr bool is_cheap_to_copy = false;
-    // ::pystd2026::is_integral_v<ValueType> || ::pystd2026::is_floating_point_v<ValueType>;
-    if constexpr(is_cheap_to_copy) {
-        auto current_element = begin;
+    auto current_element = begin;
+    ++current_element;
+    while(current_element != end) {
+        ::pystd2026::linear_insert_has_sentinel(current_element, cmp);
         ++current_element;
-        while(current_element != end) {
-            if(cmp.compare(*current_element, *begin) < 0) {
-                ValueType scratch = *current_element;
-                const size_t num_to_move = current_element - begin;
-                for(size_t i = num_to_move; i > 0; --i) {
-                    *(begin + i) = *(begin + i - 1);
-                }
-                *begin = scratch;
-            } else {
-                ::pystd2026::linear_insert_has_sentinel(current_element, cmp);
-                ++current_element;
-            }
-        }
-
-    } else {
-        auto current_element = begin;
-        ++current_element;
-        while(current_element != end) {
-            ::pystd2026::linear_insert_has_sentinel(current_element, cmp);
-            ++current_element;
-        }
     }
 }
 
