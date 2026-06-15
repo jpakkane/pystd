@@ -27,21 +27,30 @@ public:
         data.valuedata = Bytes(initial_table_size * sizeof(Value));
     }
 
-    Value *lookup(const Key &key) const {
+    ::pystd2026::Optional<size_t> lookup_slot(const Key &key) const {
         const auto hashval = hash_for(key);
         auto slot = hash_to_slot(hashval);
         while(true) {
             if(data.md[slot].state == SlotState::Empty) {
-                return nullptr;
+                return {};
             } else if(data.md[slot].state == SlotState::Tombstone) {
 
             } else if(data.md[slot].bloom_matches(hashval)) {
                 auto *potential_key = data.keyptr(slot);
                 if(*potential_key == key) {
-                    return const_cast<Value *>(data.valueptr(slot));
+                    return slot;
                 }
             }
             slot = (slot + 1) & mod_mask();
+        }
+    }
+
+    Value *lookup(const Key &key) const {
+        auto slot = lookup_slot(key);
+        if(slot) {
+            return const_cast<Value *>(data.valueptr(*slot));
+        } else {
+            return nullptr;
         }
     }
 
@@ -59,7 +68,8 @@ public:
         }
 
         const auto hashval = hash_for(key);
-        return insert_internal(hashval, key, ::pystd2026::move(v));
+        auto result_slot = insert_internal(hashval, key, ::pystd2026::move(v));
+        return *const_cast<Value *>(data.valueptr(result_slot));
     }
 
     void remove(const Key &key) {
@@ -208,7 +218,7 @@ private:
         return slot;
     }
 
-    Value &insert_internal(size_t hashval, const Key &key, Value &&v) {
+    size_t insert_internal(size_t hashval, const Key &key, Value &&v) {
         auto slot = hash_to_slot(hashval);
         while(true) {
             if(data.md[slot].state != SlotState::HasValue) {
@@ -218,14 +228,14 @@ private:
                 new(value_loc) Value{::pystd2026::move(v)};
                 data.md[slot] = SlotMetadata{SlotState::HasValue, (uint8_t)(hashval & BLOOM_MASK)};
                 ++num_entries;
-                return *value_loc;
+                return slot;
             }
             if(data.md[slot].bloom_matches(hashval)) {
                 auto *potential_key = data.keyptr(slot);
                 if(*potential_key == key) {
                     auto *value_loc = data.valueptr(slot);
                     *value_loc = ::pystd2026::move(v);
-                    return *value_loc;
+                    return slot;
                 }
             }
             slot = (slot + 1) & mod_mask();
