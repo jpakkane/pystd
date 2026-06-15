@@ -5,7 +5,7 @@
 
 namespace pystd2026 {
 
-template<typename Key, typename Value> class HashMapIterator;
+template<typename Key, typename Value> class HashTableCommonIterator;
 
 struct SetOnlyTag {};
 
@@ -19,7 +19,7 @@ protected:
 
     static constexpr bool set_only = ::pystd2026::is_same_v<Value, SetOnlyTag>;
 
-    friend class HashMapIterator<Key, Value>;
+    friend class HashTableCommonIterator<Key, Value>;
     HashTableCommon() noexcept {
         salt = (size_t)this;
         num_entries = 0;
@@ -118,11 +118,11 @@ protected:
 
     bool is_empty() const { return size() == 0; }
 
-    HashMapIterator<Key, Value> begin() const {
+    HashTableCommonIterator<Key, Value> begin() const {
         return HashMapIterator<Key, Value>(const_cast<HashTableCommon *>(this), 0);
     }
 
-    HashMapIterator<Key, Value> end() const {
+    HashTableCommonIterator<Key, Value> end() const {
         return HashMapIterator<Key, Value>(const_cast<HashTableCommon *>(this), table_size());
     }
 
@@ -302,10 +302,48 @@ protected:
     uint32_t size_in_powers_of_two;
 };
 
+template<typename Key, typename Value> struct KeyValue {
+    Key *key;
+    Value *value;
+};
+
+template<typename Key, typename Value> class HashTableCommonIterator final {
+public:
+    HashTableCommonIterator(HashTableCommon<Key, Value> *table, size_t offset)
+        : table{table}, offset{offset} {
+        if(offset == 0 && !table->data.has_value_at(offset)) {
+            advance();
+        }
+    }
+
+    KeyValue<Key, Value> operator*() {
+        return KeyValue{table->data.keyptr(offset), table->data.valueptr(offset)};
+    }
+
+    bool operator!=(const HashTableCommonIterator<Key, Value> &o) const {
+        return offset != o.offset;
+    };
+
+    HashTableCommonIterator<Key, Value> &operator++() {
+        advance();
+        return *this;
+    }
+
+private:
+    void advance() {
+        ++offset;
+        while(offset < table->table_size() && !table->data.has_value_at(offset)) {
+            ++offset;
+        }
+    }
+
+    HashTableCommon<Key, Value> *table;
+    size_t offset;
+};
+
 template<WellBehaved Key, WellBehaved Value, WellBehaved HashAlgo = SimpleHash>
 class HashMap final : private HashTableCommon<Key, Value, HashAlgo> {
 public:
-    friend class HashMapIterator<Key, Value>;
     HashMap() noexcept = default;
 
     Value *lookup(const Key &key) const {
@@ -347,12 +385,12 @@ public:
 
     bool is_empty() const { return size() == 0; }
 
-    HashMapIterator<Key, Value> begin() const {
-        return HashMapIterator<Key, Value>(const_cast<HashMap *>(this), 0);
+    HashTableCommonIterator<Key, Value> begin() const {
+        return HashTableCommonIterator<Key, Value>(const_cast<HashMap *>(this), 0);
     }
 
-    HashMapIterator<Key, Value> end() const {
-        return HashMapIterator<Key, Value>(const_cast<HashMap *>(this), table_size());
+    HashTableCommonIterator<Key, Value> end() const {
+        return HashTableCommonIterator<Key, Value>(const_cast<HashMap *>(this), table_size());
     }
 
     using HashTableCommon<Key, Value, HashAlgo>::clear;
@@ -363,11 +401,6 @@ private:
     using HashTableCommon<Key, Value, HashAlgo>::lookup_slot;
     using HashTableCommon<Key, Value, HashAlgo>::hash_for;
     using HashTableCommon<Key, Value, HashAlgo>::insert_internal;
-};
-
-template<typename Key, typename Value> struct KeyValue {
-    Key *key;
-    Value *value;
 };
 
 template<typename Key, typename Value> class HashMapIterator final {
