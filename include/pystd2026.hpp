@@ -2688,6 +2688,9 @@ template<BasicIterator It, typename Comparator>
 void insertion_sort_has_sentinel(It begin, It end, const Comparator &cmp) {
     using ValueType = ::pystd2026::remove_reference_t<decltype(*begin)>;
     // This should be faster, but according to measurements it is not.
+    if(end - begin < 2) {
+        return;
+    }
     constexpr bool is_cheap_to_copy = false;
     // ::pystd2026::is_integral_v<ValueType> || ::pystd2026::is_floating_point_v<ValueType>;
     if constexpr(is_cheap_to_copy) {
