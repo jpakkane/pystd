@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
-// Copyright 2025 Jussi Pakkanen
+// Copyright 2026 Jussi Pakkanen
 
 #include <pystd2026_pathlib.hpp>
 #include <sys/stat.h>
 #include <dirent.h>
 #include <assert.h>
 #include <errno.h>
+#include <unistd.h>
 
 // Currently does only Posix paths.
 
@@ -24,10 +25,6 @@ bool is_path_of_type(const char *path, unsigned int desired_type) {
 namespace pystd2026 {
 
 namespace {
-
-struct DirCloser {
-    static void del(DIR *dir) { closedir(dir); }
-};
 
 bool glob_matches(const char *text,
                   const size_t text_offset,
@@ -103,6 +100,31 @@ Vector<Path> glob_starstar_dirs(const Path &root) {
 }
 
 } // namespace
+
+FileDescriptor::FileDescriptor(FileDescriptor &&o) noexcept {
+    fd = o.fd;
+    o.fd = 0;
+}
+
+FileDescriptor &FileDescriptor::operator=(FileDescriptor &&o) noexcept {
+    if(this == &o) {
+        return *this;
+    }
+    if(fd != 0) {
+        close(fd);
+    }
+    fd = o.fd;
+    o.fd = 0;
+    return *this;
+}
+
+FileDescriptor::~FileDescriptor() {
+    if(fd != 0) {
+        close(fd);
+    }
+}
+
+int FileDescriptor::get() const noexcept { return fd; }
 
 Path::Path(const char *path) : buf{path} {
     while(!buf.is_empty() && buf.back() == '/') {

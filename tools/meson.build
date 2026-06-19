@@ -18,3 +18,6 @@ executable('wordsort', 'wordsort.cpp',
 
 executable('radixsorttest', 'radixsorttest.cpp',
   dependencies: stdlib_dep)
+
+executable('rmtree', 'rmtree.cpp',
+  dependencies: stdlib_dep)

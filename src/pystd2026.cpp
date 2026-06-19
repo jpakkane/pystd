@@ -20,6 +20,11 @@ namespace pystd2026 {
 
 void bootstrap_throw(const char *msg) { throw PyException(msg); }
 
+[[noreturn]]
+void throw_errno_error(int rc) {
+    throw PyException(strerror(rc));
+}
+
 namespace {
 
 bool is_ascii_whitespace(uint32_t c) {

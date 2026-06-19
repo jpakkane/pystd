@@ -1,9 +1,37 @@
 // SPDX-License-Identifier: Apache-2.0
-// Copyright 2025 Jussi Pakkanen
+// Copyright 2026 Jussi Pakkanen
 
 #include <pystd2026.hpp>
+#include <stdio.h>
+#include <dirent.h>
 
 namespace pystd2026 {
+
+struct DirCloser {
+    static void del(DIR *dir) { closedir(dir); }
+};
+
+struct FileCloser {
+    static void del(FILE *f) { fclose(f); }
+};
+
+class FileDescriptor {
+public:
+    FileDescriptor() noexcept = default;
+    explicit FileDescriptor(int fdnum) noexcept : fd{fdnum} {}
+    FileDescriptor(const FileDescriptor &) = delete;
+    FileDescriptor(FileDescriptor &&o) noexcept;
+
+    FileDescriptor &operator=(const FileDescriptor &o) = delete;
+    FileDescriptor &operator=(FileDescriptor &&o) noexcept;
+
+    ~FileDescriptor();
+
+    int get() const noexcept;
+
+private:
+    int fd;
+};
 
 class GlobResult;
 

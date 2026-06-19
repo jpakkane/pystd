@@ -34,6 +34,9 @@ enum class align_val_t : size_t {};
 [[noreturn]]
 void bootstrap_throw(const char *msg);
 
+[[noreturn]]
+void throw_errno_error(int rc);
+
 template<class T> struct remove_reference {
     typedef T type;
 };
