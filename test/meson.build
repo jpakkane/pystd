@@ -39,4 +39,5 @@ pystd2026_test_sorting = executable('pystd2026test_sorting', 'pystd2026test_sort
 
 test('pystd2026_sorting', pystd2026_test_sorting)
 
-test('timing', find_program('timingtest.py'))
+test('timing', find_program('timingtest.py'),
+  is_parallel: false)
