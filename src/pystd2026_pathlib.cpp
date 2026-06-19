@@ -1,12 +1,24 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2025 Jussi Pakkanen
 
-#include <pystd2026.hpp>
+#include <pystd2026_pathlib.hpp>
 #include <sys/stat.h>
 #include <dirent.h>
 #include <assert.h>
 
 // Currently does only Posix paths.
+
+namespace {
+
+bool is_path_of_type(const char *path, unsigned int desired_type) {
+    struct stat sb;
+    if(stat(path, &sb) == 0) {
+        return (sb.st_mode & S_IFMT) == desired_type;
+    }
+    return false;
+}
+
+} // namespace
 
 namespace pystd2026 {
 
@@ -108,21 +120,15 @@ bool Path::exists() const noexcept {
     return stat(buf.c_str(), &sb) == 0;
 }
 
-bool Path::is_file() const noexcept {
-    struct stat sb;
-    if(stat(buf.c_str(), &sb) == 0) {
-        return (sb.st_mode & S_IFMT) == S_IFREG;
-    }
-    return false;
-}
+bool Path::is_file() const noexcept { return is_path_of_type(buf.c_str(), S_IFREG); }
 
-bool Path::is_dir() const noexcept {
-    struct stat sb;
-    if(stat(buf.c_str(), &sb) == 0) {
-        return (sb.st_mode & S_IFMT) == S_IFDIR;
-    }
-    return false;
-}
+bool Path::is_dir() const noexcept { return is_path_of_type(buf.c_str(), S_IFDIR); }
+
+bool Path::is_symlink() const noexcept { return is_path_of_type(buf.c_str(), S_IFLNK); }
+
+bool Path::is_socket() const noexcept { return is_path_of_type(buf.c_str(), S_IFSOCK); }
+
+bool Path::is_fifo() const noexcept { return is_path_of_type(buf.c_str(), S_IFIFO); }
 
 bool Path::is_abs() const { return (!buf.is_empty() && buf[0] == '/'); }
 

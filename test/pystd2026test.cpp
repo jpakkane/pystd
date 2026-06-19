@@ -553,23 +553,6 @@ int test_range() {
     return failing_subtests;
 }
 
-int test_file_load() {
-    TEST_START;
-    pystd2026::Path testdir(PYSTD_TESTDIR);
-    auto testfile = testdir / "testfile.txt";
-    auto contents = testfile.load_text();
-    ASSERT(contents);
-    ASSERT(*contents == "This is a test file.\n");
-    return 0;
-}
-
-int test_files() {
-    printf("Testing file access.\n");
-    int failing_subtests = 0;
-    failing_subtests += test_file_load();
-    return failing_subtests;
-}
-
 int test_hash_computation() {
     const char *original_text = "For testing purposes only.";
     pystd2026::CString str(original_text);
@@ -1086,7 +1069,6 @@ int main(int argc, char **argv) {
         total_errors += test_span();
         total_errors += test_range();
         total_errors += test_vector();
-        total_errors += test_files();
         total_errors += test_hashing();
         total_errors += test_variant();
         total_errors += test_format();

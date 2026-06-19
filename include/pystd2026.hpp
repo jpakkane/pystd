@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-// Copyright 2025 Jussi Pakkanen
+// Copyright 2025-2026 Jussi Pakkanen
 
 #pragma once
 
@@ -2194,66 +2194,6 @@ private:
     int64_t i;
     int64_t end;
     int64_t step;
-};
-
-class GlobResult;
-
-class Path {
-public:
-    Path() noexcept {};
-    Path(const char *path);
-    explicit Path(CString path);
-
-    bool exists() const noexcept;
-    bool is_file() const noexcept;
-    bool is_dir() const noexcept;
-
-    bool is_abs() const;
-
-    CString extension() const;
-    Path filename() const;
-
-    Vector<CString> split() const;
-
-    Path operator/(const Path &o) const noexcept;
-    Path operator/(const char *str) const noexcept;
-    Path operator/(const CString &str) const noexcept;
-
-    Optional<Bytes> load_bytes();
-    Optional<U8String> load_text();
-
-    void replace_extension(CStringView new_extension);
-    void replace_extension(const char *str) { replace_extension(CStringView(str)); }
-
-    const char *c_str() const noexcept { return buf.c_str(); }
-    size_t size() const noexcept { return buf.size(); }
-
-    bool is_empty() const noexcept { return buf.is_empty(); }
-
-    bool rename_to(const Path &targetname) const noexcept;
-
-    GlobResult glob(const char *pattern);
-
-private:
-    CString buf;
-};
-
-class GlobResultInternal;
-
-class GlobResult {
-public:
-    friend class Path;
-    GlobResult() noexcept;
-    GlobResult(GlobResult &&o) noexcept;
-    ~GlobResult();
-    Optional<Path> next();
-
-    GlobResult &operator=(GlobResult &&o) noexcept = default;
-
-private:
-    GlobResult(const Path &path, const char *glob_pattern);
-
-    unique_ptr<GlobResultInternal> p;
 };
 
 class MMapping {

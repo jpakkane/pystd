@@ -14,6 +14,11 @@ pystd2026_test = executable('pystd2026test', 'pystd2026test.cpp',
 
 test('pystd2026', pystd2026_test)
 
+pystd2026_test_pathlib = executable('pystd2026test_pathlib', 'pystd2026test_pathlib.cpp',
+  dependencies: stdlib_dep)
+
+test('pystd2026_pathlib', pystd2026_test_pathlib)
+
 pystd2026_test_regex = executable('pystd2026test_regex', 'pystd2026test_regex.cpp',
   dependencies: stdlib_dep)
 
