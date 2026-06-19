@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <assert.h>
+#include <errno.h>
 
 // Currently does only Posix paths.
 
@@ -201,6 +202,29 @@ Optional<U8String> Path::load_text() {
     } catch(...) {
     }
     return Optional<U8String>();
+}
+
+bool Path::try_write_bytes(const char *data, size_t data_size) noexcept {
+    FILE *f = fopen(buf.c_str(), "wb");
+    if(!f) {
+        return false;
+    }
+    auto rc = fwrite(data, 1, data_size, f);
+    if(rc != data_size) {
+        return false;
+    }
+    rc = fclose(f);
+    if(rc != 0) {
+        return false;
+    }
+
+    return true;
+}
+
+void Path::write_bytes(const char *data, size_t data_size) {
+    if(!try_write_bytes(data, data_size)) {
+        throw pystd2026::PyException(strerror(errno));
+    }
 }
 
 void Path::replace_extension(CStringView new_extension) {

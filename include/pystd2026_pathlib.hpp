@@ -36,6 +36,9 @@ public:
     Optional<Bytes> load_bytes();
     Optional<U8String> load_text();
 
+    bool try_write_bytes(const char *data, size_t data_size) noexcept;
+    void write_bytes(const char *data, size_t data_size);
+
     void replace_extension(CStringView new_extension);
     void replace_extension(const char *str) { replace_extension(CStringView(str)); }
 
