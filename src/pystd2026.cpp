@@ -1263,6 +1263,22 @@ size_t File::seek(size_t off, int whence) {
     return rc;
 }
 
+size_t File::tell() const {
+    auto rc = ftell(f);
+    if(rc < 0) {
+        throw_errno_error(rc);
+    }
+    return rc;
+}
+
+size_t File::write_bytes(::pystd2026::Span<char> data) {
+    auto rc = fwrite(data.data(), 1, data.size_bytes(), f);
+    if(rc < 0) {
+        throw_errno_error(errno);
+    }
+    return rc;
+}
+
 Range::Range(int64_t end_) : Range(0, end_) {}
 
 Range::Range(int64_t start, int64_t end_) : Range(start, end_, 1) {}

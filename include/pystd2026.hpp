@@ -2170,6 +2170,7 @@ public:
     void read_and_append_bytes(size_t amount, Bytes &b);
     size_t seek(size_t off, int whence);
     size_t tell() const;
+    size_t write_bytes(::pystd2026::Span<char> data);
 
     FileEndSentinel end() { return FileEndSentinel(); }
     FileLineIterator begin() { return FileLineIterator(this); }
