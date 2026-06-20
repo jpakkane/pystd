@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Jussi Pakkanen
 
+#pragma once
+
 #include <pystd2026.hpp>
 #include <stdio.h>
 #include <dirent.h>

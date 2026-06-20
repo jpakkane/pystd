@@ -1199,12 +1199,14 @@ Bytes &&FileLineIterator::operator*() {
     return move(line);
 }
 
-File::File(const char *fname, const char *modes) : policy{EncodingPolicy::Enforce} {
+File::File(const char *fname, const char *modes) {
     f = fopen(fname, modes);
     if(!f) {
-        abort();
+        throw_errno_error(errno);
     }
 }
+
+File::File(FILE *open_file) : f{open_file} {}
 
 File::~File() { fclose(f); }
 
@@ -1233,13 +1235,13 @@ Bytes File::readline_bytes() {
     }
 }
 
-Bytes File::read_bytes(size_t amount) {
+Bytes File::read_bytes(uint64_t amount) {
     Bytes b;
     read_and_append_bytes(amount, b);
     return b;
 }
 
-void File::read_and_append_bytes(size_t amount, Bytes &b) {
+void File::read_and_append_bytes(uint64_t amount, Bytes &b) {
     if(amount == 0) {
         return;
     }
@@ -1255,7 +1257,7 @@ void File::read_and_append_bytes(size_t amount, Bytes &b) {
     }
 }
 
-size_t File::seek(size_t off, int whence) {
+uint64_t File::seek(uint64_t off, int whence) {
     auto rc = fseek(f, off, whence);
     if(rc < 0) {
         throw_errno_error(errno);
@@ -1263,7 +1265,7 @@ size_t File::seek(size_t off, int whence) {
     return rc;
 }
 
-size_t File::tell() const {
+uint64_t File::tell() const {
     auto rc = ftell(f);
     if(rc < 0) {
         throw_errno_error(rc);
@@ -1271,13 +1273,15 @@ size_t File::tell() const {
     return rc;
 }
 
-size_t File::write_bytes(::pystd2026::Span<char> data) {
-    auto rc = fwrite(data.data(), 1, data.size_bytes(), f);
+uint64_t File::write_bytes(const char *buf, size_t bufsize) {
+    auto rc = fwrite(buf, 1, bufsize, f);
     if(rc < 0) {
         throw_errno_error(errno);
     }
     return rc;
 }
+
+bool File::eof() const { return feof(f); }
 
 Range::Range(int64_t end_) : Range(0, end_) {}
 

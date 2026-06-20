@@ -9,6 +9,7 @@
 #include <pystd2026_rotate.hpp>
 #include <pystd2026_stablepartition.hpp>
 #include <pystd2026_nth_element.hpp>
+#include <pystd2026_tempfile.hpp>
 #include <pystd_testconfig.hpp>
 #include <string.h>
 
@@ -1059,6 +1060,33 @@ int test_std_mixing() {
     return failing_subtests;
 }
 
+int test_tempfile_simple() {
+    ::pystd2026::File tfile = ::pystd2026::TemporaryFile();
+    ASSERT(tfile.tell() == 0);
+    const char *s1 = "Hello";
+    const char *s2 = ", world!";
+    const char *s3 = "Hello, world!";
+
+    tfile.write_bytes(s1, strlen(s1));
+    ASSERT(tfile.tell() == strlen(s1));
+    tfile.write_bytes(s2, strlen(s2));
+    ASSERT(tfile.tell() == strlen(s1) + strlen(s2));
+
+    tfile.seek(0, SEEK_SET);
+    auto file_contents = tfile.read_bytes(strlen(s3));
+    ASSERT(memcmp(file_contents.data(), s3, strlen(s3)) == 0);
+
+    return 0;
+}
+
+int test_tempfile() {
+    printf("Testing tempfile\n");
+
+    int failing_subtests = 0;
+    failing_subtests += test_tempfile_simple();
+    return failing_subtests;
+}
+
 int main(int argc, char **argv) {
     int total_errors = 0;
     try {
@@ -1076,6 +1104,7 @@ int main(int argc, char **argv) {
         total_errors += test_fixedvector();
         total_errors += test_unicode();
         total_errors += test_std_mixing();
+        total_errors += test_tempfile();
     } catch(const pystd2026::PyException &e) {
         printf("Testing failed: %s\n", e.what().c_str());
         return 42;

@@ -11,6 +11,7 @@ stdlib = static_library('pystd',
   'pystd2026_pathlib.cpp',
   'pystd2026_shutil.cpp',
   'pystd2026_tables.cpp',
+  'pystd2026_tempfile.cpp',
   'pystd2026_threading.cpp',
   include_directories: '../include',
   dependencies: pcre_dep)

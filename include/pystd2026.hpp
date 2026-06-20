@@ -2162,15 +2162,19 @@ private:
 class File {
 public:
     File(const char *fname, const char *modes);
+    explicit File(FILE *open_file);
 
     Bytes readline_bytes();
     ~File();
 
-    Bytes read_bytes(size_t amount);
-    void read_and_append_bytes(size_t amount, Bytes &b);
-    size_t seek(size_t off, int whence);
-    size_t tell() const;
-    size_t write_bytes(::pystd2026::Span<char> data);
+    Bytes read_bytes(uint64_t amount);
+    void read_and_append_bytes(uint64_t amount, Bytes &b);
+    uint64_t seek(uint64_t off, int whence);
+    uint64_t tell() const;
+    uint64_t write_bytes(const char *buf, size_t bufsize);
+    uint64_t write_bytes(::pystd2026::Span<char> data) {
+        return write_bytes(data.data(), data.size_bytes());
+    }
 
     FileEndSentinel end() { return FileEndSentinel(); }
     FileLineIterator begin() { return FileLineIterator(this); }
@@ -2180,11 +2184,10 @@ public:
     // Vector<U8String> readlines();
     // Vector<Bytes> readlines_raw();
 
-    bool eof() const { return feof(f); }
+    bool eof() const;
 
 private:
     FILE *f;
-    EncodingPolicy policy;
 };
 
 class Range {
