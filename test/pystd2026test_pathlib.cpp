@@ -8,7 +8,7 @@ namespace {
 
 int breakpoint_opportunity(int number) { return number; }
 
-}
+} // namespace
 
 #define ASSERT_WITH(statement, message)                                                            \
     if(!(statement)) {                                                                             \

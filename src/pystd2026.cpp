@@ -9,6 +9,7 @@
 #include <limits.h>
 #include <math.h>
 #include <ctype.h>
+#include <errno.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -1217,9 +1218,9 @@ Bytes File::readline_bytes() {
                 }
                 return b;
             } else if(ferror(f)) {
-                abort();
+                throw_errno_error(errno);
             } else {
-                abort();
+                throw_errno_error(errno);
             }
         }
         b.append(c);
@@ -1227,6 +1228,36 @@ Bytes File::readline_bytes() {
             return b;
         }
     }
+}
+
+Bytes File::read_bytes(size_t amount) {
+    Bytes b;
+    read_and_append_bytes(amount, b);
+    return b;
+}
+
+void File::read_and_append_bytes(size_t amount, Bytes &b) {
+    if(amount == 0) {
+        return;
+    }
+    const auto original_size = b.size();
+    b.resize(b.size() + amount);
+    auto rc = fread(b.data() + original_size, 1, amount, f);
+    if(rc < 0) {
+        b.resize(original_size);
+        throw_errno_error(errno);
+    }
+    if(amount != (size_t)rc) {
+        b.resize(original_size + amount);
+    }
+}
+
+size_t File::seek(size_t off, int whence) {
+    auto rc = fseek(f, off, whence);
+    if(rc < 0) {
+        throw_errno_error(errno);
+    }
+    return rc;
 }
 
 Range::Range(int64_t end_) : Range(0, end_) {}
@@ -1287,14 +1318,12 @@ CString cformat(const char *format, ...) {
     return result;
 }
 
-#include <errno.h>
-
 void cformat_with_cb(StringCFormatCallback cb, void *ctx, const char *format, va_list ap) {
     const int bufsize = 1024;
     char buf[bufsize];
     auto rc = vsnprintf(buf, bufsize, format, ap);
     if(rc < 0) {
-        throw PyException(strerror(errno));
+        throw_errno_error(errno);
     } else if(rc >= bufsize) {
         if(INT_MAX - 1 >= rc) {
             // Almost certainly either a bug or an exploit.
@@ -1302,7 +1331,9 @@ void cformat_with_cb(StringCFormatCallback cb, void *ctx, const char *format, va
         }
         unique_arr<char> bigbuf(bufsize + 1);
         rc = vsnprintf(buf, bufsize, format, ap);
-        assert(rc > 0);
+        if(rc < 0) {
+            throw_errno_error(errno);
+        }
         cb(bigbuf.get(), rc, ctx);
     } else {
         cb(buf, rc, ctx);

@@ -245,7 +245,7 @@ bool Path::try_write_bytes(const char *data, size_t data_size) noexcept {
 
 void Path::write_bytes(const char *data, size_t data_size) {
     if(!try_write_bytes(data, data_size)) {
-        throw pystd2026::PyException(strerror(errno));
+        throw_errno_error(errno);
     }
 }
 

@@ -2166,6 +2166,11 @@ public:
     Bytes readline_bytes();
     ~File();
 
+    Bytes read_bytes(size_t amount);
+    void read_and_append_bytes(size_t amount, Bytes &b);
+    size_t seek(size_t off, int whence);
+    size_t tell() const;
+
     FileEndSentinel end() { return FileEndSentinel(); }
     FileLineIterator begin() { return FileLineIterator(this); }
 
