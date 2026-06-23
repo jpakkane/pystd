@@ -2122,8 +2122,9 @@ public:
 
     void reserve(size_t size_in_bytes) noexcept { cstring.reserve(size_in_bytes); }
 
-    static U8ParseResult
-    decode(const char *buf, size_t num_buf = (size_t)-1, uint32_t replacement_char = '?') noexcept;
+    static U8ParseResult decode(const char *buf,
+                                size_t num_buf = (size_t)-1,
+                                uint32_t replacement_char = 0xFFFD) noexcept;
 
 private:
     CString cstring;

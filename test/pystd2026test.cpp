@@ -371,7 +371,7 @@ int test_u8_casing() {
 int test_u8_invalid() {
     TEST_START;
     const unsigned char bad_utf8[4] = {'a', 0xe4, 'b', 0};
-    ::pystd2026::U8String expected("a?b");
+    ::pystd2026::U8String expected("a�b");
     auto parse_result = pystd2026::U8String::decode((const char *)bad_utf8, -1);
     ASSERT(parse_result.num_replacements == 1);
     ASSERT(parse_result.str == expected);
