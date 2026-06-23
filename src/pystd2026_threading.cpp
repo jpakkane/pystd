@@ -20,14 +20,14 @@ Mutex::~Mutex() {
 void Mutex::lock() {
     auto rc = pthread_mutex_lock(&m);
     if(rc != 0) {
-        throw_errno_error(errno);
+        throw_errno_error();
     }
 }
 
 bool Mutex::try_lock() {
     auto rc = pthread_mutex_trylock(&m);
     if(rc == EINVAL) {
-        throw_errno_error(errno);
+        throw_errno_error();
     }
     return rc == 0;
 }
@@ -35,7 +35,7 @@ bool Mutex::try_lock() {
 void Mutex::unlock() {
     auto rc = pthread_mutex_unlock(&m);
     if(rc != 0) {
-        throw_errno_error(errno);
+        throw_errno_error();
     }
 }
 
@@ -43,12 +43,12 @@ Thread::Thread(void *(*thread_main_func)(void *), void *ctx) {
     pthread_attr_t attr;
     auto rc = pthread_attr_init(&attr);
     if(rc != 0) {
-        throw_errno_error(errno);
+        throw_errno_error();
     }
     rc = pthread_create(&thread, &attr, thread_main_func, ctx);
     pthread_attr_destroy(&attr);
     if(rc != 0) {
-        throw_errno_error(errno);
+        throw_errno_error();
     }
 }
 

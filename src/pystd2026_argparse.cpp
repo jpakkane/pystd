@@ -88,7 +88,7 @@ static void update_value(const Argument &atype, ArgValue &vobj, CStringView sour
             errno = 0;
             int64_t intval = strtol(tmp.data(), nullptr, 10);
             if(errno != 0) {
-                throw_errno_error(errno);
+                throw_errno_error();
             }
             if(atype.minval && intval < atype.minval.value()) {
                 throw PyException("Argument value less than min value.");

@@ -37,6 +37,10 @@ void bootstrap_throw(const char *msg);
 [[noreturn]]
 void throw_errno_error(int rc);
 
+[[noreturn]]
+void throw_errno_error();
+
+
 template<class T> struct remove_reference {
     typedef T type;
 };

@@ -16,7 +16,7 @@ int recursive_rmtree(int dir_fd, const Path &dir_path) {
     int total_failures = 0;
     DIR *d = fdopendir(dir_fd);
     if(!d) {
-        throw_errno_error(errno);
+        throw_errno_error();
     }
     pystd2026::unique_ptr<DIR, DirCloser> dc(d);
     struct dirent *dentry;
@@ -29,7 +29,7 @@ int recursive_rmtree(int dir_fd, const Path &dir_path) {
             if(errno == 0) {
                 break;
             } else {
-                throw_errno_error(errno);
+                throw_errno_error();
             }
         }
         if(dentry->d_type == DT_DIR) {
@@ -39,7 +39,7 @@ int recursive_rmtree(int dir_fd, const Path &dir_path) {
             int subdir_fd =
                 openat(dir_fd, dentry->d_name, O_NOFOLLOW | O_DIRECTORY | O_RDONLY | O_CLOEXEC);
             if(subdir_fd < 0) {
-                throw_errno_error(errno);
+                throw_errno_error();
             }
             FileDescriptor sd(subdir_fd);
             Path subdir_path = dir_path / dentry->d_name;
@@ -56,7 +56,7 @@ int recursive_rmtree(int dir_fd, const Path &dir_path) {
             if(errno == 0) {
                 break;
             } else {
-                throw_errno_error(errno);
+                throw_errno_error();
             }
         }
         if(strcmp(dentry->d_name, ".") == 0 || strcmp(dentry->d_name, "..") == 0) {

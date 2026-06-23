@@ -245,13 +245,13 @@ bool Path::try_write_bytes(const char *data, size_t data_size) noexcept {
 
 void Path::write_bytes(const char *data, size_t data_size) {
     if(!try_write_bytes(data, data_size)) {
-        throw_errno_error(errno);
+        throw_errno_error();
     }
 }
 
 void Path::mkdir() {
     if(::mkdir(c_str(), S_IRWXU) != 0) {
-        throw_errno_error(errno);
+        throw_errno_error();
     }
 }
 

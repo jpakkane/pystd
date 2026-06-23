@@ -29,6 +29,11 @@ void throw_errno_error(int rc) {
     throw PyException(strerror(rc));
 }
 
+[[noreturn]]
+void throw_errno_error() {
+    throw_errno_error(errno);
+}
+
 namespace {
 
 bool is_ascii_whitespace(uint32_t c) {
@@ -1202,7 +1207,7 @@ Bytes &&FileLineIterator::operator*() {
 File::File(const char *fname, const char *modes) {
     f = fopen(fname, modes);
     if(!f) {
-        throw_errno_error(errno);
+        throw_errno_error();
     }
 }
 
@@ -1223,9 +1228,9 @@ Bytes File::readline_bytes() {
                 }
                 return b;
             } else if(ferror(f)) {
-                throw_errno_error(errno);
+                throw_errno_error();
             } else {
-                throw_errno_error(errno);
+                throw_errno_error();
             }
         }
         b.append(c);
@@ -1260,7 +1265,7 @@ void File::read_and_append_bytes(uint64_t amount, Bytes &b) {
 uint64_t File::seek(uint64_t off, int whence) {
     auto rc = fseek(f, off, whence);
     if(rc < 0) {
-        throw_errno_error(errno);
+        throw_errno_error();
     }
     return rc;
 }
@@ -1276,7 +1281,7 @@ uint64_t File::tell() const {
 uint64_t File::write_bytes(const char *buf, size_t bufsize) {
     auto rc = fwrite(buf, 1, bufsize, f);
     if(rc < 0) {
-        throw_errno_error(errno);
+        throw_errno_error();
     }
     return rc;
 }
@@ -1346,7 +1351,7 @@ void cformat_with_cb(StringCFormatCallback cb, void *ctx, const char *format, va
     char buf[bufsize];
     auto rc = vsnprintf(buf, bufsize, format, ap);
     if(rc < 0) {
-        throw_errno_error(errno);
+        throw_errno_error();
     } else if(rc >= bufsize) {
         if(INT_MAX - 1 >= rc) {
             // Almost certainly either a bug or an exploit.
@@ -1355,7 +1360,7 @@ void cformat_with_cb(StringCFormatCallback cb, void *ctx, const char *format, va
         unique_arr<char> bigbuf(bufsize + 1);
         rc = vsnprintf(buf, bufsize, format, ap);
         if(rc < 0) {
-            throw_errno_error(errno);
+            throw_errno_error();
         }
         cb(bigbuf.get(), rc, ctx);
     } else {
