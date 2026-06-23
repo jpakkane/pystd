@@ -31,7 +31,15 @@ TemporaryDirectory::TemporaryDirectory() {
     directory = dirname;
 }
 
-TemporaryDirectory::~TemporaryDirectory() { ::pystd2026::shutil_rmtree(directory.c_str()); }
+TemporaryDirectory::~TemporaryDirectory() {
+    try {
+        ::pystd2026::shutil_rmtree(directory.c_str());
+    } catch(PyException &e) {
+        fprintf(stderr, "%s\n", e.what().c_str());
+    } catch(...) {
+        fprintf(stderr, "Unknown error during temporary directory deletion.");
+    }
+}
 
 Path TemporaryDirectory::get_path() const { return Path(directory.c_str()); }
 
