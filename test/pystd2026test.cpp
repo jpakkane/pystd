@@ -368,6 +368,17 @@ int test_u8_casing() {
     return 0;
 }
 
+int test_u8_invalid() {
+    TEST_START;
+    const unsigned char bad_utf8[4] = {'a', 0xe4, 'b', 0};
+    ::pystd2026::U8String expected("a?b");
+    auto parse_result = pystd2026::U8String::decode((const char *)bad_utf8, -1);
+    ASSERT(parse_result.num_replacements == 1);
+    ASSERT(parse_result.str == expected);
+
+    return 0;
+}
+
 int test_u8_strings() {
     TEST_START;
     int failing_subtests = 0;
@@ -383,6 +394,7 @@ int test_u8_strings() {
     failing_subtests += test_u8_remove();
     failing_subtests += test_u8_pop();
     failing_subtests += test_u8_casing();
+    failing_subtests += test_u8_invalid();
     return failing_subtests;
 }
 

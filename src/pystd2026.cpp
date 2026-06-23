@@ -127,6 +127,29 @@ uint32_t unpack_one(const unsigned char *valid_utf8, const UtfDecodeStep &par) {
     return unpacked;
 }
 
+::pystd2026::Optional<uint32_t> try_unpack_one(const unsigned char *buf, const UtfDecodeStep &par) {
+    const uint32_t byte1 = uint32_t(*buf);
+    const uint32_t subsequent_header_mask = 0b11000000;
+    const uint32_t subsequent_header_value = 0b10000000;
+    const uint32_t subsequent_data_mask = 0b111111;
+    const uint32_t subsequent_num_data_bits = 6;
+
+    uint32_t unpacked = byte1 & par.byte1_data_mask;
+    for(uint32_t i = 0; i < par.num_subsequent_bytes; ++i) {
+        unpacked <<= subsequent_num_data_bits;
+        const uint32_t subsequent = uint32_t((unsigned char)buf[1 + i]);
+        if((subsequent & subsequent_header_mask) != subsequent_header_value) {
+            return {};
+        }
+        if((unpacked & subsequent_data_mask) != 0) {
+            return {};
+        }
+        unpacked |= subsequent & subsequent_data_mask;
+    }
+
+    return unpacked;
+}
+
 ValidU8Iterator::CharInfo extract_one_codepoint(const unsigned char *buf) {
     UtfDecodeStep par;
     // clang-format off
@@ -153,6 +176,51 @@ ValidU8Iterator::CharInfo extract_one_codepoint(const unsigned char *buf) {
         abort();
     }
     return ValidU8Iterator::CharInfo{unpack_one(buf, par), 1 + par.num_subsequent_bytes};
+}
+
+struct ExtractionResult {
+    uint32_t codepoint;
+    uint32_t bytes_advanced;
+};
+
+ExtractionResult try_extract_codepoint(const unsigned char *buf, size_t buf_size) {
+    ExtractionResult res;
+    res.codepoint = 0;
+    res.bytes_advanced = 0;
+
+    UtfDecodeStep par;
+    // clang-format off
+    const uint32_t twobyte_header_mask    = 0b11100000;
+    const uint32_t twobyte_header_value   = 0b11000000;
+    const uint32_t threebyte_header_mask  = 0b11110000;
+    const uint32_t threebyte_header_value = 0b11100000;
+    const uint32_t fourbyte_header_mask   = 0b11111000;
+    const uint32_t fourbyte_header_value  = 0b11110000;
+    // clang-format on
+    const uint32_t code = uint32_t((unsigned char)buf[0]);
+    if(code < 0x80) {
+        res.codepoint = buf[0];
+        res.bytes_advanced = 1;
+        return res;
+    } else if((code & twobyte_header_mask) == twobyte_header_value) {
+        par.byte1_data_mask = 0b11111;
+        par.num_subsequent_bytes = 1;
+    } else if((code & threebyte_header_mask) == threebyte_header_value) {
+        par.byte1_data_mask = 0b1111;
+        par.num_subsequent_bytes = 2;
+    } else if((code & fourbyte_header_mask) == fourbyte_header_value) {
+        par.byte1_data_mask = 0b111;
+        par.num_subsequent_bytes = 3;
+    } else {
+        return res;
+    }
+
+    auto unpacked = try_unpack_one(buf + 1, par);
+    if(unpacked) {
+        res.bytes_advanced = 1 + par.num_subsequent_bytes;
+        res.codepoint = *unpacked;
+    }
+    return res;
 }
 
 } // namespace
@@ -1172,6 +1240,42 @@ bool U8String::contains(const U8StringView &view) const {
 bool U8String::overlaps(const U8StringView &o) const {
     const auto v1 = view();
     return v1.overlaps(o);
+}
+
+U8ParseResult
+U8String::decode(const char *buf, size_t buf_size, uint32_t replacement_char) noexcept {
+    U8ParseResult res;
+    res.num_replacements = 0;
+    if(buf_size == (size_t)-1) {
+        buf_size = strlen(buf);
+    }
+    res.str.reserve(buf_size);
+    size_t i = 0;
+    while(i < buf_size) {
+        auto extraction = try_extract_codepoint((const unsigned char *)buf + i, buf_size - i);
+        if(extraction.bytes_advanced) {
+            res.str.append_codepoint(extraction.codepoint);
+            i += extraction.bytes_advanced;
+        } else {
+            res.str.append_codepoint(replacement_char);
+            ++res.num_replacements;
+            ++i;
+            while(true) {
+                if(i >= buf_size) {
+                    break;
+                }
+                const unsigned char current_char = (unsigned char)buf[i];
+                if(current_char < 128) {
+                    break;
+                }
+                if((current_char & 0b11000000) == 0b11000000) {
+                    break;
+                }
+                ++i;
+            }
+        }
+    }
+    return res;
 }
 
 void ValidU8Iterator::compute_char_info() {

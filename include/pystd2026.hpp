@@ -40,7 +40,6 @@ void throw_errno_error(int rc);
 [[noreturn]]
 void throw_errno_error();
 
-
 template<class T> struct remove_reference {
     typedef T type;
 };
@@ -2026,6 +2025,8 @@ private:
 typedef bool (*U8StringViewCallback)(const U8StringView &piece, void *ctx);
 typedef bool (*IsSplittingCharacter)(uint32_t codepoint);
 
+struct U8ParseResult;
+
 class U8String {
 public:
     U8String() noexcept = default;
@@ -2121,9 +2122,17 @@ public:
 
     void reserve(size_t size_in_bytes) noexcept { cstring.reserve(size_in_bytes); }
 
+    static U8ParseResult
+    decode(const char *buf, size_t num_buf = (size_t)-1, uint32_t replacement_char = '?') noexcept;
+
 private:
     CString cstring;
     // Store length in codepoints.
+};
+
+struct U8ParseResult {
+    ::pystd2026::U8String str;
+    int num_replacements;
 };
 
 class PyException {
