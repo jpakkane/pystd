@@ -237,7 +237,9 @@ void Bytes::pop_front(size_t num) {
 }
 
 void Bytes::grow_to(size_t new_size) {
-    assert(new_size < (size_t{1} << 48));
+    if constexpr(sizeof(char *) == 8) {
+        assert(new_size < (size_t{1} << 48));
+    }
     if(buf.size() >= new_size) {
         return;
     }
