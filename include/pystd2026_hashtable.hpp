@@ -264,8 +264,8 @@ protected:
         }
 
         grown.reset_hash_values();
-        MapData old = move(data);
-        data = move(grown);
+        MapData old = ::pystd2026::move(data);
+        data = ::pystd2026::move(grown);
         size_in_powers_of_two = new_powers_of_two;
         num_entries = 0;
         for(size_t i = 0; i < old.md.size(); ++i) {
