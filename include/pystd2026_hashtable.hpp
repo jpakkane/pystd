@@ -21,9 +21,9 @@ protected:
 
     friend class HashTableCommonIterator<Key, Value>;
     HashTableCommon() noexcept {
-        salt = (size_t)this;
+        salt = reinterpret_cast<size_t>(this);
         num_entries = 0;
-        size_in_powers_of_two = 4;
+        size_in_powers_of_two = MIN_SIZE_POWER_OF_TWO;
         auto initial_table_size = 1 << size_in_powers_of_two;
         data.md = unique_arr<SlotMetadata>(initial_table_size);
         data.reset_hash_values();
@@ -96,6 +96,9 @@ protected:
                         data.md[slot].state = SlotState::Tombstone;
                     }
                     --num_entries;
+                    if(fill_percentage() < MIN_LOAD_PERCENTAGE) {
+                        shrink();
+                    }
                     return;
                 }
             }
@@ -155,7 +158,7 @@ protected:
         Bytes keydata;
         Bytes valuedata;
 
-        MapData() = default;
+        MapData() noexcept = default;
         MapData(MapData &&o) noexcept {
             md = move(o.md);
             keydata = move(o.keydata);
@@ -200,7 +203,7 @@ protected:
             reset_hash_values();
         }
 
-        bool has_value_at(size_t offset) const {
+        bool has_value_at(size_t offset) const noexcept {
             if(offset >= md.size()) {
                 return false;
             }
@@ -208,7 +211,7 @@ protected:
         }
     };
 
-    size_t hash_to_slot(size_t hashval) const {
+    size_t hash_to_slot(size_t hashval) const noexcept {
         const size_t total_bits = sizeof(size_t) * 8;
         size_t consumed_bits = 0;
         size_t slot = 0;
@@ -220,7 +223,7 @@ protected:
         return slot;
     }
 
-    size_t insert_internal(const Key &key, Value &&v) {
+    size_t insert_internal(const Key &key, Value &&v) noexcept {
         auto hashval = hash_for(key);
         if(fill_percentage() >= MAX_LOAD_PERCENTAGE) {
             grow();
@@ -253,19 +256,31 @@ protected:
     }
 
     void grow() {
-        const auto new_size = 2 * table_size();
         const auto new_powers_of_two = size_in_powers_of_two + 1;
-        MapData grown;
+        const auto new_table_size = 2 * table_size();
+        resize_to(new_powers_of_two, new_table_size);
+    }
 
-        grown.md = unique_arr<SlotMetadata>(new_size);
-        grown.keydata = Bytes(new_size * sizeof(Key));
+    void shrink() {
+        if(table_size() >= MIN_SIZE) {
+            const auto new_powers_of_two = size_in_powers_of_two - 1;
+            const auto new_table_size = table_size() / 2;
+            resize_to(new_powers_of_two, new_table_size);
+        }
+    }
+
+    void resize_to(uint32_t new_powers_of_two, size_t new_size) {
+        MapData resized;
+
+        resized.md = unique_arr<SlotMetadata>(new_size);
+        resized.keydata = Bytes(new_size * sizeof(Key));
         if(!set_only) {
-            grown.valuedata = Bytes(new_size * sizeof(Value));
+            resized.valuedata = Bytes(new_size * sizeof(Value));
         }
 
-        grown.reset_hash_values();
+        resized.reset_hash_values();
         MapData old = ::pystd2026::move(data);
-        data = ::pystd2026::move(grown);
+        data = ::pystd2026::move(resized);
         size_in_powers_of_two = new_powers_of_two;
         num_entries = 0;
         for(size_t i = 0; i < old.md.size(); ++i) {
@@ -293,8 +308,11 @@ protected:
     size_t table_size() const { return data.md.size(); }
 
     size_t fill_percentage() const { return (num_entries * 100) / table_size(); }
+
     static constexpr size_t MAX_LOAD_PERCENTAGE = 77;
-    // static constexpr size_t MIN_LOAD_PERCENTAGE = 25;
+    static constexpr size_t MIN_LOAD_PERCENTAGE = 25;
+    static const size_t MIN_SIZE = 16;
+    static const size_t MIN_SIZE_POWER_OF_TWO = 4;
 
     MapData data;
     size_t salt;
