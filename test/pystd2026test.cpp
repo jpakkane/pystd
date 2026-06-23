@@ -24,6 +24,13 @@ struct CustomHashObject {
     pystd2026::CString str;
 };
 
+struct CustomHashObject2 {
+    pystd2026::CString str;
+
+    // Not a template.
+    void feed_hash(pystd2026::HashFeedInterface &iface) const { str.feed_hash(iface); }
+};
+
 namespace pystd2026 {
 
 // Template specialization to make hashing work for objects
@@ -607,6 +614,12 @@ int test_custom_hash() {
     h.feed_hash(co);
     const auto custom_hash_value = h.get_hash_value();
     ASSERT(string_hash_value == custom_hash_value);
+
+    CustomHashObject2 co2{str};
+    h.reset();
+    h.feed_hash(co2);
+    const auto custom_hash_value2 = h.get_hash_value();
+    ASSERT(string_hash_value == custom_hash_value2);
 
     return 0;
 }
