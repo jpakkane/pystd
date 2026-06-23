@@ -249,6 +249,12 @@ void Path::write_bytes(const char *data, size_t data_size) {
     }
 }
 
+void Path::mkdir() {
+    if(::mkdir(c_str(), S_IRWXU) != 0) {
+        throw_errno_error(errno);
+    }
+}
+
 void Path::replace_extension(CStringView new_extension) {
     // FIXME, assumes an extension can be found before
     // a path separator.

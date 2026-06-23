@@ -7,6 +7,19 @@
 
 namespace pystd2026 {
 
+class Path;
+
 ::pystd2026::File TemporaryFile();
 
-}
+class TemporaryDirectory {
+public:
+    TemporaryDirectory();
+    ~TemporaryDirectory();
+
+    ::pystd2026::Path get_path() const;
+
+private:
+    CString directory;
+};
+
+} // namespace pystd2026

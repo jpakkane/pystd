@@ -10,6 +10,7 @@
 #include <pystd2026_stablepartition.hpp>
 #include <pystd2026_nth_element.hpp>
 #include <pystd2026_tempfile.hpp>
+#include <pystd2026_pathlib.hpp>
 #include <pystd_testconfig.hpp>
 #include <string.h>
 
@@ -1079,11 +1080,31 @@ int test_tempfile_simple() {
     return 0;
 }
 
+int test_tempdir_simple() {
+    pystd2026::Path tmp_dir;
+    {
+        pystd2026::TemporaryDirectory td;
+        tmp_dir = td.get_path();
+        ASSERT(tmp_dir.is_dir());
+        auto testfile = tmp_dir / "filename.txt";
+        testfile.write_bytes("hello", 5);
+        ASSERT(testfile.is_file());
+        auto testdir = tmp_dir / "directory_name";
+        ASSERT(!testdir.is_dir());
+        testdir.mkdir();
+        ASSERT(testdir.is_dir());
+    }
+    ASSERT(!tmp_dir.is_dir());
+
+    return 0;
+}
+
 int test_tempfile() {
     printf("Testing tempfile\n");
 
     int failing_subtests = 0;
     failing_subtests += test_tempfile_simple();
+    failing_subtests += test_tempdir_simple();
     return failing_subtests;
 }
 
