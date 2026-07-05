@@ -2469,10 +2469,10 @@ template<typename T> struct FloatTotalOrderComparator {
     int compare(const T a, const T b) const noexcept {
         static_assert(::pystd2026::is_floating_point_v<::pystd2026::remove_cv_t<T>>,
                       "This type is unly usable with floating point types.");
-        return total_order_compare(a, b);
+        return ::pystd2026::total_order_compare(a, b);
     }
 
-    bool equal(const T a, const T b) const noexcept { return total_order_equal(a, b); }
+    bool equal(const T a, const T b) const noexcept { return ::pystd2026::total_order_equal(a, b); }
 };
 
 // Assumes NaNs do not exist in input data. If they do,
@@ -2488,7 +2488,7 @@ template<typename T> struct FloatIgnoreNanComparator {
         if(b < a) {
             return 1;
         }
-        return 1;
+        return 0;
     }
 
     bool equal(const T a, const T b) const noexcept { return a == b; }
