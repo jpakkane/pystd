@@ -2,7 +2,7 @@
 // Copyright 2025-2026 Jussi Pakkanen
 
 // Include this to ensure that mixing pystd headers works.
-#include <pystd2025.hpp>
+#include <pystd2025/common.hpp>
 
 #include <pystd2026_hashtable.hpp>
 #include <pystd2026_variant.hpp>

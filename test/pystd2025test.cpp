@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2025 Jussi Pakkanen
 
-#include <pystd2025.hpp>
+#include <pystd2025/common.hpp>
 #include <pystd_testconfig.hpp>
 #include <string.h>
 
@@ -770,7 +770,7 @@ enum class ErrorCode : int32_t {
     DynamicError,
 };
 
-#include <pystd2025_btree.hpp>
+#include <pystd2025/btree.hpp>
 
 int test_fixedvector1() {
     TEST_START;
@@ -966,7 +966,7 @@ int test_unicode() {
     return failing_subtests;
 }
 
-#include <pystd2025_threading.hpp>
+#include <pystd2025/threading.hpp>
 
 int test_mutex() {
     TEST_START;

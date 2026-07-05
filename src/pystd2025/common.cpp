@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2025 Jussi Pakkanen
 
-#include <pystd2025.hpp>
-#include <pystd2025_tables.hpp>
+#include <pystd2025/common.hpp>
+#include <pystd2025/tables.hpp>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>

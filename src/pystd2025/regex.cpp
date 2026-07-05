@@ -7,7 +7,7 @@
 char linker_remove_me_regex25;
 #else
 
-#include <pystd2025.hpp>
+#include <pystd2025/common.hpp>
 #define PCRE2_CODE_UNIT_WIDTH 8
 #include <pcre2.h>
 

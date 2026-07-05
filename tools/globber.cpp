@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2025 Jussi Pakkanen
 
-#include <pystd2025.hpp>
+#include <pystd2025/common.hpp>
 #include <assert.h>
 
 int actual_main(int argc, char **argv) {
