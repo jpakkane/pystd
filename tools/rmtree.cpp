@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Jussi Pakkanen
 
-#include <pystd2026_shutil.hpp>
+#include <pystd2026/shutil.hpp>
 
 int main(int argc, char **argv) {
     if(argc != 2) {

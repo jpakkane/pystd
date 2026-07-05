@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include <pystd2026_nth_element.hpp>
-#include <pystd2026_introsort.hpp>
+#include <pystd2026/nth_element.hpp>
+#include <pystd2026/introsort.hpp>
 
 namespace pystd2026 {
 

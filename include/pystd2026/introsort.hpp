@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include <pystd2026.hpp>
-#include <pystd2026_heapsort.hpp>
+#include <pystd2026/common.hpp>
+#include <pystd2026/heapsort.hpp>
 
 namespace pystd2026 {
 

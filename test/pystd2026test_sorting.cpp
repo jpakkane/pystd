@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Jussi Pakkanen
 
-#include <pystd2026_heapsort.hpp>
-#include <pystd2026_mergesort.hpp>
-#include <pystd2026_introsort.hpp>
-#include <pystd2026_radixsort.hpp>
-#include <pystd2026_bucketsort.hpp>
-#include <pystd2026_shellsort.hpp>
-#include <pystd2026_partial_sort.hpp>
-#include <pystd2026_indirect_sort.hpp>
+#include <pystd2026/heapsort.hpp>
+#include <pystd2026/mergesort.hpp>
+#include <pystd2026/introsort.hpp>
+#include <pystd2026/radixsort.hpp>
+#include <pystd2026/bucketsort.hpp>
+#include <pystd2026/shellsort.hpp>
+#include <pystd2026/partial_sort.hpp>
+#include <pystd2026/indirect_sort.hpp>
 #include <pystd_testconfig.hpp>
 
 int breakpoint_opportunity(int number) { return number; }

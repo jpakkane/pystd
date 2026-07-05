@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Jussi Pakkanen
 
-#include <pystd2026_mergesort.hpp>
-#include <pystd2026_indirect_sort.hpp>
+#include <pystd2026/mergesort.hpp>
+#include <pystd2026/indirect_sort.hpp>
 
 // Same as sorttest, but uses stable sort.
 

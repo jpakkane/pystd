@@ -38,9 +38,10 @@ def test_header(compile_command_base, fname):
 
 def get_header_list(source_root):
     headers = []
-    for fname in glob(os.path.join(source_root, 'include/*2026*.hpp')):  # REMEMBER: update to match epoch.
+    for fname in glob(os.path.join(source_root, 'include/pystd2026/*.hpp')):  # REMEMBER: update to match epoch.
         basename = os.path.basename(fname)
-        headers.append(basename)
+        headername = os.path.join('pystd2026', basename)
+        headers.append(headername)
     assert len(headers) > 0
     return headers
 

@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <pystd2026_rotate.hpp>
+#include <pystd2026/rotate.hpp>
 
 namespace pystd2026 {
 

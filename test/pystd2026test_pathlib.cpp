@@ -2,7 +2,7 @@
 // Copyright 2025-2026 Jussi Pakkanen
 
 #include <pystd_testconfig.hpp>
-#include <pystd2026_pathlib.hpp>
+#include <pystd2026/pathlib.hpp>
 
 namespace {
 

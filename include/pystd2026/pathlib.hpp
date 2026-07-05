@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <pystd2026.hpp>
+#include <pystd2026/common.hpp>
 #include <stdio.h>
 #include <dirent.h>
 

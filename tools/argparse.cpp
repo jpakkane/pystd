@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2025 Jussi Pakkanen
 
-#include <pystd2026_argparse.hpp>
+#include <pystd2026/argparse.hpp>
 
 int main(int argc, const char **argv) {
     pystd2026::ArgParse parser(pystd2026::U8String("Test application for command line parser."));

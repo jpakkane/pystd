@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Jussi Pakkanen
 
-#include <pystd2026_threading.hpp>
+#include <pystd2026/threading.hpp>
 #include <pystd_testconfig.hpp>
 
 int breakpoint_opportunity(int number) { return number; }

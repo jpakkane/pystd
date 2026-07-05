@@ -4,13 +4,13 @@
 // Include this to ensure that mixing pystd headers works.
 #include <pystd2025/common.hpp>
 
-#include <pystd2026_hashtable.hpp>
-#include <pystd2026_variant.hpp>
-#include <pystd2026_rotate.hpp>
-#include <pystd2026_stablepartition.hpp>
-#include <pystd2026_nth_element.hpp>
-#include <pystd2026_tempfile.hpp>
-#include <pystd2026_pathlib.hpp>
+#include <pystd2026/hashtable.hpp>
+#include <pystd2026/variant.hpp>
+#include <pystd2026/rotate.hpp>
+#include <pystd2026/stablepartition.hpp>
+#include <pystd2026/nth_element.hpp>
+#include <pystd2026/tempfile.hpp>
+#include <pystd2026/pathlib.hpp>
 #include <pystd_testconfig.hpp>
 #include <string.h>
 

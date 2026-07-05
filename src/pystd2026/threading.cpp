@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2025 Jussi Pakkanen
 
-#include <pystd2026_threading.hpp>
+#include <pystd2026/threading.hpp>
 #include <errno.h>
 
 namespace pystd2026 {

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2025 Jussi Pakkanen
 
-#include <pystd2026_argparse.hpp>
+#include <pystd2026/argparse.hpp>
 #include <errno.h>
 #include <assert.h>
 

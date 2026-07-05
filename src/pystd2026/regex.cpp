@@ -7,7 +7,7 @@
 char linker_remove_me_regex26;
 #else
 
-#include <pystd2026_regex.hpp>
+#include <pystd2026/regex.hpp>
 
 #define PCRE2_CODE_UNIT_WIDTH 8
 #include <pcre2.h>

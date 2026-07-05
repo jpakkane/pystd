@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Jussi Pakkanen
 
-#include <pystd2026_introsort.hpp>
+#include <pystd2026/introsort.hpp>
 
 // Test sorting N size_t's from a file.
 // The input data is assumed to have the

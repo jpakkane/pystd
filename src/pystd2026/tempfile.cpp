@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Jussi Pakkanen
 
-#include <pystd2026_tempfile.hpp>
-#include <pystd2026_pathlib.hpp>
-#include <pystd2026_shutil.hpp>
+#include <pystd2026/tempfile.hpp>
+#include <pystd2026/pathlib.hpp>
+#include <pystd2026/shutil.hpp>
 
 #include <stdio.h>
 #include <errno.h>

@@ -2,8 +2,8 @@
 // Copyright 2026 Jussi Pakkanen
 
 #include <stdio.h>
-#include <pystd2026_hashtable.hpp>
-#include <pystd2026_introsort.hpp>
+#include <pystd2026/hashtable.hpp>
+#include <pystd2026/introsort.hpp>
 #include <assert.h>
 
 struct WordCount {

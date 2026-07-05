@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2022-2026 Jussi Pakkanen
 
-#include <pystd2026.hpp>
+#include <pystd2026/common.hpp>
 
 namespace pystd2026 {
 

@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <pystd2026.hpp>
+#include <pystd2026/common.hpp>
 
 #ifndef PYSTD2026_HAS_REGEX
 #error "Regex support not enabled in this build."
