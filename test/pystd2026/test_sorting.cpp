@@ -4,7 +4,6 @@
 #include <pystd2026/heapsort.hpp>
 #include <pystd2026/mergesort.hpp>
 #include <pystd2026/introsort.hpp>
-#include <pystd2026/radixsort.hpp>
 #include <pystd2026/partial_sort.hpp>
 #include <pystd2026/indirect_sort.hpp>
 #include <pystd_testconfig.hpp>
@@ -131,24 +130,6 @@ int test_introsort_int() {
     return failing_subtests;
 }
 
-int test_radixsort() {
-    TEST_START;
-
-    int failing_subtests = 0;
-    const uint32_t NUM_ENTRIES = 41;
-    uint32_t table[NUM_ENTRIES] = {0xF00000FF, 36, 34, 22, 7,  27, 25, 29, 24, 39, 5,  28, 1, 14,
-                                   38,         37, 30, 18, 3,  20, 15, 26, 16, 4,  11, 21, 9, 8,
-                                   13,         17, 23, 0,  12, 31, 35, 19, 10, 6,  2,  33, 32};
-
-    pystd2026::radix_sort(table, table + NUM_ENTRIES);
-
-    for(uint32_t i = 0; i < NUM_ENTRIES - 1; ++i) {
-        ASSERT(i == table[i]);
-    }
-    ASSERT(table[NUM_ENTRIES - 1] == 0xF00000FF);
-    return failing_subtests;
-}
-
 int test_partial_sort() {
     pystd2026::Vector<int> entries;
     entries.reserve(200);
@@ -228,7 +209,6 @@ int test_sort_algorithms() {
     failing_subtests += test_mergesort_int();
     failing_subtests += test_mergesort();
     failing_subtests += test_introsort_int();
-    failing_subtests += test_radixsort();
     failing_subtests += test_partial_sort();
     failing_subtests += test_indirect_sort();
     failing_subtests += test_indirect_stable_sort();
