@@ -11,6 +11,7 @@
 #include <pystd2026/nth_element.hpp>
 #include <pystd2026/tempfile.hpp>
 #include <pystd2026/pathlib.hpp>
+#include <pystd2026/fixedset.hpp>
 #include <pystd_testconfig.hpp>
 #include <string.h>
 
@@ -714,6 +715,47 @@ int test_hashing() {
     return total_errors;
 }
 
+int test_fixed_set_simple() {
+    ::pystd2026::FixedSet<int, 4> fset;
+    ASSERT(fset.is_empty());
+    ASSERT(!fset.is_full());
+
+    fset.insert(0);
+    ASSERT(!fset.is_empty());
+    fset.insert(1);
+    fset.insert(2);
+    fset.insert(3);
+    ASSERT(fset.is_full());
+    ASSERT(!fset.try_insert(4));
+    ASSERT(fset.try_insert(3));
+
+    ASSERT(!fset.erase(66));
+
+    ASSERT(fset.contains(2));
+    ASSERT(fset.size() == 4);
+    fset.erase(2);
+    ASSERT(fset.size() == 3);
+    ASSERT(fset.contains(0));
+    ASSERT(fset.contains(1));
+    ASSERT(fset.contains(3));
+
+    fset.erase(3);
+    fset.erase(0);
+    fset.erase(1);
+
+    ASSERT(fset.is_empty());
+
+    ASSERT(!fset.erase(66));
+
+    return 0;
+}
+
+int test_fixed_set() {
+    int total_errors = 0;
+    total_errors += test_fixed_set_simple();
+    return total_errors;
+}
+
 int test_variant1() {
     TEST_START;
     pystd2026::Variant<int32_t, int64_t> v;
@@ -1144,6 +1186,7 @@ int main(int argc, char **argv) {
         total_errors += test_range();
         total_errors += test_vector();
         total_errors += test_hashing();
+        total_errors += test_fixed_set();
         total_errors += test_variant();
         total_errors += test_format();
         total_errors += test_algorithms();
