@@ -8,6 +8,10 @@
 #include <stdio.h>
 #include <errno.h>
 
+#if defined __APPLE__
+#include <unistd.h>
+#endif
+
 namespace pystd2026 {
 
 ::pystd2026::File TemporaryFile() {

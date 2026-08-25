@@ -270,7 +270,7 @@ public:
 
 #if defined(__APPLE__)
     void feed_hash(const unsigned long o) {
-        h.feed_bytes(reinterpret_cast<const char *>(&o), sizeof(o));
+        feed_bytes(reinterpret_cast<const char *>(&o), sizeof(o));
     }
 #endif
 
