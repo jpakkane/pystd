@@ -11,6 +11,11 @@ struct SetOnlyTag {};
 
 template<WellBehaved Key, WellBehaved Value, WellBehaved HashAlgo = SimpleHash>
 class HashTableCommon {
+private:
+    static constexpr size_t key_val_padding =
+        alignof(Key) >= alignof(Value) ? 0 : alignof(Value) - alignof(Key);
+    static_assert(key_val_padding >= 0);
+
 protected:
     static_assert(!::pystd2026::is_floating_point_v<::pystd2026::remove_cv_t<Key>>,
                   "Floats can not be used as map keys as that is highly unreliable.");
@@ -27,9 +32,11 @@ protected:
         auto initial_table_size = 1 << size_in_powers_of_two;
         data.md = unique_arr<SlotMetadata>(initial_table_size);
         data.reset_hash_values();
-        data.keydata = Bytes(initial_table_size * sizeof(Key));
-        if constexpr(!set_only) {
-            data.valuedata = Bytes(initial_table_size * sizeof(Value));
+        if constexpr(set_only) {
+            data.data_buffer = Bytes(initial_table_size * sizeof(Key));
+        } else {
+            data.data_buffer = Bytes(initial_table_size * sizeof(Key) + key_val_padding +
+                                     initial_table_size * sizeof(Value));
         }
     }
 
@@ -154,37 +161,36 @@ protected:
     // At this point in the project life cycle it does not need to be.
     struct MapData {
         unique_arr<SlotMetadata> md;
-        // FIXME: fold both of these into one allocation.
-        Bytes keydata;
-        Bytes valuedata;
+        // Keys first, then values.
+        Bytes data_buffer;
 
         MapData() noexcept = default;
         MapData(MapData &&o) noexcept {
             md = move(o.md);
-            keydata = move(o.keydata);
-            valuedata = move(o.valuedata);
+            data_buffer = move(o.data_buffer);
         }
 
         void operator=(MapData &&o) noexcept {
             if(this != &o) {
                 md = move(o.md);
-                keydata = move(o.keydata);
-                valuedata = move(o.valuedata);
+                data_buffer = move(o.data_buffer);
             }
         }
 
         ~MapData() { deallocate_contents(); }
 
-        Key *keyptr(size_t i) noexcept { return (Key *)(keydata.data() + i * sizeof(Key)); }
+        Key *keyptr(size_t i) noexcept { return (Key *)(data_buffer.data() + i * sizeof(Key)); }
         const Key *keyptr(size_t i) const noexcept {
-            return (const Key *)(keydata.data() + i * sizeof(Key));
+            return (const Key *)(data_buffer.data() + i * sizeof(Key));
         }
 
         Value *valueptr(size_t i) noexcept {
-            return (Value *)(valuedata.data() + i * sizeof(Value));
+            return (Value *)(data_buffer.data() + md.size() * sizeof(Key) + key_val_padding +
+                             i * sizeof(Value));
         }
         const Value *valueptr(size_t i) const noexcept {
-            return (const Value *)(valuedata.data() + i * sizeof(Value));
+            return (const Value *)(data_buffer.data() + md.size() * sizeof(Key) + key_val_padding +
+                                   i * sizeof(Value));
         }
 
         void reset_hash_values() noexcept { memset(md.get(), 0, md.size_bytes()); }
@@ -273,9 +279,11 @@ protected:
         MapData resized;
 
         resized.md = unique_arr<SlotMetadata>(new_size);
-        resized.keydata = Bytes(new_size * sizeof(Key));
-        if(!set_only) {
-            resized.valuedata = Bytes(new_size * sizeof(Value));
+        if(set_only) {
+            resized.data_buffer = Bytes(new_size * sizeof(Key));
+        } else {
+            resized.data_buffer =
+                Bytes(new_size * sizeof(Key) + key_val_padding + new_size * sizeof(Value));
         }
 
         resized.reset_hash_values();
