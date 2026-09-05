@@ -113,7 +113,7 @@ void merge_adjacent_inplace(It region_start,
             if(right_begin == right_end) {
                 break;
             }
-            if(cmp.compare(*left_begin, *right_begin) >= 0) {
+            if(cmp.compare(*left_begin, *right_begin) > 0) {
                 buf.push_back(::pystd2026::move(*right_begin));
                 ++right_begin;
             } else {

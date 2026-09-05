@@ -145,33 +145,30 @@ int test_merge_inplace_sort_int() {
 
 int test_merge_inplace_sort() {
     TEST_START;
-    pystd2026::Vector<SortStruct> items;
     const size_t NUM_VALUES = 100;
+    const size_t TOTAL_SIZE = 2 * NUM_VALUES + 2;
+    SortStruct items[TOTAL_SIZE];
     const SortStruct last{100000, 0};
     const SortStruct first{0, 100000};
-    const size_t TOTAL_SIZE = 202;
 
-    items.reserve(TOTAL_SIZE);
-    items.emplace_back(last);
-    for(size_t i = 0; i < NUM_VALUES; ++i) {
-        items.emplace_back(NUM_VALUES - i, 1);
+    items[0] = last;
+    for(int i = 0; i < (int)NUM_VALUES; ++i) {
+        items[i + 1] = SortStruct{(int)NUM_VALUES - i, 1};
     }
-    for(size_t i = 0; i < NUM_VALUES; ++i) {
-        items.emplace_back(NUM_VALUES - i, 0);
+    for(int i = 0; i < (int)NUM_VALUES; ++i) {
+        items[i + NUM_VALUES + 1] = SortStruct{(int)NUM_VALUES - i, 0};
     }
-    items.emplace_back(first);
+    items[TOTAL_SIZE - 1] = first;
 
-    ASSERT(items.size() == TOTAL_SIZE);
-    pystd2026::merge_inplace_sort(items.begin(), items.end());
-    ASSERT(items.size() == TOTAL_SIZE);
+    pystd2026::merge_inplace_sort(items, items + TOTAL_SIZE);
 
-    for(size_t i = 0; i < items.size() - 1; ++i) {
+    for(size_t i = 0; i < TOTAL_SIZE - 1; ++i) {
         ASSERT(items[i].x <= items[i + 1].x);
     }
 
-    ASSERT(items.front() == first);
-    ASSERT(items.back() == last);
-    for(size_t i = 1; i < items.size() - 2; i += 2) {
+    ASSERT(items[0] == first);
+    ASSERT(items[TOTAL_SIZE - 1] == last);
+    for(size_t i = 1; i < TOTAL_SIZE - 2; i += 2) {
         ASSERT(items[i].x == items[i + 1].x);
         ASSERT(items[i].y > items[i + 1].y);
     }
@@ -274,7 +271,7 @@ int test_sort_algorithms() {
     failing_subtests += test_mergesort_int();
     failing_subtests += test_mergesort();
     failing_subtests += test_merge_inplace_sort_int();
-    // failing_subtests += test_merge_inplace_sort();
+    failing_subtests += test_merge_inplace_sort();
     failing_subtests += test_introsort_int();
     failing_subtests += test_partial_sort();
     failing_subtests += test_indirect_sort();
