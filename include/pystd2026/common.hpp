@@ -1499,6 +1499,12 @@ public:
     T *begin() const { return const_cast<T *>(objptr(0)); }
     T *end() const { return const_cast<T *>(objptr(num_entries)); }
 
+    void clear() {
+        while(!is_empty()) {
+            pop_back();
+        }
+    }
+
 private:
     T *objptr(size_t i) noexcept { return reinterpret_cast<T *>(rawptr(i)); }
     const T *objptr(size_t i) const noexcept { return reinterpret_cast<const T *>(rawptr(i)); }
