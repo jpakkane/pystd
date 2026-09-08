@@ -232,9 +232,20 @@ ExtractionResult try_extract_codepoint(const unsigned char *buf, size_t buf_size
 #else
 
 void *allocate_native(size_t size) { return malloc(size); }
+
 void *allocate_aligned_native(size_t alignment, size_t size) {
+#if defined __APPLE__
+    // On Apple platforms malloc seems to always return 16 byte aligned
+    // values. And in addition specifying alignment less than that leads
+    // to failures EVEN THOUGH the man page claims that it only needs
+    // to be larger than a void pointer.
+    if(alignment <= 16) {
+        return allocate_native(size);
+    }
+#endif
     return aligned_alloc(alignment, size);
 }
+
 void free_native(void *ptr) { free(ptr); }
 #endif
 

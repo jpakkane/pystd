@@ -1235,6 +1235,7 @@ public:
 
     void reserve(size_t new_capacity) {
         const auto current_capacity = capacity();
+
         if(new_capacity > current_capacity) {
             while(new_capacity < current_capacity * 2) {
                 new_capacity *= 2;
@@ -1283,13 +1284,7 @@ private:
         const size_t buffer_size = new_capacity * sizeof(T);
         const size_t end_padding_size = (alignof(T) - (buffer_size % alignof(T))) % alignof(T);
         const size_t allocation_size = buffer_size + end_padding_size;
-#if defined __APPLE__
-        // If alignment is less than 8, macOS will return a null pointer
-        // I have no idea why.
-        const size_t alignment = alignof(T) < 8 ? 8 : alignof(T);
-#else
         const size_t alignment = alignof(T);
-#endif
         char *new_buf = (char *)allocate_aligned_native(alignment, allocation_size);
         for(size_t i = 0; i < num_entries; ++i) {
             T *obj = objptr(i);
