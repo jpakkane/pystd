@@ -8,7 +8,10 @@
 
 namespace pystd2026 {
 
-template<WellBehaved Payload, size_t EntryCount> class BTree {
+template<WellBehaved Payload,
+         size_t EntryCount,
+         typename Comparator = ::pystd2026::DefaultComparator<Payload>>
+class BTree {
 
     class BTreeIterator;
 
@@ -50,6 +53,7 @@ public:
     }
 
     const Payload *lookup(const Payload &value) const {
+        Comparator cmp;
         if(is_empty()) {
             return nullptr;
         }
@@ -63,9 +67,10 @@ public:
                     return nullptr;
                 }
                 const auto &prospective_value = current_common.values[node_loc];
-                if(value < prospective_value) {
+                const auto ordering = cmp.compare(value, prospective_value);
+                if(ordering < 0) {
                     return nullptr;
-                } else if(prospective_value < value) {
+                } else if(ordering > 0) {
                     return nullptr;
                 } else {
                     return &prospective_value;
@@ -76,9 +81,11 @@ public:
                     current_id = current_node.children.back();
                 } else {
                     const auto &prospective_value = current_node.values[node_loc];
-                    if(value < prospective_value) {
+                    const auto ordering = cmp.compare(value, prospective_value);
+
+                    if(ordering < 0) {
                         current_id = current_node.children[node_loc];
-                    } else if(prospective_value < value) {
+                    } else if(ordering > 0) {
                         current_id = current_node.children[node_loc + 1];
                     } else {
                         return &prospective_value;
@@ -524,11 +531,12 @@ private:
     }
 
     uint32_t find_insertion_point(const NodeCommon &node, const Payload &value) const {
+        Comparator cmp;
         const auto &value_array = node.values;
         if(node.values.is_empty()) {
             return 0;
         }
-        auto it = lower_bound(value_array.begin(), value_array.end(), value);
+        auto it = lower_bound(value_array.begin(), value_array.end(), value, cmp);
 
         return &(*it) - &node.values.front();
     }
@@ -1027,7 +1035,10 @@ private:
     Vector<LeafNode> leaves;
 };
 
-template<WellBehaved Key, size_t EntrySize> class BTreeSet {
+template<WellBehaved Key,
+         size_t EntrySize,
+         typename Comparator = ::pystd2026::DefaultComparator<Key>>
+class BTreeSet {
 public:
     BTreeSet() noexcept = default;
 
@@ -1042,10 +1053,14 @@ public:
     bool is_empty() const noexcept { return tree.is_empty(); }
 
 private:
-    BTree<Key, EntrySize> tree;
+    BTree<Key, EntrySize, Comparator> tree;
 };
 
-template<WellBehaved Key, WellBehaved Value, size_t EntrySize> class BTreeMap {
+template<WellBehaved Key,
+         WellBehaved Value,
+         size_t EntrySize,
+         typename Comparator = ::pystd2026::DefaultComparator<Key>>
+class BTreeMap {
 private:
     struct MapEntry {
         Key key;
@@ -1081,7 +1096,7 @@ public:
     }
 
 private:
-    BTree<MapEntry, EntrySize> tree;
+    BTree<MapEntry, EntrySize, Comparator> tree;
 };
 
 } // namespace pystd2026

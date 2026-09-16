@@ -9,7 +9,10 @@ template<typename Key, typename Value> class HashTableCommonIterator;
 
 struct SetOnlyTag {};
 
-template<WellBehaved Key, WellBehaved Value, WellBehaved HashAlgo = SimpleHash>
+template<WellBehaved Key,
+         WellBehaved Value,
+         WellBehaved HashAlgo = SimpleHash,
+         typename KeyComparator = ::pystd2026::DefaultComparator<Key>>
 class HashTableCommon {
 private:
     static constexpr size_t key_val_padding =
@@ -41,6 +44,7 @@ protected:
     }
 
     ::pystd2026::Optional<size_t> lookup_slot(const Key &key) const {
+        KeyComparator cmp; // Fixme, turn into an argument.
         const auto hashval = hash_for(key);
         auto slot = hash_to_slot(hashval);
         while(true) {
@@ -50,7 +54,7 @@ protected:
 
             } else if(data.md[slot].bloom_matches(hashval)) {
                 auto *potential_key = data.keyptr(slot);
-                if(*potential_key == key) {
+                if(cmp.equal(*potential_key, key)) {
                     return slot;
                 }
             }
@@ -367,8 +371,11 @@ private:
     size_t offset;
 };
 
-template<WellBehaved Key, WellBehaved Value, WellBehaved HashAlgo = SimpleHash>
-class HashMap final : private HashTableCommon<Key, Value, HashAlgo> {
+template<WellBehaved Key,
+         WellBehaved Value,
+         WellBehaved HashAlgo = SimpleHash,
+         typename Comparator = ::pystd2026::DefaultComparator<Key>>
+class HashMap final : private HashTableCommon<Key, Value, HashAlgo, Comparator> {
 public:
     HashMap() noexcept = default;
 
@@ -482,8 +489,10 @@ struct HashInsertResult {
     bool second;
 };
 
-template<WellBehaved Key, WellBehaved HashAlgo = SimpleHash>
-class HashSet final : private HashTableCommon<Key, SetOnlyTag, HashAlgo> {
+template<WellBehaved Key,
+         WellBehaved HashAlgo = SimpleHash,
+         typename Comparator = ::pystd2026::DefaultComparator<Key>>
+class HashSet final : private HashTableCommon<Key, SetOnlyTag, HashAlgo, Comparator> {
 
 public:
     HashSet() noexcept = default;

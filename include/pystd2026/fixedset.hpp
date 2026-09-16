@@ -8,7 +8,8 @@ namespace pystd2026 {
 // Intended to only be used with small number of items.
 // Pretty much all operations are O(n).
 
-template<WellBehaved T, size_t MAX_SIZE> class FixedSet {
+template<WellBehaved T, size_t MAX_SIZE, typename Comparator = ::pystd2026::DefaultComparator<T>>
+class FixedSet {
 public:
     bool try_insert(const T &entry) noexcept {
         auto *eptr = find(entry);
@@ -54,8 +55,10 @@ public:
 
 private:
     const T *find(const T &e) const noexcept {
+        // FIXME, you should be able to pass this in somehow.
+        Comparator cmp;
         for(const auto &element : backing) {
-            if(e == element) {
+            if(cmp.equal(e, element)) {
                 return &e;
             }
         }
