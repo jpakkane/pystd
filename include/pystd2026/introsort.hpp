@@ -16,7 +16,7 @@ void pick_qsort_pivot_median(It begin,
     const auto step = (end - begin) / NUM_MEDIAN_POINTS;
     size_t picker = step;
     for(size_t i = 1; i < NUM_MEDIAN_POINTS; ++i) {
-        ::pystd2026::swap(*(begin + step), *(begin + i));
+        ::pystd2026::swap(*(begin + picker), *(begin + i));
         picker += step;
     }
 
