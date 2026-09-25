@@ -234,6 +234,10 @@ int ArgParse::process_short_argument(
     int argc, const char **argv, ParseResult &result, int i, CStringView current) {
     CStringView valuepart;
     assert(current.starts_with("-"));
+    if(current.size() < 2) {
+        fprintf(stderr, "Invalid short argument: %s\n", argv[i]);
+        exit(1);
+    }
     const char shortchar = current[1];
     int extra_consumed_args = 0;
 
