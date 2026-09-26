@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: Apache-2.0 + LLVM exception
 // Copyright 2025-2026 Jussi Pakkanen
 
 #include <pystd_testconfig.hpp>

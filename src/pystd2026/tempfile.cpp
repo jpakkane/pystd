@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: Apache-2.0 + LLVM exception
 // Copyright 2026 Jussi Pakkanen
 
 #include <pystd2026/tempfile.hpp>
