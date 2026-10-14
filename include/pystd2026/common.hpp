@@ -729,6 +729,8 @@ public:
 
     void reset() { destroy(); }
 
+    void clear() { destroy(); }
+
 private:
     void destroy() {
         if(has_value) {
@@ -1125,6 +1127,29 @@ public:
         // FIXME: shrink if needed.
         --num_entries;
         return retval;
+    }
+
+    Optional<T> pop_front() noexcept {
+        if(num_entries == 0) {
+            return {};
+        }
+        T *obj = objptr(0);
+        Optional<T> retval(move(*obj));
+        remove_at(0);
+        return retval;
+    }
+
+    void remove_at(size_t i) {
+        if(i >= num_entries) {
+            bootstrap_throw("Invalid index for remove_at.");
+        }
+        size_t j = i + 1;
+        while(j < num_entries) {
+            *objptr(i) = ::pystd2026::move(*objptr(j));
+            ++i;
+            ++j;
+        }
+        pop_back();
     }
 
     size_t capacity() const noexcept { return buf_capacity; }
