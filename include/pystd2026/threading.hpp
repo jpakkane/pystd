@@ -25,11 +25,13 @@ public:
     bool try_lock();
     void unlock();
 
+    pthread_mutex_t &native() { return m; }
+
 private:
     pthread_mutex_t m;
 };
 
-template<Lockable T> class LockGuard final {
+template<::pystd2026::Lockable T> class LockGuard final {
 public:
     explicit LockGuard(T &m_) : m{m_} { m.lock(); }
 
@@ -57,4 +59,22 @@ private:
     pthread_t thread;
     bool thread_is_finalized = false;
 };
+
+class ConditionVariable final {
+public:
+    ConditionVariable() noexcept;
+    ~ConditionVariable();
+
+    ConditionVariable(const ConditionVariable &) = delete;
+    ConditionVariable &operator=(const ConditionVariable &) = delete;
+
+    void signal();
+    void broadcast();
+
+    void wait(::pystd2026::Mutex &m);
+
+private:
+    pthread_cond_t cond;
+};
+
 } // namespace pystd2026

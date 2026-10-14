@@ -68,4 +68,34 @@ void Thread::detach() {
     thread_is_finalized = true;
 }
 
+ConditionVariable::ConditionVariable() noexcept {
+    if(pthread_cond_init(&cond, nullptr) != 0) {
+        throw_errno_error();
+    }
+}
+
+ConditionVariable::~ConditionVariable() {
+    if(pthread_cond_destroy(&cond) != 0) {
+        fprintf(stderr, "Could not destroy ConditionVariable: %s\n", strerror(errno));
+    }
+}
+
+void ConditionVariable::signal() {
+    if(pthread_cond_signal(&cond) != 0) {
+        throw_errno_error();
+    }
+}
+
+void ConditionVariable::broadcast() {
+    if(pthread_cond_broadcast(&cond) != 0) {
+        throw_errno_error();
+    }
+}
+
+void ConditionVariable::wait(::pystd2026::Mutex &m) {
+    if(pthread_cond_wait(&cond, &m.native()) != 0) {
+        throw_errno_error();
+    }
+}
+
 } // namespace pystd2026
