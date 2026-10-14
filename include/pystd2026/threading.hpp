@@ -44,20 +44,27 @@ private:
     T &m;
 };
 
+class ThreadInterface {
+public:
+    virtual ~ThreadInterface() = default;
+    virtual void *run() = 0;
+};
+
 class Thread final {
 public:
-    Thread(void *(*thread_main_func)(void *), void *ctx);
+    Thread(::pystd2026::unique_ptr<ThreadInterface> state_in);
     ~Thread();
 
     Thread(const Thread &) = delete;
     Thread &operator=(const Thread &) = delete;
 
-    void join();
+    void *join();
     void detach();
 
 private:
     pthread_t thread;
     bool thread_is_finalized = false;
+    ::pystd2026::unique_ptr<ThreadInterface> thread_state;
 };
 
 class ConditionVariable final {

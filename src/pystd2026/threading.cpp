@@ -6,6 +6,11 @@
 
 namespace pystd2026 {
 
+static void *ThreadInvoker(void *iface_c) {
+    auto iface = reinterpret_cast<::pystd2026::ThreadInterface *>(iface_c);
+    return iface->run();
+}
+
 Mutex::Mutex() noexcept {
     m = PTHREAD_MUTEX_INITIALIZER;
     pthread_mutex_init(&m, nullptr);
@@ -39,13 +44,14 @@ void Mutex::unlock() {
     }
 }
 
-Thread::Thread(void *(*thread_main_func)(void *), void *ctx) {
+Thread::Thread(::pystd2026::unique_ptr<ThreadInterface> state_in)
+    : thread_state(::pystd2026::move(state_in)) {
     pthread_attr_t attr;
     auto rc = pthread_attr_init(&attr);
     if(rc != 0) {
         throw_errno_error();
     }
-    rc = pthread_create(&thread, &attr, thread_main_func, ctx);
+    rc = pthread_create(&thread, &attr, ThreadInvoker, thread_state.get());
     pthread_attr_destroy(&attr);
     if(rc != 0) {
         throw_errno_error();
@@ -58,9 +64,11 @@ Thread::~Thread() {
     }
 }
 
-void Thread::join() {
-    pthread_join(thread, nullptr);
+void *Thread::join() {
+    void *retval;
+    pthread_join(thread, &retval);
     thread_is_finalized = true;
+    return retval;
 }
 
 void Thread::detach() {

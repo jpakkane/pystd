@@ -34,28 +34,41 @@ int test_mutex() {
     return 0;
 }
 
-int test_thread() {
-    TEST_START;
-    typedef struct {
-        int x;
-        pystd2026::Mutex m;
-    } Context;
-    Context ctx;
-    ctx.x = 0;
+struct SharedState {
+    int x{0};
+    ::pystd2026::Mutex m;
+};
 
-    auto incrementer = [](void *ctx) -> void * {
-        Context *c = reinterpret_cast<Context *>(ctx);
+class IncrementerThread : public pystd2026::ThreadInterface {
+public:
+    IncrementerThread(SharedState &c) : ctx{c} {}
+    virtual ~IncrementerThread() = default;
+
+    void *run() override {
         for(int i = 0; i < 1000; ++i) {
-            pystd2026::LockGuard<pystd2026::Mutex> lg(c->m);
-            ++c->x;
+            pystd2026::LockGuard<pystd2026::Mutex> lg(ctx.m);
+            ++ctx.x;
         }
         return nullptr;
-    };
+    }
+
+private:
+    SharedState &ctx;
+};
+
+int test_thread() {
+    TEST_START;
+    SharedState ctx;
+
     {
-        pystd2026::Thread th1(incrementer, &ctx);
-        pystd2026::Thread th2(incrementer, &ctx);
-        pystd2026::Thread th3(incrementer, &ctx);
-        pystd2026::Thread th4(incrementer, &ctx);
+        pystd2026::Thread th1(::pystd2026::move(
+            ::pystd2026::unique_ptr<::pystd2026::ThreadInterface>(new IncrementerThread{ctx})));
+        pystd2026::Thread th2(
+            ::pystd2026::unique_ptr<::pystd2026::ThreadInterface>(new IncrementerThread{ctx}));
+        pystd2026::Thread th3(
+            ::pystd2026::unique_ptr<::pystd2026::ThreadInterface>(new IncrementerThread{ctx}));
+        pystd2026::Thread th4(
+            ::pystd2026::unique_ptr<::pystd2026::ThreadInterface>(new IncrementerThread{ctx}));
     }
     ASSERT(ctx.x == 4000);
 
