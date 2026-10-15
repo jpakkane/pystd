@@ -21,3 +21,6 @@ executable('rmtree', 'rmtree.cpp',
 
 executable('executor', 'executor.cpp',
   dependencies: stdlib_dep)
+
+executable('pngrepacker', 'pngrepacker.cpp',
+  dependencies: [stdlib_dep, dependency('libpng')])
