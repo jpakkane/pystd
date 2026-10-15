@@ -2,6 +2,7 @@
 // Copyright 2026 Jussi Pakkanen
 
 #include <pystd2026/thread_executor.hpp>
+#include <pystd2026/pathlib.hpp>
 #include <png.h>
 #include <zlib.h>
 
@@ -82,7 +83,41 @@ void repack_one(const char *infile, const char *outfile) {
     png_destroy_read_struct(&p, nullptr, nullptr);
 }
 
+class PackTask : public pystd2026::ExecutorTaskInterface {
+public:
+    PackTask(pystd2026::Path ifile, pystd2026::Path ofile)
+        : infile(pystd2026::move(ifile)), outfile(pystd2026::move(ofile)) {}
+
+    void run() override { repack_one(infile.c_str(), outfile.c_str()); }
+
+private:
+    pystd2026::Path infile, outfile;
+};
+
+void repack_all(pystd2026::Path &indir, pystd2026::Path &outdir) {
+    pystd2026::ThreadExecutor ex;
+    for(auto &&inname : pystd2026::Loopsume(indir.glob("*.png"))) {
+        auto basename = inname.filename();
+        auto outname = outdir / basename;
+        pystd2026::unique_ptr<pystd2026::ExecutorTaskInterface> task(
+            new PackTask(pystd2026::move(inname), pystd2026::move(outname)));
+        ex.submit(pystd2026::move(task));
+    }
+}
+
 int main(int argc, char **argv) {
-    repack_one("tmp/capture00000000.png", "tmp2/out0.png");
+    if(argc != 3) {
+        fprintf(stderr, "%s <input dir> <output dir>\n", argv[0]);
+        return 1;
+    }
+    if(strcmp(argv[1], argv[2]) == 0) {
+        fprintf(stderr, "Dirs must be different.\n");
+        return 1;
+    }
+    pystd2026::Path indir(argv[1]);
+    pystd2026::Path outdir(argv[2]);
+
+    repack_all(indir, outdir);
+
     return 0;
 }
