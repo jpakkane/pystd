@@ -11,15 +11,18 @@ public:
     ExecutorWorkerThread(ThreadExecutor *executor) : ex{executor} {}
 
     void *run() override {
+        //        printf("Starting worker thread.\n");
         ::pystd2026::Optional<::pystd2026::unique_ptr<::pystd2026::ExecutorTaskInterface>>
             active_task;
         while(true) {
+            //          printf("Grabbing task.\n");
             {
                 ::pystd2026::LockGuard<::pystd2026::Mutex> lg(ex->m);
-                if(ex->shutdown_flag) {
-                    break;
-                } else {
-                    active_task = ex->tasks.pop_front();
+                active_task = ex->tasks.pop_front();
+                if(!active_task) {
+                    if(ex->shutdown_flag) {
+                        break;
+                    }
                 }
             }
             if(active_task) {
@@ -28,12 +31,15 @@ public:
             }
             {
                 ::pystd2026::LockGuard<::pystd2026::Mutex> lg(ex->m);
-                if(ex->shutdown_flag) {
-                    break;
+                if(ex->tasks.is_empty()) {
+                    if(ex->shutdown_flag) {
+                        break;
+                    }
+                    ex->cv.wait(ex->m);
                 }
-                ex->cv.wait(ex->m);
             }
         }
+        //    printf("Exiting worker.\n");
         return nullptr;
     }
 
@@ -47,8 +53,9 @@ ThreadExecutor::ThreadExecutor(int num_threads) {
     }
     threads.reserve(num_threads);
     for(int i = 0; i < num_threads; ++i) {
-        auto t =
+        auto ti =
             ::pystd2026::unique_ptr<::pystd2026::ThreadInterface>(new ExecutorWorkerThread(this));
+        auto t = ::pystd2026::unique_ptr<::pystd2026::Thread>(new Thread(pystd2026::move(ti)));
         threads.push_back(::pystd2026::move(t));
     }
 }
@@ -58,6 +65,10 @@ ThreadExecutor::~ThreadExecutor() { shutdown(); }
 void ThreadExecutor::submit(::pystd2026::unique_ptr<::pystd2026::ExecutorTaskInterface> task) {
     {
         ::pystd2026::LockGuard<::pystd2026::Mutex> lg(m);
+        if(shutdown_flag) {
+            throw ::pystd2026::PyException(
+                "Fatal: trying to submit work to an executor that is shutting down.");
+        }
         tasks.push_back(::pystd2026::move(task));
     }
     cv.signal();

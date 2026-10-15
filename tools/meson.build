@@ -18,3 +18,6 @@ executable('wordsort', 'wordsort.cpp',
 
 executable('rmtree', 'rmtree.cpp',
   dependencies: stdlib_dep)
+
+executable('executor', 'executor.cpp',
+  dependencies: stdlib_dep)

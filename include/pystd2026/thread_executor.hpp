@@ -34,7 +34,7 @@ private:
     ::pystd2026::Mutex m;
 
     ::pystd2026::Vector<::pystd2026::unique_ptr<::pystd2026::ExecutorTaskInterface>> tasks;
-    ::pystd2026::Vector<::pystd2026::unique_ptr<::pystd2026::ThreadInterface>> threads;
+    ::pystd2026::Vector<::pystd2026::unique_ptr<::pystd2026::Thread>> threads;
 
     friend class ::pystd2026::ExecutorWorkerThread;
 };
