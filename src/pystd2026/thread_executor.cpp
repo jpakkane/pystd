@@ -82,4 +82,18 @@ void ThreadExecutor::shutdown() {
     cv.broadcast();
 }
 
+void ThreadExecutor::reserve(size_t num_tasks) noexcept {
+    {
+        ::pystd2026::LockGuard<::pystd2026::Mutex> lg(m);
+        tasks.reserve(num_tasks);
+    }
+}
+
+size_t ThreadExecutor::size() const noexcept {
+    {
+        ::pystd2026::LockGuard<::pystd2026::Mutex> lg(m);
+        return tasks.size();
+    }
+}
+
 } // namespace pystd2026

@@ -26,12 +26,16 @@ public:
 
     void submit(::pystd2026::unique_ptr<::pystd2026::ExecutorTaskInterface> task);
 
+    void reserve(size_t num_tasks) noexcept;
+
+    size_t size() const noexcept;
+
 private:
     void shutdown();
 
     bool shutdown_flag = false;
     ::pystd2026::ConditionVariable cv;
-    ::pystd2026::Mutex m;
+    mutable ::pystd2026::Mutex m;
 
     ::pystd2026::Vector<::pystd2026::unique_ptr<::pystd2026::ExecutorTaskInterface>> tasks;
     ::pystd2026::Vector<::pystd2026::unique_ptr<::pystd2026::Thread>> threads;
