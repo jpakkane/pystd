@@ -46,105 +46,144 @@ template<BasicIterator It, typename Comparator>
 void do_introsort(It begin,
                   It end,
                   bool is_leftmost,
-                  const size_t depth,
-                  const size_t degenerate_depth,
+                  size_t depth,
+                  size_t degenerate_depth,
                   const size_t MAX_ROUNDS,
                   const Comparator &cmp) {
     using ValueType = ::pystd2026::remove_reference_t<decltype(*begin)>;
-    const size_t INSERTION_SORT_LIMIT = ::pystd2026::insertion_sort_limit<ValueType>;
-    const size_t num_elements = end - begin;
-    const size_t degenerate_limit = num_elements / 8;
     constexpr bool is_intlike =
         ::pystd2026::is_integral_v<ValueType> || ::pystd2026::is_floating_point_v<ValueType>;
+    const size_t INSERTION_SORT_LIMIT = ::pystd2026::insertion_sort_limit<ValueType>;
+    while(true) {
+        const size_t num_elements = end - begin;
+        const size_t degenerate_limit = num_elements / 8;
 
-    if(num_elements <= INSERTION_SORT_LIMIT) {
-        if(is_leftmost) {
-            ::pystd2026::insertion_sort(begin, end, cmp);
+        if(num_elements <= INSERTION_SORT_LIMIT) {
+            if(is_leftmost) {
+                ::pystd2026::insertion_sort(begin, end, cmp);
+            } else {
+                ::pystd2026::insertion_sort_has_sentinel(begin, end, cmp);
+            }
+            return;
+        }
+
+        if(depth >= MAX_ROUNDS) {
+            ::pystd2026::heapsort(begin, end, cmp);
+            return;
+        }
+
+        const auto median_size = qsort_median_count(num_elements, degenerate_depth);
+        const auto half_median = median_size / 2;
+
+        pick_qsort_pivot_median(begin, end, median_size, cmp);
+
+        const auto pivot_index = half_median;
+        auto pivot_point = begin + pivot_index;
+
+        // At this point we have N/2 items that are less than (or equal) to pivot
+        // and N/2 that are greater than (or equal) to pivot.
+        // Shrink the partitioning space by median_size - 1.
+        // After this the pivot element is at the beginning of the range to be
+        // partitioned.
+        {
+            auto from_loc = pivot_point + 1;
+            auto to_loc = end - half_median;
+            for(size_t i = 0; i < half_median; ++i) {
+                ::pystd2026::swap(*(from_loc + i), *(to_loc + i));
+            }
+        }
+        auto partitioning_begin = begin + pivot_index + 1;
+        auto partitioning_end = end - half_median;
+
+        It split_point;
+        if constexpr(is_intlike) {
+            const ValueType pivot_value{*pivot_point};
+            split_point = ::pystd2026::partition(partitioning_begin,
+                                                 partitioning_end,
+                                                 [pivot_value, &cmp](const ValueType &v) -> bool {
+                                                     return cmp.compare(v, pivot_value) < 0;
+                                                 });
         } else {
-            ::pystd2026::insertion_sort_has_sentinel(begin, end, cmp);
+            split_point = ::pystd2026::partition(partitioning_begin,
+                                                 partitioning_end,
+                                                 [pivot_point, &cmp](const ValueType &v) -> bool {
+                                                     return cmp.compare(v, *pivot_point) < 0;
+                                                 });
         }
-        return;
-    }
+        auto last_value_point = split_point - 1;
+        // After this, last_value_point is in its correct, sorted location.
+        ::pystd2026::swap(*pivot_point, *last_value_point);
 
-    if(depth >= MAX_ROUNDS) {
-        ::pystd2026::heapsort(begin, end, cmp);
-        return;
-    }
+        auto left_begin = begin;
+        auto left_end = last_value_point;
+        auto right_begin = split_point;
+        auto right_end = end;
 
-    const auto median_size = qsort_median_count(num_elements, degenerate_depth);
-    const auto half_median = median_size / 2;
-
-    pick_qsort_pivot_median(begin, end, median_size, cmp);
-
-    const auto pivot_index = half_median;
-    auto pivot_point = begin + pivot_index;
-
-    // At this point we have N/2 items that are less than (or equal) to pivot
-    // and N/2 that are greater than (or equal) to pivot.
-    // Shrink the partitioning space by median_size - 1.
-    // After this the pivot element is at the beginning of the range to be
-    // partitioned.
-    {
-        auto from_loc = pivot_point + 1;
-        auto to_loc = end - half_median;
-        for(size_t i = 0; i < half_median; ++i) {
-            ::pystd2026::swap(*(from_loc + i), *(to_loc + i));
+        // Equal values adjacent to the pivot are also in their correct locations.
+        // Most are in the right half as the partition critarion was <.
+        // Gobble up as many as we can.
+        while(right_begin < right_end && (*right_begin == *last_value_point)) {
+            ++right_begin;
         }
-    }
-    auto partitioning_begin = begin + pivot_index + 1;
-    auto partitioning_end = end - half_median;
 
-    It split_point;
-    if constexpr(is_intlike) {
-        const ValueType pivot_value{*pivot_point};
-        split_point = ::pystd2026::partition(
-            partitioning_begin, partitioning_end, [pivot_value, &cmp](const ValueType &v) -> bool {
-                return cmp.compare(v, pivot_value) < 0;
-            });
-    } else {
-        split_point = ::pystd2026::partition(
-            partitioning_begin, partitioning_end, [pivot_point, &cmp](const ValueType &v) -> bool {
-                return cmp.compare(v, *pivot_point) < 0;
-            });
-    }
-    auto last_value_point = split_point - 1;
-    // After this, last_value_point is in its correct, sorted location.
-    ::pystd2026::swap(*pivot_point, *last_value_point);
+        // Recurse into the smaller segment but handle the bit one in the same stack frame.
+        // This improves reliability against degenerate sequences and is (should be) faster
+        // as it skips a function call. Theoretically the compiler could do tail call
+        // optimization, but it probably can not prove it to be always valid.
+        const size_t left_size = left_end - left_begin;
+        const size_t right_size = right_end - right_begin;
 
-    auto left_begin = begin;
-    auto left_end = last_value_point;
-    auto right_begin = split_point;
-    auto right_end = end;
-
-    // Equal values adjacent to the pivot are also in their correct locations.
-    // Most are in the right half as the partition critarion was <.
-    // Gobble up as many as we can.
-    while(right_begin < right_end && (*right_begin == *last_value_point)) {
-        ++right_begin;
-    }
-
-    const size_t left_size = left_end - left_begin;
-    const size_t right_size = right_end - right_begin;
-    // Did we pick a bad pivot?
-    // Check if we need to fall back to heapsort.
-    if(left_size < degenerate_limit || right_size < degenerate_limit) {
-        if(degenerate_depth > 0) {
-            ::pystd2026::heapsort(left_begin, left_end, cmp);
-            ::pystd2026::heapsort(right_begin, right_end, cmp);
+        // Did we pick a bad pivot?
+        // Check if we need to fall back to heapsort.
+        if(left_size < degenerate_limit || right_size < degenerate_limit) {
+            if(degenerate_depth > 0) {
+                ::pystd2026::heapsort(left_begin, left_end, cmp);
+                ::pystd2026::heapsort(right_begin, right_end, cmp);
+                return;
+            } else {
+                if(left_size < right_size) {
+                    do_introsort(left_begin,
+                                 left_end,
+                                 is_leftmost,
+                                 depth + 1,
+                                 degenerate_depth + 1,
+                                 MAX_ROUNDS,
+                                 cmp);
+                    begin = right_begin;
+                    end = right_end;
+                    is_leftmost = false;
+                    depth += 1;
+                    degenerate_depth += 1;
+                } else {
+                    do_introsort(right_begin,
+                                 right_end,
+                                 false,
+                                 depth + 1,
+                                 degenerate_depth + 1,
+                                 MAX_ROUNDS,
+                                 cmp);
+                    begin = left_begin;
+                    end = left_end;
+                    depth += 1;
+                    degenerate_depth += 1;
+                }
+            }
         } else {
-            do_introsort(left_begin,
-                         left_end,
-                         is_leftmost,
-                         depth + 1,
-                         degenerate_depth + 1,
-                         MAX_ROUNDS,
-                         cmp);
-            do_introsort(
-                right_begin, right_end, false, depth + 1, degenerate_depth + 1, MAX_ROUNDS, cmp);
+            if(left_size < right_size) {
+                do_introsort(left_begin, left_end, is_leftmost, depth + 1, 0, MAX_ROUNDS, cmp);
+                begin = right_begin;
+                end = right_end;
+                is_leftmost = false;
+                depth += 1;
+                degenerate_depth = 0;
+            } else {
+                do_introsort(right_begin, right_end, false, depth + 1, 0, MAX_ROUNDS, cmp);
+                begin = left_begin;
+                end = right_end;
+                depth += 1;
+                degenerate_depth = 0;
+            }
         }
-    } else {
-        do_introsort(left_begin, left_end, is_leftmost, depth + 1, 0, MAX_ROUNDS, cmp);
-        do_introsort(right_begin, right_end, false, depth + 1, 0, MAX_ROUNDS, cmp);
     }
 }
 
