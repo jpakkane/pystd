@@ -2,6 +2,7 @@
 // Copyright 2026 Jussi Pakkanen
 
 #include <pystd2026/threading.hpp>
+#include <pystd2026/thread_executor.hpp>
 #include <pystd_testconfig.hpp>
 
 int breakpoint_opportunity(int number) { return number; }
@@ -75,11 +76,24 @@ int test_thread() {
     return 0;
 }
 
+int test_futures() {
+    TEST_START;
+    auto pair = ::pystd2026::Future::create_future_pair();
+
+    // This does not actually test any behaviour yet, but
+    // at least it should not leak memory.
+    pair.p.set();
+    pair.f.get();
+
+    return 0;
+}
+
 int test_threading() {
     printf("Testing threading.\n");
     int failing_subtests = 0;
     failing_subtests += test_mutex();
     failing_subtests += test_thread();
+    failing_subtests += test_futures();
     return failing_subtests;
 }
 
