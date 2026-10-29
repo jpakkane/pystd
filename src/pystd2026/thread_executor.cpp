@@ -12,8 +12,7 @@ public:
 
     void *run() override {
         //        printf("Starting worker thread.\n");
-        ::pystd2026::Optional<::pystd2026::unique_ptr<::pystd2026::ExecutorTaskInterface>>
-            active_task;
+        ::pystd2026::Optional<TaskData> active_task;
         while(true) {
             //          printf("Grabbing task.\n");
             {
@@ -26,7 +25,8 @@ public:
                 }
             }
             if(active_task) {
-                active_task.value()->run();
+                active_task.value().task->run();
+                active_task.value().p.set();
                 active_task.clear();
             }
             {
@@ -62,16 +62,19 @@ ThreadExecutor::ThreadExecutor(int num_threads) {
 
 ThreadExecutor::~ThreadExecutor() { shutdown(); }
 
-void ThreadExecutor::submit(::pystd2026::unique_ptr<::pystd2026::ExecutorTaskInterface> task) {
+Future ThreadExecutor::submit(::pystd2026::unique_ptr<::pystd2026::ExecutorTaskInterface> task) {
+    FuturePair fp;
     {
         ::pystd2026::LockGuard<::pystd2026::Mutex> lg(m);
         if(shutdown_flag) {
             throw ::pystd2026::PyException(
                 "Fatal: trying to submit work to an executor that is shutting down.");
         }
-        tasks.push_back(::pystd2026::move(task));
+        fp = ::pystd2026::Future::create_future_pair();
+        tasks.emplace_back(::pystd2026::move(task), ::pystd2026::move(fp.p));
     }
     cv.signal();
+    return ::pystd2026::move(fp.f);
 }
 
 void ThreadExecutor::shutdown() {

@@ -144,6 +144,13 @@ public:
     virtual ~ExecutorTaskInterface() = default;
 
     virtual void run() = 0;
+
+    ::pystd2026::Promise promise;
+};
+
+struct TaskData {
+    ::pystd2026::unique_ptr<::pystd2026::ExecutorTaskInterface> task;
+    ::pystd2026::Promise p;
 };
 
 class ThreadExecutor final {
@@ -154,7 +161,7 @@ public:
     ThreadExecutor(const ThreadExecutor &) = delete;
     ThreadExecutor &operator=(const ThreadExecutor &) = delete;
 
-    void submit(::pystd2026::unique_ptr<::pystd2026::ExecutorTaskInterface> task);
+    ::pystd2026::Future submit(::pystd2026::unique_ptr<::pystd2026::ExecutorTaskInterface> task);
 
     void reserve(size_t num_tasks) noexcept;
 
@@ -167,7 +174,7 @@ private:
     ::pystd2026::ConditionVariable cv;
     mutable ::pystd2026::Mutex m;
 
-    ::pystd2026::Vector<::pystd2026::unique_ptr<::pystd2026::ExecutorTaskInterface>> tasks;
+    ::pystd2026::Vector<TaskData> tasks;
     ::pystd2026::Vector<::pystd2026::unique_ptr<::pystd2026::Thread>> threads;
 
     friend class ::pystd2026::ExecutorWorkerThread;
