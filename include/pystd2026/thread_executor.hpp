@@ -31,7 +31,9 @@ public:
     }
 
     ~Future() {
-        get();
+        if(data) {
+            get();
+        }
         release_data();
     }
 
