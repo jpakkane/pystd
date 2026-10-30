@@ -10,17 +10,20 @@ namespace pystd2026 {
 class ExecutorWorkerThread;
 
 struct FutureData {
-    // virtual ~FutureData();
+    virtual ~FutureData() = default;
     ::pystd2026::Mutex m;
     ::pystd2026::ConditionVariable cv;
     int refcount = 2;
     bool has_value = false;
     // a bool that the value has been given out maybe?
 
-    // virtual void* get_value() noexcept { return nullptr; }
+    virtual void *get_value() noexcept { return nullptr; }
+    virtual void set_value(void *data) noexcept {}
 };
 
 struct FuturePair;
+
+template<typename T> class Future2;
 
 class Future {
 public:
@@ -46,18 +49,19 @@ public:
         return *this;
     }
 
-    void get() {
+    void *get() {
         ::pystd2026::LockGuard<::pystd2026::Mutex> lg(data->m);
         while(!data->has_value) {
             data->cv.wait(data->m);
         }
+        return data->get_value();
     }
 
     static FuturePair create_future_pair();
 
-private:
     Future(FutureData *fd) : data{fd} {}
 
+private:
     void release_data() noexcept {
         if(data == nullptr) {
             return;
@@ -95,12 +99,13 @@ public:
         return *this;
     }
 
-    void set() {
+    void set(void *ctx = nullptr) {
         {
             ::pystd2026::LockGuard<::pystd2026::Mutex> lg(data->m);
             if(data->has_value) {
                 throw ::pystd2026::PyException("Tried to set value in a promise twice.");
             }
+            data->set_value(ctx);
             data->has_value = true;
             if(data->refcount > 1) {
                 data->cv.signal();
@@ -109,9 +114,9 @@ public:
         release_data();
     }
 
-private:
     Promise(FutureData *fd) noexcept : data{fd} {}
 
+private:
     void release_data() noexcept {
         if(data == nullptr) {
             return;
@@ -139,6 +144,69 @@ struct FuturePair {
 inline FuturePair Future::create_future_pair() {
     auto pair_data = new FutureData{};
     return FuturePair{pair_data, pair_data};
+}
+
+template<typename T> struct FutureData2 : public FutureData {
+    void *get_value() noexcept override { return &stored_data; }
+    void set_value(void *data) noexcept override {
+        stored_data = ::pystd2026::move(*reinterpret_cast<T *>(data));
+    }
+
+    T stored_data;
+};
+
+template<typename T> struct FuturePair2;
+
+template<typename T> class Future2 {
+public:
+    Future2() noexcept = default;
+    explicit Future2(::pystd2026::Future2<T> &&of) noexcept : underlying{of.underlying} {
+        of.underlying = nullptr;
+    }
+    // Future2(::pystd2026::Future2<T> &&) noexcept = default;
+
+    Future2 &operator=(::pystd2026::Future2<T> &&) noexcept = default;
+
+    T &get() { return *reinterpret_cast<T *>(underlying->get_value()); }
+
+    static FuturePair2<T> create_future_pair2();
+
+private:
+    Future2(FutureData *fd) : underlying{fd} {}
+
+    ::pystd2026::FutureData *underlying;
+};
+
+template<> class Future2<void> {
+
+    // Fixme: implement.
+};
+
+template<typename T> class Promise2 {
+public:
+    Promise2() noexcept = default;
+    explicit Promise2(::pystd2026::Promise &&of) noexcept : underlying{::pystd2026::move(of)} {}
+    Promise2(::pystd2026::Promise2<T> &&) noexcept = default;
+
+    Promise2 &operator=(::pystd2026::Promise2<T> &&) noexcept = default;
+
+    void set(T &result) { underlying.set(static_cast<void *>(&result)); }
+
+    Promise2(FutureData *fd) noexcept : underlying{fd} {}
+
+private:
+    ::pystd2026::Promise underlying;
+};
+
+template<typename T> struct FuturePair2 {
+    ::pystd2026::Future2<T> f;
+    ::pystd2026::Promise2<T> p;
+};
+
+template<typename T> inline FuturePair2<T> Future2<T>::create_future_pair2() {
+    auto pair_data = new FutureData2<T>{};
+
+    return FuturePair2<T>{pair_data, pair_data};
 }
 
 class ExecutorTaskInterface {

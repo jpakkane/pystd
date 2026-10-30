@@ -88,12 +88,27 @@ int test_futures() {
     return 0;
 }
 
+int test_futures2() {
+    TEST_START;
+    auto pair = ::pystd2026::Future2<int>::create_future_pair2();
+
+    // This does not actually test any behaviour yet, but
+    // at least it should not leak memory.
+    int in_value = 3;
+    pair.p.set(in_value);
+    int out_value = pair.f.get();
+
+    ASSERT(in_value == out_value);
+    return 0;
+}
+
 int test_threading() {
     printf("Testing threading.\n");
     int failing_subtests = 0;
     failing_subtests += test_mutex();
     failing_subtests += test_thread();
     failing_subtests += test_futures();
+    failing_subtests += test_futures2();
     return failing_subtests;
 }
 
