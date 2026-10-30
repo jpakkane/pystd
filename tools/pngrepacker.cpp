@@ -88,7 +88,10 @@ public:
     PackTask(pystd2026::Path ifile, pystd2026::Path ofile)
         : infile(pystd2026::move(ifile)), outfile(pystd2026::move(ofile)) {}
 
-    void run() override { repack_one(infile.c_str(), outfile.c_str()); }
+    void run(::pystd2026::TypeErasedPromise &p) noexcept override {
+        repack_one(infile.c_str(), outfile.c_str());
+        p.set();
+    }
 
 private:
     pystd2026::Path infile, outfile;
