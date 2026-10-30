@@ -104,6 +104,10 @@ template<typename U> struct is_same<U, U> : true_type {};
 
 template<typename U, typename V> constexpr bool is_same_v = is_same<U, V>::value;
 
+template<class T> struct is_void : ::pystd2026::false_type {};
+template<class T> struct is_void<const T> : ::pystd2026::true_type {};
+template<class T> constexpr bool is_void_v = is_void<T>::value;
+
 template<class T> struct is_const : ::pystd2026::false_type {};
 template<class T> struct is_const<const T> : ::pystd2026::true_type {};
 template<class T> constexpr bool is_const_v = is_const<T>::value;
@@ -158,6 +162,12 @@ template<> struct is_unsigned_base<unsigned long long> : ::pystd2026::true_type 
 template<typename T> struct is_unsigned : is_unsigned_base<remove_cv_t<remove_reference_t<T>>> {};
 
 template<class T> constexpr bool is_unsigned_v = is_unsigned<T>::value;
+
+template<bool B, class T = void> struct enable_if {};
+
+template<class T> struct enable_if<true, T> {
+    typedef T type;
+};
 
 template<typename T>
 constexpr T &&forward(typename ::pystd2026::remove_reference<T>::type &t) noexcept {

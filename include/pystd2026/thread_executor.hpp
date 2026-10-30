@@ -147,6 +147,8 @@ inline FuturePair Future::create_future_pair() {
 }
 
 template<typename T> struct FutureData2 : public FutureData {
+    ~FutureData2() = default;
+
     void *get_value() noexcept override { return &stored_data; }
     void set_value(void *data) noexcept override {
         stored_data = ::pystd2026::move(*reinterpret_cast<T *>(data));
@@ -155,31 +157,50 @@ template<typename T> struct FutureData2 : public FutureData {
     T stored_data;
 };
 
+template<> struct FutureData2<void> : public FutureData {
+    ~FutureData2() = default;
+    void *get_value() noexcept override { return nullptr; }
+    void set_value(void *data) noexcept override {};
+};
+
 template<typename T> struct FuturePair2;
+
+template<typename T> struct ref_or_void {
+    typedef T &type;
+};
+
+template<> struct ref_or_void<void> {
+    typedef void type;
+};
+
+template<typename T> using ref_or_void_t = typename ref_or_void<T>::type;
 
 template<typename T> class Future2 {
 public:
     Future2() noexcept = default;
-    explicit Future2(::pystd2026::Future2<T> &&of) noexcept : underlying{of.underlying} {
+    explicit Future2(::pystd2026::Future2<T> &&of) noexcept
+        : underlying{::pystd2026::move(of.underlying)} {
         of.underlying = nullptr;
     }
     // Future2(::pystd2026::Future2<T> &&) noexcept = default;
 
     Future2 &operator=(::pystd2026::Future2<T> &&) noexcept = default;
 
-    T &get() { return *reinterpret_cast<T *>(underlying->get_value()); }
+    ref_or_void_t<T> get() {
+        if constexpr(::pystd2026::is_same_v<void, T>) {
+            underlying.get();
+        } else {
+            static_assert(::pystd2026::is_reference_v<ref_or_void_t<T>>);
+            return *reinterpret_cast<T *>(underlying.get());
+        }
+    }
 
     static FuturePair2<T> create_future_pair2();
 
 private:
-    Future2(FutureData *fd) : underlying{fd} {}
+    Future2(FutureData2<T> *fd) : underlying{fd} {}
 
-    ::pystd2026::FutureData *underlying;
-};
-
-template<> class Future2<void> {
-
-    // Fixme: implement.
+    ::pystd2026::Future underlying;
 };
 
 template<typename T> class Promise2 {
@@ -191,6 +212,22 @@ public:
     Promise2 &operator=(::pystd2026::Promise2<T> &&) noexcept = default;
 
     void set(T &result) { underlying.set(static_cast<void *>(&result)); }
+
+    Promise2(FutureData *fd) noexcept : underlying{fd} {}
+
+private:
+    ::pystd2026::Promise underlying;
+};
+
+template<> class Promise2<void> {
+public:
+    Promise2() noexcept = default;
+    explicit Promise2(::pystd2026::Promise &&of) noexcept : underlying{::pystd2026::move(of)} {}
+    Promise2(::pystd2026::Promise2<void> &&) noexcept = default;
+
+    Promise2 &operator=(::pystd2026::Promise2<void> &&) noexcept = default;
+
+    void set() { underlying.set(); }
 
     Promise2(FutureData *fd) noexcept : underlying{fd} {}
 
