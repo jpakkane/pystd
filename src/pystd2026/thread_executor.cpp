@@ -25,8 +25,8 @@ public:
                 }
             }
             if(active_task) {
-                active_task.value().task->run();
-                active_task.value().p.set();
+                auto &atask = active_task.value();
+                atask.task->run(atask.p);
                 active_task.clear();
             }
             {

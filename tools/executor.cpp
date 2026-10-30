@@ -9,7 +9,7 @@ class PrintTask : public ::pystd2026::ExecutorTaskInterface {
 public:
     explicit PrintTask(const char *msg) : str(msg) {}
 
-    void run() override {
+    void run(::pystd2026::TypeErasedPromise &p) noexcept override {
         const int num_times = 4;
         timespec dur;
         dur.tv_sec = 2;
@@ -18,6 +18,7 @@ public:
             nanosleep(&dur, nullptr);
             printf("%s\n", str.c_str());
         }
+        p.set();
     }
 
 private:

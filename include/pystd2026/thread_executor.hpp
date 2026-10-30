@@ -240,10 +240,12 @@ template<typename T> inline FuturePair<T> Future<T>::create_future_pair() {
 
 class ExecutorTaskInterface {
 public:
+    friend class TaskExecutor;
     virtual ~ExecutorTaskInterface() = default;
 
-    virtual void run() = 0;
+    virtual void run(::pystd2026::TypeErasedPromise &) noexcept = 0;
 
+private:
     ::pystd2026::TypeErasedPromise promise;
 };
 
