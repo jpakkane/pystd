@@ -96,7 +96,7 @@ private:
 
 void repack_all(pystd2026::Path &indir, pystd2026::Path &outdir) {
     pystd2026::ThreadExecutor ex;
-    pystd2026::Vector<::pystd2026::Future> futures;
+    pystd2026::Vector<::pystd2026::Future<void>> futures;
     ex.reserve(1024);
     futures.reserve(1024);
     for(auto &&inname : pystd2026::Loopsume(indir.glob("*.png"))) {
@@ -104,7 +104,7 @@ void repack_all(pystd2026::Path &indir, pystd2026::Path &outdir) {
         auto outname = outdir / basename;
         pystd2026::unique_ptr<pystd2026::ExecutorTaskInterface> task(
             new PackTask(pystd2026::move(inname), pystd2026::move(outname)));
-        futures.push_back(ex.submit(pystd2026::move(task)));
+        futures.push_back(ex.submit<void>(pystd2026::move(task)));
     }
     int i = 0;
     for(auto &f : futures) {
