@@ -62,21 +62,6 @@ ThreadExecutor::ThreadExecutor(int num_threads) {
 
 ThreadExecutor::~ThreadExecutor() { shutdown(); }
 
-Future ThreadExecutor::submit(::pystd2026::unique_ptr<::pystd2026::ExecutorTaskInterface> task) {
-    FuturePair fp;
-    {
-        ::pystd2026::LockGuard<::pystd2026::Mutex> lg(m);
-        if(shutdown_flag) {
-            throw ::pystd2026::PyException(
-                "Fatal: trying to submit work to an executor that is shutting down.");
-        }
-        fp = ::pystd2026::Future::create_future_pair();
-        tasks.emplace_back(::pystd2026::move(task), ::pystd2026::move(fp.p));
-    }
-    cv.signal();
-    return ::pystd2026::move(fp.f);
-}
-
 void ThreadExecutor::shutdown() {
     {
         ::pystd2026::LockGuard<::pystd2026::Mutex> lg(m);

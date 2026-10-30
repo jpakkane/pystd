@@ -9,8 +9,8 @@ namespace pystd2026 {
 
 class ExecutorWorkerThread;
 
-struct FutureData {
-    virtual ~FutureData() = default;
+struct FutureDataBase {
+    virtual ~FutureDataBase() = default;
     ::pystd2026::Mutex m;
     ::pystd2026::ConditionVariable cv;
     int refcount = 2;
@@ -21,26 +21,26 @@ struct FutureData {
     virtual void set_value(void *data) noexcept {}
 };
 
-struct FuturePair;
+template<typename T> struct FuturePair;
 
-template<typename T> class Future2;
+template<typename T> class Future;
 
-class Future {
+class TypeErasedFuture {
 public:
-    Future() noexcept = default;
-    Future(Future &&o) noexcept {
+    TypeErasedFuture() noexcept = default;
+    TypeErasedFuture(TypeErasedFuture &&o) noexcept {
         data = o.data;
         o.data = nullptr;
     }
 
-    ~Future() {
+    ~TypeErasedFuture() {
         if(data) {
             get();
         }
         release_data();
     }
 
-    Future &operator=(Future &&o) noexcept {
+    TypeErasedFuture &operator=(TypeErasedFuture &&o) noexcept {
         if(this != &o) {
             release_data();
             data = o.data;
@@ -57,9 +57,7 @@ public:
         return data->get_value();
     }
 
-    static FuturePair create_future_pair();
-
-    Future(FutureData *fd) : data{fd} {}
+    TypeErasedFuture(FutureDataBase *fd) : data{fd} {}
 
 private:
     void release_data() noexcept {
@@ -78,19 +76,19 @@ private:
         data = nullptr;
     }
 
-    FutureData *data = nullptr;
+    FutureDataBase *data = nullptr;
 };
 
-class Promise {
+class TypeErasedPromise {
 public:
-    friend class Future;
-    Promise() noexcept = default;
-    Promise(Promise &&o) noexcept {
+    friend class TypeErasedFuture;
+    TypeErasedPromise() noexcept = default;
+    TypeErasedPromise(TypeErasedPromise &&o) noexcept {
         data = o.data;
         o.data = nullptr;
     }
 
-    Promise &operator=(Promise &&o) noexcept {
+    TypeErasedPromise &operator=(TypeErasedPromise &&o) noexcept {
         if(this != &o) {
             release_data();
             data = o.data;
@@ -114,7 +112,7 @@ public:
         release_data();
     }
 
-    Promise(FutureData *fd) noexcept : data{fd} {}
+    TypeErasedPromise(FutureDataBase *fd) noexcept : data{fd} {}
 
 private:
     void release_data() noexcept {
@@ -133,21 +131,11 @@ private:
         data = nullptr;
     }
 
-    FutureData *data = nullptr;
+    FutureDataBase *data = nullptr;
 };
 
-struct FuturePair {
-    Future f;
-    Promise p;
-};
-
-inline FuturePair Future::create_future_pair() {
-    auto pair_data = new FutureData{};
-    return FuturePair{pair_data, pair_data};
-}
-
-template<typename T> struct FutureData2 : public FutureData {
-    ~FutureData2() = default;
+template<typename T> struct FutureData : public FutureDataBase {
+    ~FutureData() = default;
 
     void *get_value() noexcept override { return &stored_data; }
     void set_value(void *data) noexcept override {
@@ -157,8 +145,8 @@ template<typename T> struct FutureData2 : public FutureData {
     T stored_data;
 };
 
-template<> struct FutureData2<void> : public FutureData {
-    ~FutureData2() = default;
+template<> struct FutureData<void> : public FutureDataBase {
+    ~FutureData() = default;
     void *get_value() noexcept override { return nullptr; }
     void set_value(void *data) noexcept override {};
 };
@@ -175,16 +163,13 @@ template<> struct ref_or_void<void> {
 
 template<typename T> using ref_or_void_t = typename ref_or_void<T>::type;
 
-template<typename T> class Future2 {
+template<typename T> class Future {
 public:
-    Future2() noexcept = default;
-    explicit Future2(::pystd2026::Future2<T> &&of) noexcept
-        : underlying{::pystd2026::move(of.underlying)} {
-        of.underlying = nullptr;
-    }
-    // Future2(::pystd2026::Future2<T> &&) noexcept = default;
+    Future() noexcept = default;
+    Future(::pystd2026::Future<T> &&of) noexcept = default;
+    // Future(::pystd2026::Future<T> &&) noexcept = default;
 
-    Future2 &operator=(::pystd2026::Future2<T> &&) noexcept = default;
+    Future &operator=(::pystd2026::Future<T> &&) noexcept = default;
 
     ref_or_void_t<T> get() {
         if constexpr(::pystd2026::is_same_v<void, T>) {
@@ -195,55 +180,62 @@ public:
         }
     }
 
-    static FuturePair2<T> create_future_pair2();
+    static FuturePair<T> create_future_pair();
 
 private:
-    Future2(FutureData2<T> *fd) : underlying{fd} {}
+    Future(FutureData<T> *fd) : underlying{fd} {}
 
-    ::pystd2026::Future underlying;
+    ::pystd2026::TypeErasedFuture underlying;
 };
 
-template<typename T> class Promise2 {
+template<typename T> class Promise {
 public:
-    Promise2() noexcept = default;
-    explicit Promise2(::pystd2026::Promise &&of) noexcept : underlying{::pystd2026::move(of)} {}
-    Promise2(::pystd2026::Promise2<T> &&) noexcept = default;
+    Promise() noexcept = default;
 
-    Promise2 &operator=(::pystd2026::Promise2<T> &&) noexcept = default;
+    explicit Promise(::pystd2026::TypeErasedPromise &&of) noexcept
+        : underlying{::pystd2026::move(of)} {}
+    Promise(::pystd2026::Promise<T> &&) noexcept = default;
+
+    Promise &operator=(::pystd2026::Promise<T> &&) noexcept = default;
 
     void set(T &result) { underlying.set(static_cast<void *>(&result)); }
 
-    Promise2(FutureData *fd) noexcept : underlying{fd} {}
+    Promise(FutureDataBase *fd) noexcept : underlying{fd} {}
+
+    ::pystd2026::TypeErasedPromise swipe() { return ::pystd2026::move(underlying); }
 
 private:
-    ::pystd2026::Promise underlying;
+    ::pystd2026::TypeErasedPromise underlying;
 };
 
-template<> class Promise2<void> {
+template<> class Promise<void> {
 public:
-    Promise2() noexcept = default;
-    explicit Promise2(::pystd2026::Promise &&of) noexcept : underlying{::pystd2026::move(of)} {}
-    Promise2(::pystd2026::Promise2<void> &&) noexcept = default;
+    Promise() noexcept = default;
+    explicit Promise(::pystd2026::TypeErasedPromise &&of) noexcept
+        : underlying{::pystd2026::move(of)} {}
+    Promise(::pystd2026::Promise<void> &&) noexcept = default;
 
-    Promise2 &operator=(::pystd2026::Promise2<void> &&) noexcept = default;
+    Promise &operator=(::pystd2026::Promise<void> &&) noexcept = default;
 
     void set() { underlying.set(); }
 
-    Promise2(FutureData *fd) noexcept : underlying{fd} {}
+    Promise(FutureDataBase *fd) noexcept : underlying{fd} {}
+
+    ::pystd2026::TypeErasedPromise swipe() { return ::pystd2026::move(underlying); }
 
 private:
-    ::pystd2026::Promise underlying;
+    ::pystd2026::TypeErasedPromise underlying;
 };
 
-template<typename T> struct FuturePair2 {
-    ::pystd2026::Future2<T> f;
-    ::pystd2026::Promise2<T> p;
+template<typename T> struct FuturePair {
+    ::pystd2026::Future<T> f;
+    ::pystd2026::Promise<T> p;
 };
 
-template<typename T> inline FuturePair2<T> Future2<T>::create_future_pair2() {
-    auto pair_data = new FutureData2<T>{};
+template<typename T> inline FuturePair<T> Future<T>::create_future_pair() {
+    auto pair_data = new FutureData<T>{};
 
-    return FuturePair2<T>{pair_data, pair_data};
+    return FuturePair<T>{pair_data, pair_data};
 }
 
 class ExecutorTaskInterface {
@@ -252,12 +244,12 @@ public:
 
     virtual void run() = 0;
 
-    ::pystd2026::Promise promise;
+    ::pystd2026::TypeErasedPromise promise;
 };
 
 struct TaskData {
     ::pystd2026::unique_ptr<::pystd2026::ExecutorTaskInterface> task;
-    ::pystd2026::Promise p;
+    ::pystd2026::TypeErasedPromise p;
 };
 
 class ThreadExecutor final {
@@ -268,8 +260,22 @@ public:
     ThreadExecutor(const ThreadExecutor &) = delete;
     ThreadExecutor &operator=(const ThreadExecutor &) = delete;
 
-    ::pystd2026::Future submit(::pystd2026::unique_ptr<::pystd2026::ExecutorTaskInterface> task);
-
+    template<typename T>
+    ::pystd2026::Future<T>
+    submit(::pystd2026::unique_ptr<::pystd2026::ExecutorTaskInterface> task) {
+        FuturePair<T> fp;
+        {
+            ::pystd2026::LockGuard<::pystd2026::Mutex> lg(m);
+            if(shutdown_flag) {
+                throw ::pystd2026::PyException(
+                    "Fatal: trying to submit work to an executor that is shutting down.");
+            }
+            fp = ::pystd2026::Future<T>::create_future_pair();
+            tasks.emplace_back(::pystd2026::move(task), ::pystd2026::move(fp.p.swipe()));
+        }
+        cv.signal();
+        return ::pystd2026::move(fp.f);
+    }
     void reserve(size_t num_tasks) noexcept;
 
     size_t size() const noexcept;

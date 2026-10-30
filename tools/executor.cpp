@@ -33,7 +33,7 @@ int main() {
         for(int task = 0; task < num_tasks; ++task) {
             snprintf(buf, 20, "task: %d", task);
             pystd2026::unique_ptr<pystd2026::ExecutorTaskInterface> up(new PrintTask(buf));
-            ex1.submit(pystd2026::move(up));
+            auto f = ex1.submit<void>(pystd2026::move(up));
         }
         timespec dur;
         dur.tv_sec = 2;

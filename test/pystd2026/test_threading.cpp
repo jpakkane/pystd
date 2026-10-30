@@ -77,6 +77,7 @@ int test_thread() {
 }
 
 int test_futures() {
+    /*
     TEST_START;
     auto pair = ::pystd2026::Future::create_future_pair();
 
@@ -84,14 +85,14 @@ int test_futures() {
     // at least it should not leak memory.
     pair.p.set();
     pair.f.get();
-
+*/
     return 0;
 }
 
 int test_futures2() {
     TEST_START;
 
-    auto pair = ::pystd2026::Future2<int>::create_future_pair2();
+    auto pair = ::pystd2026::Future<int>::create_future_pair();
 
     // This does not actually test any behaviour yet, but
     // at least it should not leak memory.
@@ -100,7 +101,7 @@ int test_futures2() {
     int out_value = pair.f.get();
 
     ASSERT(in_value == out_value);
-    auto voidpair = ::pystd2026::Future2<void>::create_future_pair2();
+    auto voidpair = ::pystd2026::Future<void>::create_future_pair();
 
     voidpair.p.set();
     voidpair.f.get();
