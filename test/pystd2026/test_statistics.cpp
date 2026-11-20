@@ -34,6 +34,22 @@ int test_mean() {
     return 0;
 }
 
+int test_geometric_mean() {
+    TEST_START;
+    ::pystd2026::Vector<double> data;
+    data.push_back(1);
+    data.push_back(2);
+    data.push_back(3);
+
+    const double expected = 1.817120592;
+
+    auto var = ::pystd2026::geometric_mean(data.span());
+    ASSERT(var);
+    ASSERT(fabs(var.value() - expected) < 0.01);
+
+    return 0;
+}
+
 int test_variance() {
     TEST_START;
     ::pystd2026::Vector<double> data;
@@ -91,6 +107,7 @@ int test_stats() {
     printf("Testing file access.\n");
     int failing_subtests = 0;
     failing_subtests += test_mean();
+    failing_subtests += test_geometric_mean();
     failing_subtests += test_variance();
     failing_subtests += test_covariance();
     return failing_subtests;

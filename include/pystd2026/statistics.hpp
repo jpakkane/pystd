@@ -28,6 +28,27 @@ template<WellBehaved ValueType>
     return mean(span.begin(), span.end());
 }
 
+template<::pystd2026::BasicIterator It>
+auto geometric_mean(It begin, It end) noexcept
+    -> ::pystd2026::Optional<::pystd2026::remove_cvref_t<decltype(*begin)>> {
+    using ValueType = ::pystd2026::remove_cvref_t<decltype(*begin)>;
+    if(begin == end) {
+        return ::pystd2026::Optional<ValueType>{};
+    }
+    ValueType summed = 1;
+    ValueType N = end - begin;
+    for(auto it = begin; it != end; ++it) {
+        summed *= *it;
+    }
+
+    return pow(summed, 1.0 / N);
+}
+
+template<WellBehaved ValueType>
+::pystd2026::Optional<ValueType> geometric_mean(::pystd2026::Span<ValueType> span) {
+    return geometric_mean(span.begin(), span.end());
+}
+
 template<WellBehaved ValueType, ::pystd2026::BasicIterator It>
 ValueType variance(It begin, It end, ValueType mean) noexcept {
     ValueType summed{};
