@@ -119,6 +119,27 @@ int test_correlation() {
     return 0;
 }
 
+int test_regression() {
+    TEST_START;
+    const int NUM_ITEMS = 5;
+    double xdata[NUM_ITEMS] = {1971, 1975, 1979, 1982, 1983};
+    double ydata[NUM_ITEMS] = {1, 2, 3, 4, 5};
+
+    ::pystd2026::Span x(xdata, NUM_ITEMS);
+    ::pystd2026::Span y(ydata, NUM_ITEMS);
+
+    const double expected_slope = 0.312;
+    const double expected_intercept = -610.18;
+
+    auto var = ::pystd2026::linear_regression(x, y);
+    ASSERT(var);
+    auto &v = var.value();
+    ASSERT(fabs(v.slope - expected_slope) < 0.01);
+    ASSERT(fabs(v.intercept - expected_intercept) < 0.01);
+
+    return 0;
+}
+
 int test_stats() {
     printf("Testing file access.\n");
     int failing_subtests = 0;
@@ -127,6 +148,7 @@ int test_stats() {
     failing_subtests += test_harmonic_mean();
     failing_subtests += test_variance();
     failing_subtests += test_covariance();
+    failing_subtests += test_regression();
     return failing_subtests;
 }
 

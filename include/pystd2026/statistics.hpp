@@ -159,4 +159,58 @@ template<WellBehaved ValueType>
     return numerator / (denominator1 * denominator2);
 }
 
+template<typename T> struct RegressionResult {
+    T slope;
+    T intercept;
+};
+
+template<WellBehaved ValueType>
+::pystd2026::Optional<RegressionResult<ValueType>>
+linear_regression(::pystd2026::Span<ValueType> x, ::pystd2026::Span<ValueType> y) noexcept {
+    if(x.size() < 2 || y.size() < 2) {
+        return {};
+    }
+    if(x.size() != y.size()) {
+        return {};
+    }
+
+    const ValueType N = x.size();
+
+    ValueType sum_x{};
+    ValueType sum_x2{};
+    for(const auto &i : x) {
+        sum_x += i;
+        sum_x2 += i * i;
+    }
+    // Do the pseudoinverse
+    ValueType XX[2][2];
+    XX[0][0] = N;
+    XX[1][0] = sum_x;
+    XX[0][1] = sum_x;
+    XX[1][1] = sum_x2;
+
+    const ValueType D = XX[0][0] * XX[1][1] - XX[1][0] * XX[0][1];
+
+    if(fabs(D) < 0.00001) {
+        return {};
+    }
+
+    ValueType I_X[2][2];
+    I_X[0][0] = XX[1][1] / D;
+    I_X[1][1] = XX[0][0] / D;
+    I_X[1][0] = -XX[1][0] / D;
+    I_X[0][1] = -XX[0][1] / D;
+
+    ValueType Xty[2] = {{}, {}};
+    for(size_t i = 0; i < x.size(); ++i) {
+        Xty[0] += y[i];
+        Xty[1] += x[i] * y[i];
+    }
+
+    ValueType intercept = I_X[0][0] * Xty[0] + I_X[0][1] * Xty[1];
+    ValueType slope = I_X[1][0] * Xty[0] + I_X[1][1] * Xty[1];
+
+    return RegressionResult<ValueType>{slope, intercept};
+}
+
 } // namespace pystd2026
