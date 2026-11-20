@@ -36,8 +36,8 @@ ValueType variance(It begin, It end, ValueType mean) noexcept {
         summed += x * x;
     }
 
-    const ValueType num_elements = (end - begin);
-    return summed / (num_elements - 1);
+    const ValueType N = (end - begin);
+    return summed / (N - 1);
 }
 
 template<::pystd2026::BasicIterator It>
@@ -57,6 +57,29 @@ auto variance(It begin, It end) noexcept
 template<WellBehaved ValueType>
 ::pystd2026::Optional<ValueType> variance(::pystd2026::Span<ValueType> span) {
     return ::pystd2026::variance(span.begin(), span.end());
+}
+
+template<WellBehaved ValueType>
+::pystd2026::Optional<ValueType> covariance(::pystd2026::Span<ValueType> x,
+                                            ::pystd2026::Span<ValueType> y) noexcept {
+    if(x.size() < 2 || y.size() < 2) {
+        return {};
+    }
+    if(x.size() != y.size()) {
+        return {};
+    }
+
+    const auto xmean = ::pystd2026::mean(x).value();
+    const auto ymean = ::pystd2026::mean(y).value();
+
+    const ValueType N = x.size();
+
+    ValueType sum{};
+    for(size_t i = 0; i < x.size(); ++i) {
+        sum += (x[i] - xmean) * (y[i] - ymean);
+    }
+
+    return sum / (N - 1);
 }
 
 } // namespace pystd2026

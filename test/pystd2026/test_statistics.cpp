@@ -51,11 +51,30 @@ int test_variance() {
     return 0;
 }
 
+int test_covariance() {
+    TEST_START;
+    const int NUM_ITEMS = 9;
+    double xdata[NUM_ITEMS] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+    double ydata[NUM_ITEMS] = {1, 2, 3, 1, 2, 3, 1, 2, 3};
+
+    ::pystd2026::Span x(xdata, NUM_ITEMS);
+    ::pystd2026::Span y(ydata, NUM_ITEMS);
+
+    const double expected = 0.75;
+
+    auto var = ::pystd2026::covariance(x, y);
+    ASSERT(var);
+    ASSERT(fabs(var.value() - expected) < 0.01);
+
+    return 0;
+}
+
 int test_stats() {
     printf("Testing file access.\n");
     int failing_subtests = 0;
     failing_subtests += test_mean();
     failing_subtests += test_variance();
+    failing_subtests += test_covariance();
     return failing_subtests;
 }
 
@@ -66,6 +85,9 @@ int main(int argc, char **argv) {
     } catch(const pystd2026::PyException &e) {
         printf("Testing failed: %s\n", e.what().c_str());
         return 42;
+    } catch(...) {
+        printf("Testing failed due to unknown exception.\n");
+        return 43;
     }
 
     if(total_errors) {
