@@ -49,6 +49,30 @@ template<WellBehaved ValueType>
     return geometric_mean(span.begin(), span.end());
 }
 
+template<::pystd2026::BasicIterator It>
+auto harmonic_mean(It begin, It end) noexcept
+    -> ::pystd2026::Optional<::pystd2026::remove_cvref_t<decltype(*begin)>> {
+    using ValueType = ::pystd2026::remove_cvref_t<decltype(*begin)>;
+    if(begin == end) {
+        return ::pystd2026::Optional<ValueType>{};
+    }
+    ValueType summed = 0;
+    ValueType N = end - begin;
+    for(auto it = begin; it != end; ++it) {
+        if(fabs(*it) < 0.0000001) {
+            return 0;
+        }
+        summed += 1.0 / (*it);
+    }
+
+    return N / summed;
+}
+
+template<WellBehaved ValueType>
+::pystd2026::Optional<ValueType> harmonic_mean(::pystd2026::Span<ValueType> span) {
+    return harmonic_mean(span.begin(), span.end());
+}
+
 template<WellBehaved ValueType, ::pystd2026::BasicIterator It>
 ValueType variance(It begin, It end, ValueType mean) noexcept {
     ValueType summed{};
