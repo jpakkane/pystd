@@ -737,6 +737,13 @@ public:
         return data.value;
     }
 
+    const bool operator==(const T &plain_value) const noexcept {
+        if(!has_value) {
+            return false;
+        }
+        return data.value == plain_value;
+    }
+
     void reset() { destroy(); }
 
     void clear() { destroy(); }

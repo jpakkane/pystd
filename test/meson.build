@@ -41,3 +41,8 @@ test('pystd2026_sorting', pystd2026_test_sorting)
 
 test('timing', find_program('timingtest.py'),
   is_parallel: false)
+
+pystd2026_test_statistics = executable('pystd2026test_statistics', 'pystd2026/test_statistics.cpp',
+  dependencies: stdlib_dep)
+
+test('pystd2026_statistics', pystd2026_test_statistics)
