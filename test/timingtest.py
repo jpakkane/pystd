@@ -55,7 +55,10 @@ def test_unixy():
     compilers = json.loads(open('meson-info/intro-compilers.json', 'r').read())
     options = json.loads(open('meson-info/intro-buildoptions.json', 'r').read())
     mi = json.loads(open('meson-info/meson-info.json', 'r').read())
-    cpp = compilers['build']['cpp']['exelist']
+    try:
+        cpp = compilers['build']['cpp']['exelist']
+    except KeyError:
+        cpp = compilers['host']['cpp']['exelist']
     std_version = get_std(options)
     std_flags = [f'-std={std_version}'] if std_version else []
 
