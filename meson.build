@@ -10,7 +10,10 @@ else
   add_project_link_arguments('-nostdlib++', '-lsupc++', language: 'cpp')
 endif
 
+cc = meson.get_compiler('cpp')
+
 pcre_dep = dependency('libpcre2-8', required: false)
+m_dep = cc.find_library('m', required: false)
 
 subdir('include')
 subdir('src')

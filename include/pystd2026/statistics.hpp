@@ -82,4 +82,36 @@ template<WellBehaved ValueType>
     return sum / (N - 1);
 }
 
+template<WellBehaved ValueType>
+::pystd2026::Optional<ValueType> correlation(::pystd2026::Span<ValueType> x,
+                                             ::pystd2026::Span<ValueType> y) noexcept {
+    if(x.size() < 2 || y.size() < 2) {
+        return {};
+    }
+    if(x.size() != y.size()) {
+        return {};
+    }
+
+    const ValueType N = x.size();
+
+    ValueType sum_xy{};
+    ValueType sum_x{};
+    ValueType sum_y{};
+    ValueType sum_xx{};
+    ValueType sum_yy{};
+    for(size_t i = 0; i < x.size(); ++i) {
+        sum_x += x[i];
+        sum_y += y[i];
+        sum_xy += x[i] * y[i];
+        sum_xx += x[i] * x[i];
+        sum_yy += y[i] * y[i];
+    }
+
+    const ValueType numerator = N * sum_xy - sum_x * sum_y;
+    const ValueType denominator1 = sqrt(N * sum_xx - sum_x * sum_x);
+    const ValueType denominator2 = sqrt(N * sum_yy - sum_y * sum_y);
+
+    return numerator / (denominator1 * denominator2);
+}
+
 } // namespace pystd2026

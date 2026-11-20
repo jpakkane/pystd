@@ -20,4 +20,5 @@ stdlib = static_library('pystd',
   dependencies: pcre_dep)
 
 stdlib_dep = declare_dependency(include_directories: '../include',
+  dependencies: m_dep,
   link_with: stdlib)

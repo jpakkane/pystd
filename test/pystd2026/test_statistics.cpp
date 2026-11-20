@@ -69,6 +69,24 @@ int test_covariance() {
     return 0;
 }
 
+int test_correlation() {
+    TEST_START;
+    const int NUM_ITEMS = 9;
+    double xdata[NUM_ITEMS] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+    double ydata[NUM_ITEMS] = {1, 2, 3, 1, 2, 3, 1, 2, 3};
+
+    ::pystd2026::Span x(xdata, NUM_ITEMS);
+    ::pystd2026::Span y(ydata, NUM_ITEMS);
+
+    const double expected = 0.3162277660;
+
+    auto var = ::pystd2026::correlation(x, y);
+    ASSERT(var);
+    ASSERT(fabs(var.value() - expected) < 0.01);
+
+    return 0;
+}
+
 int test_stats() {
     printf("Testing file access.\n");
     int failing_subtests = 0;
