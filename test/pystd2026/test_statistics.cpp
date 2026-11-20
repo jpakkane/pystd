@@ -34,10 +34,28 @@ int test_mean() {
     return 0;
 }
 
+int test_variance() {
+    TEST_START;
+    ::pystd2026::Vector<double> data;
+    data.push_back(1.0);
+    data.push_back(2.0);
+    data.push_back(3.0);
+    data.push_back(4.0);
+
+    const double expected = 1.66666;
+
+    auto var = ::pystd2026::variance(data.span());
+    ASSERT(var);
+    ASSERT(fabs(var.value() - expected) < 0.01);
+
+    return 0;
+}
+
 int test_stats() {
     printf("Testing file access.\n");
     int failing_subtests = 0;
     failing_subtests += test_mean();
+    failing_subtests += test_variance();
     return failing_subtests;
 }
 
